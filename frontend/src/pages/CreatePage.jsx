@@ -1,0 +1,327 @@
+import React, { useState } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import SocialLinksInput from "../components/SocialLinksInput";
+import ImageUpload from "../components/ImageUpload";
+import TemplateSelector from "../components/TemplateSelector";
+import PagePreview from "../components/PagePreview";
+import PaymentModal from "../components/PaymentModal";
+
+export default function CreatePage() {
+  const { connected, publicKey } = useWallet();
+  const navigate = useNavigate();
+
+  const [step, setStep] = useState(1);
+  const [slug, setSlug] = useState("");
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [avatar, setAvatar] = useState(null);
+  const [banner, setBanner] = useState(null);
+  const [socials, setSocials] = useState({});
+  const [templateId, setTemplateId] = useState("template_1");
+  const [slugError, setSlugError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [createdPage, setCreatedPage] = useState(null);
+  const [showPayment, setShowPayment] = useState(false);
+
+  if (!connected) {
+    return (
+      <div style={{ textAlign: "center", padding: "80px 20px", color: "#888" }}>
+        Please connect your wallet to create a page.
+      </div>
+    );
+  }
+
+  const validateSlug = (val) => {
+    if (!val) return "Slug is required";
+    if (!/^[a-z0-9-]{2,40}$/.test(val))
+      return "Only lowercase letters, numbers, hyphens. 2–40 chars.";
+    return "";
+  };
+
+  const handleSlugChange = (val) => {
+    setSlug(val.toLowerCase().replace(/[^a-z0-9-]/g, ""));
+    setSlugError("");
+  };
+
+  const handleSlugBlur = async () => {
+    const err = validateSlug(slug);
+    if (err) { setSlugError(err); return; }
+    try {
+      const res = await axios.get(`/api/pages/check-slug/${slug}`);
+      if (!res.data.available) setSlugError("This slug is already taken.");
+    } catch {
+      setSlugError("Could not verify slug availability.");
+    }
+  };
+
+  const uploadImage = async (imageObj, type) => {
+    if (!imageObj?.file) return null;
+    const form = new FormData();
+    form.append("image", imageObj.file);
+    form.append("type", type);
+    const res = await axios.post("/api/media/upload", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return res.data.url;
+  };
+
+  const handleSubmit = async () => {
+    const err = validateSlug(slug);
+    if (err) { setSlugError(err); return; }
+    setSubmitting(true);
+    try {
+      const avatarUrl = await uploadImage(avatar, "avatar");
+      const bannerUrl = await uploadImage(banner, "banner");
+
+      const res = await axios.post("/api/pages", {
+        walletAddress: publicKey.toString(),
+        slug,
+        templateId,
+        content: {
+          name: name || undefined,
+          description: description || undefined,
+          avatar: avatarUrl || undefined,
+          banner: bannerUrl || undefined,
+          socials: Object.fromEntries(
+            Object.entries(socials).filter(([, v]) => v && v.trim())
+          ),
+        },
+      });
+
+      setCreatedPage(res.data.page);
+      setShowPayment(true);
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to create page.");
+    }
+    setSubmitting(false);
+  };
+
+  const STEPS = ["Info", "Media", "Socials", "Template", "Review"];
+
+  return (
+    <div style={{ maxWidth: "900px", margin: "0 auto", padding: "32px 20px" }}>
+      <h1 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "6px" }}>Create Page</h1>
+      <p style={{ fontSize: "13px", color: "#666", marginBottom: "28px" }}>
+        All fields optional except slug. You can always update content later.
+      </p>
+
+      {/* Step indicators */}
+      <div style={{ display: "flex", gap: "8px", marginBottom: "28px", flexWrap: "wrap" }}>
+        {STEPS.map((s, i) => (
+          <div
+            key={s}
+            onClick={() => i + 1 < step && setStep(i + 1)}
+            style={{
+              padding: "6px 14px",
+              borderRadius: "20px",
+              fontSize: "12px",
+              fontWeight: 600,
+              cursor: i + 1 < step ? "pointer" : "default",
+              background:
+                step === i + 1
+                  ? "linear-gradient(135deg, #9945FF, #14F195)"
+                  : step > i + 1
+                  ? "rgba(20,241,149,0.1)"
+                  : "rgba(255,255,255,0.05)",
+              color:
+                step === i + 1
+                  ? "#000"
+                  : step > i + 1
+                  ? "#14F195"
+                  : "#555",
+              border:
+                step > i + 1
+                  ? "1px solid rgba(20,241,149,0.3)"
+                  : "1px solid transparent",
+            }}
+          >
+            {step > i + 1 ? "✓ " : ""}{s}
+          </div>
+        ))}
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: step === 5 ? "1fr 1fr" : "1fr",
+          gap: "24px",
+          alignItems: "start",
+        }}
+      >
+        <div className="glass" style={{ borderRadius: "12px", padding: "24px" }}>
+          {/* Step 1: Info */}
+          {step === 1 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Basic Info</h2>
+              <div>
+                <label>Slug (your subdomain) *</label>
+                <input
+                  value={slug}
+                  onChange={(e) => handleSlugChange(e.target.value)}
+                  onBlur={handleSlugBlur}
+                  placeholder="e.g. pepecoin"
+                />
+                {slugError && <div style={{ color: "#ff6464", fontSize: "12px", marginTop: "4px" }}>{slugError}</div>}
+                <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>
+                  Your page will be at: {slug || "yourslug"}.tokensite.fun
+                </div>
+              </div>
+              <div>
+                <label>Project Name <span style={{ color: "#555" }}>(optional)</span></label>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. PepeCoin" />
+              </div>
+              <div>
+                <label>Description <span style={{ color: "#555" }}>(optional)</span></label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe your project…"
+                  rows={4}
+                  style={{ resize: "vertical" }}
+                />
+              </div>
+              <button
+                className="btn-primary"
+                style={{ marginTop: "8px" }}
+                onClick={() => {
+                  const err = validateSlug(slug);
+                  if (err) { setSlugError(err); return; }
+                  setStep(2);
+                }}
+              >
+                Next →
+              </button>
+            </div>
+          )}
+
+          {/* Step 2: Media */}
+          {step === 2 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Media</h2>
+              <ImageUpload
+                label="Avatar"
+                hint="Recommended 400×400px · Max 2MB"
+                value={avatar}
+                onChange={setAvatar}
+              />
+              <ImageUpload
+                label="Banner"
+                hint="Recommended 1200×300px · Max 5MB"
+                value={banner}
+                onChange={setBanner}
+              />
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button className="btn-secondary" onClick={() => setStep(1)}>← Back</button>
+                <button className="btn-primary" onClick={() => setStep(3)}>Next →</button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Socials */}
+          {step === 3 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Social Links</h2>
+              <p style={{ fontSize: "13px", color: "#888" }}>All optional. Add whichever apply.</p>
+              <SocialLinksInput value={socials} onChange={setSocials} />
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button className="btn-secondary" onClick={() => setStep(2)}>← Back</button>
+                <button className="btn-primary" onClick={() => setStep(4)}>Next →</button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 4: Template */}
+          {step === 4 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Choose Template</h2>
+              <TemplateSelector value={templateId} onChange={setTemplateId} />
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button className="btn-secondary" onClick={() => setStep(3)}>← Back</button>
+                <button className="btn-primary" onClick={() => setStep(5)}>Review →</button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 5: Review */}
+          {step === 5 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Review & Pay</h2>
+              <div style={{ fontSize: "13px", color: "#aaa" }}>
+                <div>Slug: <strong style={{ color: "#fff" }}>{slug}.tokensite.fun</strong></div>
+                {name && <div style={{ marginTop: "4px" }}>Name: <strong style={{ color: "#fff" }}>{name}</strong></div>}
+                <div style={{ marginTop: "4px" }}>Template: <strong style={{ color: "#fff" }}>{templateId}</strong></div>
+              </div>
+
+              <div
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  background: "rgba(255,204,68,0.08)",
+                  border: "1px solid rgba(255,204,68,0.2)",
+                  fontSize: "12px",
+                  color: "#ffcc44",
+                }}
+              >
+                ⚠ Pages are automatically deleted after 3 months of non-renewal. You will need to pay to activate this page.
+              </div>
+
+              <div
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: "8px",
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  fontSize: "12px",
+                  color: "#888",
+                }}
+              >
+                📋 Pages must not contain illegal content such as racism, explicit sexual material, or harmful extremist content.
+                Crypto slang like "shitcoin" and general project branding are allowed.
+                Violations result in permanent deletion.
+              </div>
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button className="btn-secondary" onClick={() => setStep(4)}>← Back</button>
+                <button
+                  className="btn-primary"
+                  style={{ flex: 1 }}
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                >
+                  {submitting ? "Creating…" : "Create & Activate →"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Live preview shown in step 5 */}
+        {step === 5 && (
+          <div>
+            <div style={{ fontSize: "13px", color: "#888", marginBottom: "10px" }}>Preview</div>
+            <PagePreview
+              data={{ name, description, avatar, banner, socials }}
+              templateId={templateId}
+            />
+          </div>
+        )}
+      </div>
+
+      {showPayment && createdPage && (
+        <PaymentModal
+          pageId={createdPage.id}
+          slug={createdPage.slug}
+          onClose={() => {
+            setShowPayment(false);
+            navigate(`/manage/${createdPage.id}`);
+          }}
+          onActivated={() => {
+            setTimeout(() => navigate(`/manage/${createdPage.id}`), 2000);
+          }}
+        />
+      )}
+    </div>
+  );
+}
