@@ -2,14 +2,14 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { getDb } from "./db/index.js";
 import { getOrCreateWalletAuthSecret } from "./services/secretService.js";
 import { globalRateLimiter } from "./middleware/rateLimiter.js";
 import { subdomainResolver } from "./middleware/subdomainResolver.js";
 import { startExpiryJob } from "./jobs/expiryJob.js";
-import { startCleanupJob } from "./jobs/cleanupJob.js";
-import { runCleanup } from "./jobs/cleanupJob.js";
+import { startCleanupJob, runCleanup } from "./jobs/cleanupJob.js";
 import { DOMAIN } from "./config/domain.js";
 import { logger } from "./utils/logger.js";
 import { upload, processAndSaveImage } from "./services/mediaService.js";
@@ -20,12 +20,13 @@ import adminRouter from "./routes/admin.js";
 import subdomainRouter from "./routes/subdomain.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const UPLOAD_DIR = process.env.UPLOAD_DIR || "/data/uploads";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
 getDb();
-const secret = getOrCreateWalletAuthSecret();
+getOrCreateWalletAuthSecret();
 logger.info("system_start", { domain: DOMAIN, mockMode: process.env.MOCK_MODE === "true" });
 
 app.set("trust proxy", 1);
@@ -37,8 +38,8 @@ app.use(
       const allowed = [
         `https://${DOMAIN}`,
         `http://${DOMAIN}`,
-        `http://localhost:3000`,
-        `http://localhost:5173`,
+        "http://localhost:3000",
+        "http://localhost:5173",
       ];
       if (allowed.includes(origin) || origin.endsWith(`.${DOMAIN}`)) {
         return cb(null, true);
@@ -71,8 +72,15 @@ app.use("/api/payments", paymentsRouter);
 app.use("/api/pricing", paymentsRouter);
 app.use("/api/admin", adminRouter);
 
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", domain: DOMAIN, mock: process.env.MOCK_MODE === "true" });
+});
+
+app.get("/media/:filename", (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const filepath = path.join(UPLOAD_DIR, filename);
+  if (!fs.existsSync(filepath)) return res.status(404).send("Not found");
+  res.sendFile(filepath);
 });
 
 app.use((req, res, next) => {
@@ -82,23 +90,11 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/media", (req, res) => {
-  const UPLOAD_DIR = process.env.UPLOAD_DIR || "/data/uploads";
-  const filename = path.basename(req.path);
-  const filepath = path.join(UPLOAD_DIR, filename);
-  const fs = await import("fs");
-  if (!fs.default.existsSync(filepath)) return res.status(404).send("Not found");
-  res.sendFile(filepath);
-});
-
-app.use((req, res) => {
-  if (!req.isMainDomain && req.subdomain) {
-    return subdomainRouter(req, res, () => res.status(404).send("Not found"));
-  }
+app.use((_req, res) => {
   res.status(404).json({ error: "Not found" });
 });
 
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   logger.error("unhandled_error", { err: err.message, path: req.path });
   res.status(500).json({ error: "Internal server error." });
 });
