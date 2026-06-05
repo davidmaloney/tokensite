@@ -11,10 +11,9 @@ services:
     container_name: tokensite_backend
     restart: always
     env_file: .env
+    network_mode: host
     volumes:
       - sqlite_data:/data
-    ports:
-      - "4000:4000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tokensite-backend.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.tokensite.fun`)"
@@ -35,8 +34,7 @@ services:
     container_name: tokensite_frontend
     restart: always
     env_file: .env
-    ports:
-      - "3000:3000"
+    network_mode: host
     depends_on:
       - backend
     labels:
