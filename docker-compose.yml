@@ -1,0 +1,56 @@
+version: "3.9"
+
+networks:
+  tokensite_net:
+    external: false
+
+volumes:
+  sqlite_data:
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tokensite_backend
+    restart: always
+    env_file: .env
+    volumes:
+      - sqlite_data:/data
+    networks:
+      - tokensite_net
+    expose:
+      - "4000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.${DOMAIN}`)"
+      - "traefik.http.routers.backend.priority=10"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.backend.loadbalancer.server.port=4000"
+      - "traefik.http.routers.backend-api.rule=Host(`${DOMAIN}`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.backend-api.priority=20"
+      - "traefik.http.routers.backend-api.entrypoints=websecure"
+      - "traefik.http.routers.backend-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.backend-api.service=backend"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tokensite_frontend
+    restart: always
+    env_file: .env
+    networks:
+      - tokensite_net
+    expose:
+      - "3000"
+    depends_on:
+      - backend
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.frontend.priority=5"
+      - "traefik.http.routers.frontend.entrypoints=websecure"
+      - "traefik.http.routers.frontend.tls.certresolver=letsencrypt"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
