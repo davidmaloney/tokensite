@@ -1,9 +1,5 @@
 version: "3.9"
 
-networks:
-  traefik-proxy:
-    external: true
-
 volumes:
   sqlite_data:
 
@@ -17,10 +13,8 @@ services:
     env_file: .env
     volumes:
       - sqlite_data:/data
-    networks:
-      - traefik-proxy
-    expose:
-      - "4000"
+    ports:
+      - "4000:4000"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tokensite-backend.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.tokensite.fun`)"
@@ -41,10 +35,8 @@ services:
     container_name: tokensite_frontend
     restart: always
     env_file: .env
-    networks:
-      - traefik-proxy
-    expose:
-      - "3000"
+    ports:
+      - "3000:3000"
     depends_on:
       - backend
     labels:
