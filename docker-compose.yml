@@ -1,5 +1,3 @@
-version: "3.9"
-
 volumes:
   sqlite_data:
 
@@ -11,9 +9,10 @@ services:
     container_name: tokensite_backend
     restart: always
     env_file: .env
-    network_mode: host
     volumes:
       - sqlite_data:/data
+    networks:
+      - traefik-proxy
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.tokensite-backend.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.tokensite.fun`)"
@@ -34,7 +33,8 @@ services:
     container_name: tokensite_frontend
     restart: always
     env_file: .env
-    network_mode: host
+    networks:
+      - traefik-proxy
     depends_on:
       - backend
     labels:
@@ -44,3 +44,7 @@ services:
       - "traefik.http.routers.tokensite-frontend.entrypoints=websecure"
       - "traefik.http.routers.tokensite-frontend.tls.certresolver=letsencrypt"
       - "traefik.http.services.tokensite-frontend.loadbalancer.server.port=3000"
+
+networks:
+  traefik-proxy:
+    external: true
