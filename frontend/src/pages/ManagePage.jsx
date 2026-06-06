@@ -66,7 +66,7 @@ export default function ManagePage() {
   if (!page) return null;
 
   const isActive = page.status === "active";
-  const expires = page.expires_at ? new Date(page.expires_at).toLocaleString() : "—";
+  const expires = page.expires_at ? new Date(page.expires_at * 1000).toLocaleString() : "—";
 
   return (
     <div style={{ maxWidth: "700px", margin: "0 auto", padding: "32px 20px" }}>
