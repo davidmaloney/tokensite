@@ -16,7 +16,8 @@ const wallets = [
   new BackpackWalletAdapter(),
 ];
 
-const endpoint = clusterApiUrl("mainnet-beta");
+const endpoint = import.meta.env.VITE_SOLANA_RPC_URL || clusterApiUrl("mainnet-beta");
+
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
