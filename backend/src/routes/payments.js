@@ -30,12 +30,6 @@ router.post("/initiate", async (req, res) => {
     return res.json({ activated: true });
   }
 
-  if (process.env.MOCK_MODE === "true") {
-    await activatePage(pageId, plan);
-    logger.info("mock_activation", { pageId, plan });
-    return res.json({ activated: true });
-  }
-
   try {
     const planData = await getPlanWithSol(plan);
     const tx = createPendingTransaction({
