@@ -11,20 +11,8 @@ services:
     env_file: .env
     volumes:
       - sqlite_data:/data
-    networks:
-      - traefik-proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.tokensite-backend.rule=HostRegexp(`{subdomain:[a-z0-9-]+}.tokensite.fun`)"
-      - "traefik.http.routers.tokensite-backend.priority=10"
-      - "traefik.http.routers.tokensite-backend.entrypoints=websecure"
-      - "traefik.http.routers.tokensite-backend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.tokensite-backend.loadbalancer.server.port=4000"
-      - "traefik.http.routers.tokensite-api.rule=Host(`tokensite.fun`) && PathPrefix(`/api`)"
-      - "traefik.http.routers.tokensite-api.priority=20"
-      - "traefik.http.routers.tokensite-api.entrypoints=websecure"
-      - "traefik.http.routers.tokensite-api.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.tokensite-api.service=tokensite-backend"
+    ports:
+      - "0.0.0.0:4000:4000"
 
   frontend:
     build:
@@ -33,18 +21,7 @@ services:
     container_name: tokensite_frontend
     restart: always
     env_file: .env
-    networks:
-      - traefik-proxy
     depends_on:
       - backend
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.tokensite-frontend.rule=Host(`tokensite.fun`)"
-      - "traefik.http.routers.tokensite-frontend.priority=5"
-      - "traefik.http.routers.tokensite-frontend.entrypoints=websecure"
-      - "traefik.http.routers.tokensite-frontend.tls.certresolver=letsencrypt"
-      - "traefik.http.services.tokensite-frontend.loadbalancer.server.port=3000"
-
-networks:
-  traefik-proxy:
-    external: true
+    ports:
+      - "0.0.0.0:3000:3000"
