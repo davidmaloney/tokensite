@@ -6,6 +6,7 @@ import {
   CLEANUP_JOB_INTERVAL_HOURS,
   SOFT_DELETE_AFTER_EXPIRY_DAYS,
   HARD_DELETE_AFTER_SOFT_DELETE_DAYS,
+  UNPAID_PAGE_CLEANUP_HOURS,
 } from "../config/constants.js";
 import fs from "fs";
 import path from "path";
@@ -30,6 +31,22 @@ export async function runCleanup() {
   return dbWriteQueue.push(() => {
     const db = getDb();
     const now = Math.floor(Date.now() / 1000);
+
+    // Delete unpaid pages older than 1 hour
+    const unpaidCutoff = now - UNPAID_PAGE_CLEANUP_HOURS * 3600;
+    const unpaidResult = db.prepare(`
+      DELETE FROM pages
+      WHERE status = 'inactive'
+        AND expires_at IS NULL
+        AND created_at < ?
+        AND id NOT IN (
+          SELECT page_id FROM transactions WHERE confirmed = 1
+        )
+    `).run(unpaidCutoff);
+
+    if (unpaidResult.changes > 0) {
+      logger.info("unpaid_pages_deleted", { count: unpaidResult.changes });
+    }
 
     const softDeleteCutoff = now - SOFT_DELETE_AFTER_EXPIRY_DAYS * 86400;
     const softDeleteResult = db.prepare(`
