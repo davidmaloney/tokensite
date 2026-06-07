@@ -72,7 +72,7 @@ export default function ManagePage() {
     <div style={{ maxWidth: "700px", margin: "0 auto", padding: "32px 20px" }}>
       <button
         onClick={() => navigate("/")}
-        style={{ background: "none", border: "none", color: "#888", cursor: "pointer", marginBottom: "16px", fontSize: "13px" }}
+        style={{ background: "none", border: "none", color: "#9945FF", cursor: "pointer", marginBottom: "16px", fontSize: "15px", fontWeight: 600 }}
       >
         ← Back to Dashboard
       </button>
@@ -86,14 +86,12 @@ export default function ManagePage() {
         <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
           <div>
             <div style={{ fontSize: "13px", color: "#888" }}>Status</div>
-            <div
-              style={{
-                fontSize: "16px",
-                fontWeight: 700,
-                color: isActive ? "#14F195" : "#ff6464",
-                marginTop: "4px",
-              }}
-            >
+            <div style={{
+              fontSize: "16px",
+              fontWeight: 700,
+              color: isActive ? "#14F195" : "#ff6464",
+              marginTop: "4px",
+            }}>
               {isActive ? "● Active" : "● Inactive"}
             </div>
           </div>
@@ -115,11 +113,10 @@ export default function ManagePage() {
           </a>
         )}
         <button className="btn-secondary" onClick={() => setShowPayment(true)}>
-          {isActive ? "Extend / Renew" : "Activate Page"}
+          {isActive ? "Top Up / Extend" : "Activate Page"}
         </button>
       </div>
 
-      {/* Owner Controls */}
       <div className="glass" style={{ borderRadius: "12px", padding: "20px" }}>
         <div style={{ fontSize: "13px", color: "#666", marginBottom: "12px" }}>Owner Controls</div>
         {!ownerVerified ? (
