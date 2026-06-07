@@ -12,6 +12,7 @@ export default function CreatePage() {
   const { connected, publicKey } = useWallet();
   const navigate = useNavigate();
 
+  const [showWarning, setShowWarning] = useState(true);
   const [step, setStep] = useState(1);
   const [slug, setSlug] = useState("");
   const [name, setName] = useState("");
@@ -31,6 +32,47 @@ export default function CreatePage() {
     return (
       <div style={{ textAlign: "center", padding: "80px 20px", color: "#888" }}>
         Connect your wallet to get started.
+      </div>
+    );
+  }
+
+  if (showWarning) {
+    return (
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        minHeight: "calc(100vh - 64px)", padding: "24px",
+      }}>
+        <div className="glass" style={{
+          borderRadius: "16px", padding: "32px", maxWidth: "440px", width: "100%",
+          border: "1px solid rgba(153,69,255,0.2)",
+          boxShadow: "0 0 40px rgba(153,69,255,0.08)",
+          textAlign: "center",
+        }}>
+          <div style={{ fontSize: "36px", marginBottom: "16px" }}>🚀</div>
+          <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>Before you launch</h2>
+          <p style={{ fontSize: "14px", color: "#888", lineHeight: 1.7, marginBottom: "20px" }}>
+            Your slug is permanent once chosen — pick it carefully. Everything else can be sorted later, but your slug is yours from the moment you create it.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px", textAlign: "left" }}>
+            {[
+              "Your slug cannot be changed after creation",
+              "Keep it clean — meme culture is fine, illegal content is not",
+              "Top up before expiry to keep your page alive",
+            ].map((item) => (
+              <div key={item} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                <span style={{ color: "#9945FF", flexShrink: 0 }}>●</span>
+                <span style={{ fontSize: "13px", color: "#aaa" }}>{item}</span>
+              </div>
+            ))}
+          </div>
+          <button
+            className="btn-primary"
+            style={{ width: "100%", fontSize: "15px", padding: "13px" }}
+            onClick={() => setShowWarning(false)}
+          >
+            Let's build it →
+          </button>
+        </div>
       </div>
     );
   }
@@ -121,21 +163,11 @@ export default function CreatePage() {
             key={s}
             onClick={() => i + 1 < step && setStep(i + 1)}
             style={{
-              padding: "6px 14px",
-              borderRadius: "20px",
-              fontSize: "12px",
-              fontWeight: 600,
+              padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 600,
               cursor: i + 1 < step ? "pointer" : "default",
-              background:
-                step === i + 1
-                  ? "linear-gradient(135deg, #9945FF, #14F195)"
-                  : step > i + 1
-                  ? "rgba(20,241,149,0.1)"
-                  : "rgba(255,255,255,0.05)",
-              color:
-                step === i + 1 ? "#000" : step > i + 1 ? "#14F195" : "#555",
-              border:
-                step > i + 1 ? "1px solid rgba(20,241,149,0.3)" : "1px solid transparent",
+              background: step === i + 1 ? "linear-gradient(135deg, #9945FF, #14F195)" : step > i + 1 ? "rgba(20,241,149,0.1)" : "rgba(255,255,255,0.05)",
+              color: step === i + 1 ? "#000" : step > i + 1 ? "#14F195" : "#555",
+              border: step > i + 1 ? "1px solid rgba(20,241,149,0.3)" : "1px solid transparent",
             }}
           >
             {step > i + 1 ? "✓ " : ""}{s}
@@ -146,24 +178,17 @@ export default function CreatePage() {
       <div style={{
         display: "grid",
         gridTemplateColumns: step === 5 ? "1fr 1fr" : "1fr",
-        gap: "24px",
-        alignItems: "start",
+        gap: "24px", alignItems: "start",
       }}>
         <div className="glass" style={{ borderRadius: "12px", padding: "24px" }}>
 
-          {/* Step 1: Info */}
           {step === 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Basic Info</h2>
 
               <div>
                 <label>Slug (your subdomain) *</label>
-                <input
-                  value={slug}
-                  onChange={(e) => handleSlugChange(e.target.value)}
-                  onBlur={handleSlugBlur}
-                  placeholder="e.g. pepecoin"
-                />
+                <input value={slug} onChange={(e) => handleSlugChange(e.target.value)} onBlur={handleSlugBlur} placeholder="e.g. pepecoin" />
                 {slugError && <div style={{ color: "#ff6464", fontSize: "12px", marginTop: "4px" }}>{slugError}</div>}
                 <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>
                   Your page: {slug || "yourslug"}.tokensite.fun
@@ -177,76 +202,42 @@ export default function CreatePage() {
 
               <div>
                 <label>Description <span style={{ color: "#555" }}>(optional)</span></label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Tell people what your project is about…"
-                  rows={4}
-                  style={{ resize: "vertical" }}
-                />
+                <textarea value={description} onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Tell people what your project is about…" rows={4} style={{ resize: "vertical" }} />
               </div>
 
               <div>
                 <label>Contract Address <span style={{ color: "#555" }}>(optional)</span></label>
-                <input
-                  value={contractAddress}
-                  onChange={(e) => setContractAddress(e.target.value)}
+                <input value={contractAddress} onChange={(e) => setContractAddress(e.target.value)}
                   placeholder="e.g. So11111111111111111111111111111111111111112"
-                  style={{ fontFamily: "monospace", fontSize: "12px" }}
-                />
-                <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>
-                  Shows on your page with a copy button
-                </div>
+                  style={{ fontFamily: "monospace", fontSize: "12px" }} />
+                <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>Shows on your page with a copy button</div>
               </div>
 
               <div>
                 <label>Buy Links <span style={{ color: "#555" }}>(optional)</span></label>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
-                  <div style={{ position: "relative" }}>
-                    <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#14F195" }}>Raydium</span>
-                    <input
-                      value={buyLinks.raydium}
-                      onChange={(e) => setBuyLinks({ ...buyLinks, raydium: e.target.value })}
-                      placeholder="https://raydium.io/swap/..."
-                      style={{ paddingLeft: "76px" }}
-                    />
-                  </div>
-                  <div style={{ position: "relative" }}>
-                    <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#14F195" }}>Jupiter</span>
-                    <input
-                      value={buyLinks.jupiter}
-                      onChange={(e) => setBuyLinks({ ...buyLinks, jupiter: e.target.value })}
-                      placeholder="https://jup.ag/swap/..."
-                      style={{ paddingLeft: "70px" }}
-                    />
-                  </div>
-                  <div style={{ position: "relative" }}>
-                    <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#14F195" }}>Pump.fun</span>
-                    <input
-                      value={buyLinks.pumpfun}
-                      onChange={(e) => setBuyLinks({ ...buyLinks, pumpfun: e.target.value })}
-                      placeholder="https://pump.fun/..."
-                      style={{ paddingLeft: "80px" }}
-                    />
-                  </div>
+                  {[
+                    { key: "raydium", label: "Raydium", placeholder: "https://raydium.io/swap/..." },
+                    { key: "jupiter", label: "Jupiter", placeholder: "https://jup.ag/swap/..." },
+                    { key: "pumpfun", label: "Pump.fun", placeholder: "https://pump.fun/..." },
+                  ].map(({ key, label, placeholder }) => (
+                    <div key={key} style={{ position: "relative" }}>
+                      <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#14F195", pointerEvents: "none" }}>{label}</span>
+                      <input value={buyLinks[key]} onChange={(e) => setBuyLinks({ ...buyLinks, [key]: e.target.value })}
+                        placeholder={placeholder} style={{ paddingLeft: key === "pumpfun" ? "82px" : key === "raydium" ? "78px" : "72px" }} />
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <button
-                className="btn-primary"
-                style={{ marginTop: "8px" }}
-                onClick={() => {
-                  const err = validateSlug(slug);
-                  if (err) { setSlugError(err); return; }
-                  setStep(2);
-                }}
-              >
+              <button className="btn-primary" style={{ marginTop: "8px" }}
+                onClick={() => { const err = validateSlug(slug); if (err) { setSlugError(err); return; } setStep(2); }}>
                 Next →
               </button>
             </div>
           )}
 
-          {/* Step 2: Media */}
           {step === 2 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Media</h2>
@@ -259,7 +250,6 @@ export default function CreatePage() {
             </div>
           )}
 
-          {/* Step 3: Socials */}
           {step === 3 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Social Links</h2>
@@ -272,7 +262,6 @@ export default function CreatePage() {
             </div>
           )}
 
-          {/* Step 4: Template */}
           {step === 4 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Pick a Template</h2>
@@ -284,7 +273,6 @@ export default function CreatePage() {
             </div>
           )}
 
-          {/* Step 5: Review */}
           {step === 5 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Almost there!</h2>
@@ -295,36 +283,17 @@ export default function CreatePage() {
                 <div style={{ marginTop: "4px" }}>Template: <strong style={{ color: "#fff" }}>{templateId}</strong></div>
               </div>
 
-              <div style={{
-                padding: "12px 16px",
-                borderRadius: "8px",
-                background: "rgba(255,204,68,0.08)",
-                border: "1px solid rgba(255,204,68,0.2)",
-                fontSize: "12px",
-                color: "#ffcc44",
-              }}>
-                ⚡ Top up within 30 days of expiry to keep your page alive. After that the slug gets released.
+              <div style={{ padding: "12px 16px", borderRadius: "8px", background: "rgba(255,204,68,0.08)", border: "1px solid rgba(255,204,68,0.2)", fontSize: "12px", color: "#ffcc44" }}>
+                ⚡ Your page stays live as long as it's topped up. If you don't renew within 30 days of expiry, the slug gets released.
               </div>
 
-              <div style={{
-                padding: "12px 16px",
-                borderRadius: "8px",
-                background: "rgba(255,255,255,0.03)",
-                border: "1px solid rgba(255,255,255,0.08)",
-                fontSize: "12px",
-                color: "#888",
-              }}>
+              <div style={{ padding: "12px 16px", borderRadius: "8px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", fontSize: "12px", color: "#888" }}>
                 📋 No illegal content — racism, explicit material or extremist content will result in permanent deletion. Crypto slang and meme culture are totally fine.
               </div>
 
               <div style={{ display: "flex", gap: "10px" }}>
                 <button className="btn-secondary" onClick={() => setStep(4)}>← Back</button>
-                <button
-                  className="btn-primary"
-                  style={{ flex: 1 }}
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                >
+                <button className="btn-primary" style={{ flex: 1 }} onClick={handleSubmit} disabled={submitting}>
                   {submitting ? "Creating…" : "Let's go →"}
                 </button>
               </div>
@@ -335,10 +304,7 @@ export default function CreatePage() {
         {step === 5 && (
           <div>
             <div style={{ fontSize: "13px", color: "#888", marginBottom: "10px" }}>Preview</div>
-            <PagePreview
-              data={{ name, description, avatar, banner, socials }}
-              templateId={templateId}
-            />
+            <PagePreview data={{ name, description, avatar, banner, socials }} templateId={templateId} />
           </div>
         )}
       </div>
@@ -347,13 +313,8 @@ export default function CreatePage() {
         <PaymentModal
           pageId={createdPage.id}
           slug={createdPage.slug}
-          onClose={() => {
-            setShowPayment(false);
-            navigate(`/manage/${createdPage.id}`);
-          }}
-          onActivated={() => {
-            setTimeout(() => navigate(`/manage/${createdPage.id}`), 2000);
-          }}
+          onClose={() => { setShowPayment(false); navigate(`/manage/${createdPage.id}`); }}
+          onActivated={() => { setTimeout(() => navigate(`/manage/${createdPage.id}`), 2000); }}
         />
       )}
     </div>
