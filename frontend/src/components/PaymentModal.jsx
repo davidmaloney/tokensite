@@ -122,32 +122,30 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
           fontSize: "20px", cursor: "pointer",
         }}>×</button>
 
-        <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "6px" }}>Activate Page</h2>
+        <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "16px" }}>Activate Page</h2>
 
         {PAYMENTS_COMING_SOON ? (
-          <div style={{ textAlign: "center", padding: "24px 0" }}>
+          <div style={{ textAlign: "center", padding: "8px 0 16px" }}>
             <div style={{ fontSize: "32px", marginBottom: "12px" }}>🚧</div>
             <div style={{ fontSize: "16px", fontWeight: 700, color: "#ffcc44", marginBottom: "8px" }}>
               Payments launching very soon!
             </div>
-            <div style={{ fontSize: "13px", color: "#888", marginBottom: "8px" }}>
-              We are putting the finishing touches on our payment system. Check back shortly!
+            <div style={{ fontSize: "13px", color: "#888", marginBottom: "20px", lineHeight: 1.6 }}>
+              We are putting the finishing touches on our payment system. Check back shortly — it won't be long!
             </div>
-            <div style={{ fontSize: "12px", color: "#555", marginBottom: "20px" }}>
-              Have an access code? Use it below to activate now.
-            </div>
+
             <button onClick={() => setShowOwnerField(!showOwnerField)} style={{
               background: "none", border: "none", color: "#9945FF",
-              fontSize: "13px", cursor: "pointer", textDecoration: "underline", marginBottom: "12px",
+              fontSize: "13px", cursor: "pointer", textDecoration: "underline", marginBottom: "12px", display: "block", margin: "0 auto 12px",
             }}>
-              Enter access code
+              Have an access code?
             </button>
+
             {showOwnerField && (
               <div style={{ marginBottom: "12px" }}>
                 <input type="password" placeholder="Access code"
                   value={ownerCode} onChange={(e) => setOwnerCode(e.target.value)}
-                  style={{ marginBottom: "8px" }}
-                />
+                  style={{ marginBottom: "8px" }} />
                 {error && <div style={{ color: "#ff6464", fontSize: "12px", marginBottom: "8px" }}>{error}</div>}
                 <button className="btn-primary" style={{ width: "100%" }}
                   onClick={handlePayment} disabled={status === "initiating"}>
@@ -155,6 +153,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
                 </button>
               </div>
             )}
+
             {!showOwnerField && (
               <button className="btn-secondary" style={{ width: "100%" }} onClick={onClose}>
                 Got it
@@ -200,8 +199,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
                   {showOwnerField && (
                     <input type="password" placeholder="Access code"
                       value={ownerCode} onChange={(e) => setOwnerCode(e.target.value)}
-                      style={{ marginTop: "8px" }}
-                    />
+                      style={{ marginTop: "8px" }} />
                   )}
                 </div>
 
@@ -209,9 +207,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
 
                 <button className="btn-primary"
                   style={{ width: "100%", fontSize: "15px", padding: "13px" }}
-                  onClick={handlePayment}
-                  disabled={status === "initiating"}
-                >
+                  onClick={handlePayment} disabled={status === "initiating"}>
                   {status === "initiating" ? "Processing…" : "Pay with Phantom →"}
                 </button>
               </>
