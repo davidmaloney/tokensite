@@ -1,4 +1,5 @@
 import express from "express";
+import { Connection } from "@solana/web3.js";
 import { getPlanWithSol, getSolPriceUsd } from "../services/pricingService.js";
 import {
   createPendingTransaction,
@@ -15,6 +16,17 @@ const router = express.Router();
 router.get("/sol-rate", async (req, res) => {
   const price = await getSolPriceUsd();
   res.json({ usdPerSol: price, solPerUsd: 1 / price });
+});
+
+router.get("/blockhash", async (req, res) => {
+  try {
+    const conn = new Connection(process.env.SOLANA_RPC_URL, "finalized");
+    const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash();
+    res.json({ blockhash, lastValidBlockHeight });
+  } catch (err) {
+    logger.error("blockhash_error", { err: err.message });
+    res.status(500).json({ error: "Failed to get blockhash" });
+  }
 });
 
 router.post("/initiate", async (req, res) => {
