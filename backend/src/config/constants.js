@@ -1,11 +1,10 @@
 export const PLANS = {
-  "1month": { usd: 15, days: 30 },
-  "3months": { usd: 35, days: 90 },
-  "12months": { usd: 99, days: 365 },
+  "1month": { usd: 4.99, days: 30 },
+  "12months": { usd: 39, days: 365 },
 };
 
 export const RETENTION_DAYS_AFTER_EXPIRY = 90;
-export const SOFT_DELETE_AFTER_EXPIRY_DAYS = 60;
+export const SOFT_DELETE_AFTER_EXPIRY_DAYS = 30;
 export const HARD_DELETE_AFTER_SOFT_DELETE_DAYS = 30;
 export const UNPAID_PAGE_CLEANUP_HOURS = 1;
 
