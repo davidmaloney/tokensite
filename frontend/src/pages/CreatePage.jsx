@@ -16,6 +16,8 @@ export default function CreatePage() {
   const [slug, setSlug] = useState("");
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [contractAddress, setContractAddress] = useState("");
+  const [buyLinks, setBuyLinks] = useState({ raydium: "", jupiter: "", pumpfun: "" });
   const [avatar, setAvatar] = useState(null);
   const [banner, setBanner] = useState(null);
   const [socials, setSocials] = useState({});
@@ -28,7 +30,7 @@ export default function CreatePage() {
   if (!connected) {
     return (
       <div style={{ textAlign: "center", padding: "80px 20px", color: "#888" }}>
-        Please connect your wallet to create a page.
+        Connect your wallet to get started.
       </div>
     );
   }
@@ -36,7 +38,7 @@ export default function CreatePage() {
   const validateSlug = (val) => {
     if (!val) return "Slug is required";
     if (!/^[a-z0-9-]{2,40}$/.test(val))
-      return "Only lowercase letters, numbers, hyphens. 2–40 chars.";
+      return "Lowercase letters, numbers and hyphens only. 2–40 characters.";
     return "";
   };
 
@@ -50,9 +52,9 @@ export default function CreatePage() {
     if (err) { setSlugError(err); return; }
     try {
       const res = await axios.get(`/api/pages/check-slug/${slug}`);
-      if (!res.data.available) setSlugError("This slug is already taken.");
+      if (!res.data.available) setSlugError("That slug is already taken — try another!");
     } catch {
-      setSlugError("Could not verify slug availability.");
+      setSlugError("Could not check availability right now.");
     }
   };
 
@@ -75,6 +77,10 @@ export default function CreatePage() {
       const avatarUrl = await uploadImage(avatar, "avatar");
       const bannerUrl = await uploadImage(banner, "banner");
 
+      const filteredBuyLinks = Object.fromEntries(
+        Object.entries(buyLinks).filter(([, v]) => v && v.trim())
+      );
+
       const res = await axios.post("/api/pages", {
         walletAddress: publicKey.toString(),
         slug,
@@ -82,6 +88,8 @@ export default function CreatePage() {
         content: {
           name: name || undefined,
           description: description || undefined,
+          contractAddress: contractAddress || undefined,
+          buyLinks: Object.keys(filteredBuyLinks).length > 0 ? filteredBuyLinks : undefined,
           avatar: avatarUrl || undefined,
           banner: bannerUrl || undefined,
           socials: Object.fromEntries(
@@ -93,7 +101,7 @@ export default function CreatePage() {
       setCreatedPage(res.data.page);
       setShowPayment(true);
     } catch (err) {
-      alert(err.response?.data?.error || "Failed to create page.");
+      alert(err.response?.data?.error || "Something went wrong. Please try again.");
     }
     setSubmitting(false);
   };
@@ -102,12 +110,11 @@ export default function CreatePage() {
 
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto", padding: "32px 20px" }}>
-      <h1 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "6px" }}>Create Page</h1>
+      <h1 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "6px" }}>Create Your Page</h1>
       <p style={{ fontSize: "13px", color: "#666", marginBottom: "28px" }}>
-        All fields optional except slug. You can always update content later.
+        Everything is optional except your slug. Fill in as much or as little as you like.
       </p>
 
-      {/* Step indicators */}
       <div style={{ display: "flex", gap: "8px", marginBottom: "28px", flexWrap: "wrap" }}>
         {STEPS.map((s, i) => (
           <div
@@ -126,15 +133,9 @@ export default function CreatePage() {
                   ? "rgba(20,241,149,0.1)"
                   : "rgba(255,255,255,0.05)",
               color:
-                step === i + 1
-                  ? "#000"
-                  : step > i + 1
-                  ? "#14F195"
-                  : "#555",
+                step === i + 1 ? "#000" : step > i + 1 ? "#14F195" : "#555",
               border:
-                step > i + 1
-                  ? "1px solid rgba(20,241,149,0.3)"
-                  : "1px solid transparent",
+                step > i + 1 ? "1px solid rgba(20,241,149,0.3)" : "1px solid transparent",
             }}
           >
             {step > i + 1 ? "✓ " : ""}{s}
@@ -142,19 +143,19 @@ export default function CreatePage() {
         ))}
       </div>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: step === 5 ? "1fr 1fr" : "1fr",
-          gap: "24px",
-          alignItems: "start",
-        }}
-      >
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: step === 5 ? "1fr 1fr" : "1fr",
+        gap: "24px",
+        alignItems: "start",
+      }}>
         <div className="glass" style={{ borderRadius: "12px", padding: "24px" }}>
+
           {/* Step 1: Info */}
           {step === 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Basic Info</h2>
+
               <div>
                 <label>Slug (your subdomain) *</label>
                 <input
@@ -165,23 +166,72 @@ export default function CreatePage() {
                 />
                 {slugError && <div style={{ color: "#ff6464", fontSize: "12px", marginTop: "4px" }}>{slugError}</div>}
                 <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>
-                  Your page will be at: {slug || "yourslug"}.tokensite.fun
+                  Your page: {slug || "yourslug"}.tokensite.fun
                 </div>
               </div>
+
               <div>
                 <label>Project Name <span style={{ color: "#555" }}>(optional)</span></label>
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. PepeCoin" />
               </div>
+
               <div>
                 <label>Description <span style={{ color: "#555" }}>(optional)</span></label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Describe your project…"
+                  placeholder="Tell people what your project is about…"
                   rows={4}
                   style={{ resize: "vertical" }}
                 />
               </div>
+
+              <div>
+                <label>Contract Address <span style={{ color: "#555" }}>(optional)</span></label>
+                <input
+                  value={contractAddress}
+                  onChange={(e) => setContractAddress(e.target.value)}
+                  placeholder="e.g. So11111111111111111111111111111111111111112"
+                  style={{ fontFamily: "monospace", fontSize: "12px" }}
+                />
+                <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>
+                  Shows on your page with a copy button
+                </div>
+              </div>
+
+              <div>
+                <label>Buy Links <span style={{ color: "#555" }}>(optional)</span></label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
+                  <div style={{ position: "relative" }}>
+                    <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#14F195" }}>Raydium</span>
+                    <input
+                      value={buyLinks.raydium}
+                      onChange={(e) => setBuyLinks({ ...buyLinks, raydium: e.target.value })}
+                      placeholder="https://raydium.io/swap/..."
+                      style={{ paddingLeft: "76px" }}
+                    />
+                  </div>
+                  <div style={{ position: "relative" }}>
+                    <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#14F195" }}>Jupiter</span>
+                    <input
+                      value={buyLinks.jupiter}
+                      onChange={(e) => setBuyLinks({ ...buyLinks, jupiter: e.target.value })}
+                      placeholder="https://jup.ag/swap/..."
+                      style={{ paddingLeft: "70px" }}
+                    />
+                  </div>
+                  <div style={{ position: "relative" }}>
+                    <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#14F195" }}>Pump.fun</span>
+                    <input
+                      value={buyLinks.pumpfun}
+                      onChange={(e) => setBuyLinks({ ...buyLinks, pumpfun: e.target.value })}
+                      placeholder="https://pump.fun/..."
+                      style={{ paddingLeft: "80px" }}
+                    />
+                  </div>
+                </div>
+              </div>
+
               <button
                 className="btn-primary"
                 style={{ marginTop: "8px" }}
@@ -200,18 +250,8 @@ export default function CreatePage() {
           {step === 2 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Media</h2>
-              <ImageUpload
-                label="Avatar"
-                hint="Recommended 400×400px · Max 2MB"
-                value={avatar}
-                onChange={setAvatar}
-              />
-              <ImageUpload
-                label="Banner"
-                hint="Recommended 1200×300px · Max 5MB"
-                value={banner}
-                onChange={setBanner}
-              />
+              <ImageUpload label="Avatar" hint="Recommended 400×400px · Max 2MB" value={avatar} onChange={setAvatar} />
+              <ImageUpload label="Banner" hint="Recommended 1200×300px · Max 5MB" value={banner} onChange={setBanner} />
               <div style={{ display: "flex", gap: "10px" }}>
                 <button className="btn-secondary" onClick={() => setStep(1)}>← Back</button>
                 <button className="btn-primary" onClick={() => setStep(3)}>Next →</button>
@@ -223,7 +263,7 @@ export default function CreatePage() {
           {step === 3 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Social Links</h2>
-              <p style={{ fontSize: "13px", color: "#888" }}>All optional. Add whichever apply.</p>
+              <p style={{ fontSize: "13px", color: "#888" }}>All optional. Add whichever apply to your project.</p>
               <SocialLinksInput value={socials} onChange={setSocials} />
               <div style={{ display: "flex", gap: "10px" }}>
                 <button className="btn-secondary" onClick={() => setStep(2)}>← Back</button>
@@ -235,7 +275,7 @@ export default function CreatePage() {
           {/* Step 4: Template */}
           {step === 4 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Choose Template</h2>
+              <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Pick a Template</h2>
               <TemplateSelector value={templateId} onChange={setTemplateId} />
               <div style={{ display: "flex", gap: "10px" }}>
                 <button className="btn-secondary" onClick={() => setStep(3)}>← Back</button>
@@ -247,39 +287,34 @@ export default function CreatePage() {
           {/* Step 5: Review */}
           {step === 5 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-              <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Review & Pay</h2>
+              <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Almost there!</h2>
               <div style={{ fontSize: "13px", color: "#aaa" }}>
-                <div>Slug: <strong style={{ color: "#fff" }}>{slug}.tokensite.fun</strong></div>
+                <div>Page: <strong style={{ color: "#fff" }}>{slug}.tokensite.fun</strong></div>
                 {name && <div style={{ marginTop: "4px" }}>Name: <strong style={{ color: "#fff" }}>{name}</strong></div>}
+                {contractAddress && <div style={{ marginTop: "4px" }}>Contract: <strong style={{ color: "#9945FF", fontFamily: "monospace", fontSize: "11px" }}>{contractAddress.slice(0, 8)}…{contractAddress.slice(-8)}</strong></div>}
                 <div style={{ marginTop: "4px" }}>Template: <strong style={{ color: "#fff" }}>{templateId}</strong></div>
               </div>
 
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: "8px",
-                  background: "rgba(255,204,68,0.08)",
-                  border: "1px solid rgba(255,204,68,0.2)",
-                  fontSize: "12px",
-                  color: "#ffcc44",
-                }}
-              >
-                ⚠ Pages are automatically deleted after 3 months of non-renewal. You will need to pay to activate this page.
+              <div style={{
+                padding: "12px 16px",
+                borderRadius: "8px",
+                background: "rgba(255,204,68,0.08)",
+                border: "1px solid rgba(255,204,68,0.2)",
+                fontSize: "12px",
+                color: "#ffcc44",
+              }}>
+                ⚡ Top up within 30 days of expiry to keep your page alive. After that the slug gets released.
               </div>
 
-              <div
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: "8px",
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  fontSize: "12px",
-                  color: "#888",
-                }}
-              >
-                📋 Pages must not contain illegal content such as racism, explicit sexual material, or harmful extremist content.
-                Crypto slang like "shitcoin" and general project branding are allowed.
-                Violations result in permanent deletion.
+              <div style={{
+                padding: "12px 16px",
+                borderRadius: "8px",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                fontSize: "12px",
+                color: "#888",
+              }}>
+                📋 No illegal content — racism, explicit material or extremist content will result in permanent deletion. Crypto slang and meme culture are totally fine.
               </div>
 
               <div style={{ display: "flex", gap: "10px" }}>
@@ -290,14 +325,13 @@ export default function CreatePage() {
                   onClick={handleSubmit}
                   disabled={submitting}
                 >
-                  {submitting ? "Creating…" : "Create & Activate →"}
+                  {submitting ? "Creating…" : "Let's go →"}
                 </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Live preview shown in step 5 */}
         {step === 5 && (
           <div>
             <div style={{ fontSize: "13px", color: "#888", marginBottom: "10px" }}>Preview</div>
