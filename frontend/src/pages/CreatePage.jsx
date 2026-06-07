@@ -51,17 +51,17 @@ export default function CreatePage() {
           <div style={{ fontSize: "36px", marginBottom: "16px" }}>🚀</div>
           <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>Before you launch</h2>
           <p style={{ fontSize: "14px", color: "#888", lineHeight: 1.7, marginBottom: "20px" }}>
-            Your slug is permanent once chosen — pick it carefully. Everything else can be sorted later, but your slug is yours from the moment you create it.
+            Take a moment to get everything ready. Once your page is live, some things cannot be changed — so make sure your details are good to go before you hit launch.
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginBottom: "24px", textAlign: "left" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px", textAlign: "left" }}>
             {[
-              "Your slug cannot be changed after creation",
-              "Keep it clean — meme culture is fine, illegal content is not",
-              "Top up before expiry to keep your page alive",
+              "Your slug is permanent — choose it carefully",
+              "Everything else can be updated anytime",
+              "Meme culture and crypto slang are totally welcome",
             ].map((item) => (
               <div key={item} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                <span style={{ color: "#9945FF", flexShrink: 0 }}>●</span>
-                <span style={{ fontSize: "13px", color: "#aaa" }}>{item}</span>
+                <span style={{ color: "#9945FF", flexShrink: 0, marginTop: "2px" }}>●</span>
+                <span style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.5 }}>{item}</span>
               </div>
             ))}
           </div>
@@ -123,21 +123,22 @@ export default function CreatePage() {
         Object.entries(buyLinks).filter(([, v]) => v && v.trim())
       );
 
+      const content = {};
+      if (name) content.name = name;
+      if (description) content.description = description;
+      if (contractAddress) content.contractAddress = contractAddress;
+      if (Object.keys(filteredBuyLinks).length > 0) content.buyLinks = filteredBuyLinks;
+      if (avatarUrl) content.avatar = avatarUrl;
+      if (bannerUrl) content.banner = bannerUrl;
+      content.socials = Object.fromEntries(
+        Object.entries(socials).filter(([, v]) => v && v.trim())
+      );
+
       const res = await axios.post("/api/pages", {
         walletAddress: publicKey.toString(),
         slug,
         templateId,
-        content: {
-          name: name || undefined,
-          description: description || undefined,
-          contractAddress: contractAddress || undefined,
-          buyLinks: Object.keys(filteredBuyLinks).length > 0 ? filteredBuyLinks : undefined,
-          avatar: avatarUrl || undefined,
-          banner: bannerUrl || undefined,
-          socials: Object.fromEntries(
-            Object.entries(socials).filter(([, v]) => v && v.trim())
-          ),
-        },
+        content,
       });
 
       setCreatedPage(res.data.page);
@@ -159,17 +160,13 @@ export default function CreatePage() {
 
       <div style={{ display: "flex", gap: "8px", marginBottom: "28px", flexWrap: "wrap" }}>
         {STEPS.map((s, i) => (
-          <div
-            key={s}
-            onClick={() => i + 1 < step && setStep(i + 1)}
-            style={{
-              padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 600,
-              cursor: i + 1 < step ? "pointer" : "default",
-              background: step === i + 1 ? "linear-gradient(135deg, #9945FF, #14F195)" : step > i + 1 ? "rgba(20,241,149,0.1)" : "rgba(255,255,255,0.05)",
-              color: step === i + 1 ? "#000" : step > i + 1 ? "#14F195" : "#555",
-              border: step > i + 1 ? "1px solid rgba(20,241,149,0.3)" : "1px solid transparent",
-            }}
-          >
+          <div key={s} onClick={() => i + 1 < step && setStep(i + 1)} style={{
+            padding: "6px 14px", borderRadius: "20px", fontSize: "12px", fontWeight: 600,
+            cursor: i + 1 < step ? "pointer" : "default",
+            background: step === i + 1 ? "linear-gradient(135deg, #9945FF, #14F195)" : step > i + 1 ? "rgba(20,241,149,0.1)" : "rgba(255,255,255,0.05)",
+            color: step === i + 1 ? "#000" : step > i + 1 ? "#14F195" : "#555",
+            border: step > i + 1 ? "1px solid rgba(20,241,149,0.3)" : "1px solid transparent",
+          }}>
             {step > i + 1 ? "✓ " : ""}{s}
           </div>
         ))}
@@ -218,14 +215,14 @@ export default function CreatePage() {
                 <label>Buy Links <span style={{ color: "#555" }}>(optional)</span></label>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
                   {[
-                    { key: "raydium", label: "Raydium", placeholder: "https://raydium.io/swap/..." },
-                    { key: "jupiter", label: "Jupiter", placeholder: "https://jup.ag/swap/..." },
-                    { key: "pumpfun", label: "Pump.fun", placeholder: "https://pump.fun/..." },
-                  ].map(({ key, label, placeholder }) => (
+                    { key: "raydium", label: "Raydium", pl: "78px", placeholder: "https://raydium.io/swap/..." },
+                    { key: "jupiter", label: "Jupiter", pl: "72px", placeholder: "https://jup.ag/swap/..." },
+                    { key: "pumpfun", label: "Pump.fun", pl: "82px", placeholder: "https://pump.fun/..." },
+                  ].map(({ key, label, pl, placeholder }) => (
                     <div key={key} style={{ position: "relative" }}>
                       <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#14F195", pointerEvents: "none" }}>{label}</span>
                       <input value={buyLinks[key]} onChange={(e) => setBuyLinks({ ...buyLinks, [key]: e.target.value })}
-                        placeholder={placeholder} style={{ paddingLeft: key === "pumpfun" ? "82px" : key === "raydium" ? "78px" : "72px" }} />
+                        placeholder={placeholder} style={{ paddingLeft: pl }} />
                     </div>
                   ))}
                 </div>
