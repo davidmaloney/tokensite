@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const PLANS = [
@@ -9,12 +9,12 @@ const PLANS = [
   { id: "12months", label: "12 Months", usd: 99 },
 ];
 
+const PAYMENTS_COMING_SOON = false;
+
 export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
-  const { publicKey, sendTransaction } = useWallet();
-  const { connection } = useConnection();
+  const { publicKey, sendTransaction, signTransaction } = useWallet();
   const [selectedPlan, setSelectedPlan] = useState(PLANS[0]);
   const [solPrice, setSolPrice] = useState(null);
-  const [polling, setPolling] = useState(false);
   const [status, setStatus] = useState("idle");
   const [ownerCode, setOwnerCode] = useState("");
   const [showOwnerField, setShowOwnerField] = useState(false);
@@ -43,7 +43,6 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
     setStatus("initiating");
 
     try {
-      // Owner code or mock mode — instant activation
       if (ownerCode) {
         const res = await axios.post("/api/payments/initiate", {
           pageId,
@@ -55,15 +54,16 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
           onActivated && onActivated();
           return;
         }
+        setError("Invalid access code.");
+        setStatus("idle");
+        return;
       }
 
-      // Get payment details from backend
       const res = await axios.post("/api/payments/initiate", {
         pageId,
         plan: selectedPlan.id,
       });
 
-      // Mock mode — instant activation
       if (res.data.activated) {
         setStatus("activated");
         onActivated && onActivated();
@@ -72,30 +72,31 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
 
       const { amountSol, treasuryWallet, referenceId } = res.data;
 
-      // Build Solana transaction
+      const { data: { blockhash, lastValidBlockHeight } } = await axios.get("/api/payments/blockhash");
+
       const lamports = Math.round(parseFloat(amountSol) * LAMPORTS_PER_SOL);
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
-          toPubkey: new PublicKey(treasuryWallet),
+          toPubkey: new PublicKey(treasuryWallet.trim()),
           lamports,
         })
       );
 
-      const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      // Send via Phantom — wallet popup appears here
       setStatus("signing");
-      const signature = await sendTransaction(transaction, connection);
+      const { Connection } = await import("@solana/web3.js");
+      const conn = new Connection(
+        "https://api.mainnet-beta.solana.com",
+        { commitment: "finalized" }
+      );
+      const signature = await sendTransaction(transaction, conn);
 
-      // Wait for confirmation
       setStatus("confirming");
-      await connection.confirmTransaction(signature, "finalized");
 
-      // Tell backend to activate
-      await axios.post(`/api/payments/confirm-tx`, {
+      await axios.post("/api/payments/confirm-tx", {
         referenceId,
         txHash: signature,
       });
@@ -104,7 +105,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
       onActivated && onActivated();
 
     } catch (err) {
-      if (err.message?.includes("rejected") || err.message?.includes("cancelled")) {
+      if (err.message?.includes("rejected") || err.message?.includes("cancelled") || err.message?.includes("User rejected")) {
         setStatus("idle");
         setError("Transaction cancelled.");
       } else {
@@ -131,91 +132,109 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
         }}>×</button>
 
         <h2 style={{ fontSize: "20px", fontWeight: 700, marginBottom: "6px" }}>Activate Page</h2>
-        <p style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>
-          <strong style={{ color: "#ffcc44" }}>⚠ Notice:</strong> Pages are automatically deleted after 3 months of non-renewal.
-        </p>
 
-        {(status === "idle" || status === "initiating") && (
-          <>
-            <div style={{ marginBottom: "20px" }}>
-              <label>Select Plan</label>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
-                {PLANS.map((plan) => (
-                  <div key={plan.id} onClick={() => setSelectedPlan(plan)} style={{
-                    padding: "12px 16px", borderRadius: "10px", cursor: "pointer",
-                    border: selectedPlan.id === plan.id ? "2px solid #9945FF" : "2px solid rgba(255,255,255,0.08)",
-                    background: selectedPlan.id === plan.id ? "rgba(153,69,255,0.1)" : "rgba(255,255,255,0.03)",
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                  }}>
-                    <span style={{ fontWeight: 600 }}>{plan.label}</span>
-                    <span>
-                      <span style={{ color: "#9945FF", fontWeight: 700 }}>{getSolAmount(plan.usd)} SOL</span>
-                      <span style={{ color: "#555", fontSize: "12px", marginLeft: "6px" }}>(${plan.usd})</span>
-                    </span>
-                  </div>
-                ))}
-              </div>
+        {PAYMENTS_COMING_SOON ? (
+          <div style={{ textAlign: "center", padding: "24px 0" }}>
+            <div style={{ fontSize: "32px", marginBottom: "12px" }}>🚧</div>
+            <div style={{ fontSize: "16px", fontWeight: 700, color: "#ffcc44", marginBottom: "8px" }}>
+              Payments launching very soon!
             </div>
-
-            <div style={{ marginBottom: "16px" }}>
-              <button onClick={() => setShowOwnerField(!showOwnerField)} style={{
-                background: "none", border: "none", color: "#555",
-                fontSize: "12px", cursor: "pointer", textDecoration: "underline",
-              }}>
-                Have an access code?
-              </button>
-              {showOwnerField && (
-                <input type="password" placeholder="Owner access code"
-                  value={ownerCode} onChange={(e) => setOwnerCode(e.target.value)}
-                  style={{ marginTop: "8px" }}
-                />
-              )}
-            </div>
-
-            {error && <div style={{ color: "#ff6464", fontSize: "12px", marginBottom: "12px" }}>{error}</div>}
-
-            <button className="btn-primary"
-              style={{ width: "100%", fontSize: "15px", padding: "13px" }}
-              onClick={handlePayment}
-              disabled={status === "initiating"}
-            >
-              {status === "initiating" ? "Processing…" : "Pay with Phantom →"}
-            </button>
-          </>
-        )}
-
-        {status === "signing" && (
-          <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: "32px", marginBottom: "12px" }}>👻</div>
-            <div style={{ fontSize: "16px", fontWeight: 700 }}>Waiting for wallet approval…</div>
-            <div style={{ fontSize: "13px", color: "#888", marginTop: "8px" }}>Check your Phantom wallet</div>
-          </div>
-        )}
-
-        {status === "confirming" && (
-          <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: "32px", marginBottom: "12px" }}>⛓</div>
-            <div style={{ fontSize: "16px", fontWeight: 700 }}>Confirming on Solana…</div>
-            <div style={{ fontSize: "13px", color: "#888", marginTop: "8px" }}>This takes a few seconds</div>
-          </div>
-        )}
-
-        {status === "activated" && (
-          <div style={{ textAlign: "center", padding: "20px 0" }}>
-            <div style={{ fontSize: "40px", marginBottom: "12px" }}>🎉</div>
-            <div style={{ fontSize: "20px", fontWeight: 700, color: "#14F195", marginBottom: "8px" }}>Page Activated!</div>
             <div style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>
-              Your page is live at <span style={{ color: "#9945FF" }}>{slug}.tokensite.fun</span>
+              We are putting the finishing touches on our payment system. Check back shortly — it won't be long!
             </div>
-            <button className="btn-primary" style={{ width: "100%" }} onClick={onClose}>Done</button>
+            <button className="btn-secondary" style={{ width: "100%" }} onClick={onClose}>
+              Got it
+            </button>
           </div>
-        )}
+        ) : (
+          <>
+            <p style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>
+              <strong style={{ color: "#ffcc44" }}>⚠ Heads up:</strong> Top up within 30 days of expiry to keep your page alive. After that the slug gets released.
+            </p>
 
-        {status === "error" && (
-          <div style={{ textAlign: "center" }}>
-            <div style={{ color: "#ff6464", marginBottom: "12px" }}>{error || "Something went wrong."}</div>
-            <button className="btn-secondary" style={{ width: "100%" }} onClick={() => { setStatus("idle"); setError(""); }}>Retry</button>
-          </div>
+            {(status === "idle" || status === "initiating") && (
+              <>
+                <div style={{ marginBottom: "20px" }}>
+                  <label>Pick your plan</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
+                    {PLANS.map((plan) => (
+                      <div key={plan.id} onClick={() => setSelectedPlan(plan)} style={{
+                        padding: "12px 16px", borderRadius: "10px", cursor: "pointer",
+                        border: selectedPlan.id === plan.id ? "2px solid #9945FF" : "2px solid rgba(255,255,255,0.08)",
+                        background: selectedPlan.id === plan.id ? "rgba(153,69,255,0.1)" : "rgba(255,255,255,0.03)",
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                      }}>
+                        <span style={{ fontWeight: 600 }}>{plan.label}</span>
+                        <span>
+                          <span style={{ color: "#9945FF", fontWeight: 700 }}>{getSolAmount(plan.usd)} SOL</span>
+                          <span style={{ color: "#555", fontSize: "12px", marginLeft: "6px" }}>(${plan.usd})</span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: "16px" }}>
+                  <button onClick={() => setShowOwnerField(!showOwnerField)} style={{
+                    background: "none", border: "none", color: "#555",
+                    fontSize: "12px", cursor: "pointer", textDecoration: "underline",
+                  }}>
+                    Have an access code?
+                  </button>
+                  {showOwnerField && (
+                    <input type="password" placeholder="Access code"
+                      value={ownerCode} onChange={(e) => setOwnerCode(e.target.value)}
+                      style={{ marginTop: "8px" }}
+                    />
+                  )}
+                </div>
+
+                {error && <div style={{ color: "#ff6464", fontSize: "12px", marginBottom: "12px" }}>{error}</div>}
+
+                <button className="btn-primary"
+                  style={{ width: "100%", fontSize: "15px", padding: "13px" }}
+                  onClick={handlePayment}
+                  disabled={status === "initiating"}
+                >
+                  {status === "initiating" ? "Processing…" : "Pay with Phantom →"}
+                </button>
+              </>
+            )}
+
+            {status === "signing" && (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <div style={{ fontSize: "32px", marginBottom: "12px" }}>👻</div>
+                <div style={{ fontSize: "16px", fontWeight: 700 }}>Approve in your wallet</div>
+                <div style={{ fontSize: "13px", color: "#888", marginTop: "8px" }}>Check your Phantom app</div>
+              </div>
+            )}
+
+            {status === "confirming" && (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <div style={{ fontSize: "32px", marginBottom: "12px" }}>✅</div>
+                <div style={{ fontSize: "16px", fontWeight: 700 }}>Transaction sent!</div>
+                <div style={{ fontSize: "13px", color: "#888", marginTop: "8px" }}>Activating your page…</div>
+              </div>
+            )}
+
+            {status === "activated" && (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <div style={{ fontSize: "40px", marginBottom: "12px" }}>🎉</div>
+                <div style={{ fontSize: "20px", fontWeight: 700, color: "#14F195", marginBottom: "8px" }}>You're live!</div>
+                <div style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>
+                  Your page is ready at <span style={{ color: "#9945FF" }}>{slug}.tokensite.fun</span>
+                </div>
+                <button className="btn-primary" style={{ width: "100%" }} onClick={onClose}>Let's go →</button>
+              </div>
+            )}
+
+            {status === "error" && (
+              <div style={{ textAlign: "center" }}>
+                <div style={{ color: "#ff6464", marginBottom: "12px" }}>{error || "Something went wrong."}</div>
+                <button className="btn-secondary" style={{ width: "100%" }} onClick={() => { setStatus("idle"); setError(""); }}>Try again</button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
