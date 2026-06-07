@@ -3,6 +3,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import PageCard from "../components/PageCard";
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 
 const DOMAIN = import.meta.env.VITE_DOMAIN || "tokensite.fun";
 
@@ -30,67 +31,153 @@ export default function Dashboard() {
 
   if (!connected) {
     return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          minHeight: "calc(100vh - 64px)",
-          gap: "20px",
-          textAlign: "center",
-          padding: "24px",
-        }}
-      >
-        <div
-          style={{
-            fontSize: "52px",
-            fontWeight: 900,
-            background: "linear-gradient(135deg, #9945FF, #14F195)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        minHeight: "calc(100vh - 64px)",
+        gap: "24px",
+        textAlign: "center",
+        padding: "24px 20px",
+      }}>
+
+        {/* Logo */}
+        <div style={{
+          fontSize: "56px",
+          fontWeight: 900,
+          background: "linear-gradient(135deg, #9945FF, #14F195)",
+          WebkitBackgroundClip: "text",
+          WebkitTextFillColor: "transparent",
+          lineHeight: 1.1,
+        }}>
           TokenSite
         </div>
-        <div style={{ fontSize: "18px", color: "#888", maxWidth: "400px" }}>
-          Create a crypto landing page for your token in minutes. Powered by Solana.
+
+        <div style={{ fontSize: "17px", color: "#888", maxWidth: "380px", lineHeight: 1.6 }}>
+          Your token deserves its own page. Set it up in minutes, powered by Solana.
         </div>
-        <div
-          style={{
-            display: "flex",
-            gap: "16px",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            fontSize: "14px",
-            color: "#555",
-            marginTop: "8px",
-          }}
-        >
+
+        {/* Feature pills */}
+        <div style={{
+          display: "flex",
+          gap: "12px",
+          flexWrap: "wrap",
+          justifyContent: "center",
+          fontSize: "13px",
+          color: "#666",
+        }}>
           <span>🚀 Instant setup</span>
-          <span>🔒 Wallet-based identity</span>
+          <span>🔒 Wallet-based</span>
           <span>⚡ SOL payments</span>
           <span>🌐 Custom subdomain</span>
         </div>
-        <div style={{ marginTop: "16px", color: "#777", fontSize: "13px" }}>
-          Connect your Phantom wallet to get started ↑
+
+        {/* How it works + Pricing panel */}
+        <div className="glass" style={{
+          borderRadius: "16px",
+          padding: "28px 24px",
+          maxWidth: "480px",
+          width: "100%",
+          textAlign: "left",
+          border: "1px solid rgba(153,69,255,0.2)",
+          boxShadow: "0 0 40px rgba(153,69,255,0.08)",
+        }}>
+
+          {/* How it works */}
+          <div style={{ marginBottom: "24px" }}>
+            <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
+              HOW IT WORKS
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {[
+                { step: "01", text: "Connect your Solana wallet" },
+                { step: "02", text: "Fill in your project details and pick a template" },
+                { step: "03", text: "Top up with SOL and your page goes live instantly" },
+              ].map(({ step, text }) => (
+                <div key={step} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <span style={{
+                    fontSize: "11px",
+                    fontWeight: 800,
+                    color: "#9945FF",
+                    fontFamily: "monospace",
+                    minWidth: "24px",
+                  }}>{step}</span>
+                  <span style={{ fontSize: "14px", color: "#bbb" }}>{text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginBottom: "20px" }} />
+
+          {/* Pricing */}
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
+            SIMPLE PRICING
+          </div>
+          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+            <div style={{
+              flex: 1,
+              minWidth: "120px",
+              background: "rgba(255,255,255,0.03)",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: "10px",
+              padding: "14px",
+              textAlign: "center",
+            }}>
+              <div style={{ fontSize: "11px", color: "#666", marginBottom: "6px" }}>MONTHLY</div>
+              <div style={{ fontSize: "22px", fontWeight: 800, color: "#fff" }}>$4.99</div>
+              <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>per month</div>
+            </div>
+            <div style={{
+              flex: 1,
+              minWidth: "120px",
+              background: "rgba(153,69,255,0.08)",
+              border: "1px solid rgba(153,69,255,0.3)",
+              borderRadius: "10px",
+              padding: "14px",
+              textAlign: "center",
+            }}>
+              <div style={{ fontSize: "11px", color: "#9945FF", marginBottom: "6px" }}>YEARLY</div>
+              <div style={{ fontSize: "22px", fontWeight: 800, color: "#fff" }}>$39</div>
+              <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>save 35%</div>
+            </div>
+          </div>
         </div>
+
+        {/* Big connect button */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+          <WalletMultiButton style={{
+            background: "linear-gradient(135deg, #9945FF, #14F195)",
+            color: "#000",
+            fontWeight: 800,
+            fontSize: "16px",
+            borderRadius: "12px",
+            border: "none",
+            height: "52px",
+            padding: "0 32px",
+            cursor: "pointer",
+          }} />
+          <div style={{ fontSize: "12px", color: "#555" }}>
+            Phantom, Solflare and Backpack supported
+          </div>
+        </div>
+
       </div>
     );
   }
 
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto", padding: "32px 20px" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "28px",
-          flexWrap: "wrap",
-          gap: "12px",
-        }}
-      >
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: "28px",
+        flexWrap: "wrap",
+        gap: "12px",
+      }}>
         <div>
           <h1 style={{ fontSize: "24px", fontWeight: 800 }}>My Pages</h1>
           <div style={{ fontSize: "13px", color: "#666", marginTop: "4px" }}>
@@ -105,16 +192,9 @@ export default function Dashboard() {
       </div>
 
       {loading ? (
-        <div style={{ color: "#666", textAlign: "center", padding: "40px" }}>Loading pages…</div>
+        <div style={{ color: "#666", textAlign: "center", padding: "40px" }}>Loading…</div>
       ) : pages.length === 0 ? (
-        <div
-          className="glass"
-          style={{
-            borderRadius: "12px",
-            padding: "48px",
-            textAlign: "center",
-          }}
-        >
+        <div className="glass" style={{ borderRadius: "12px", padding: "48px", textAlign: "center" }}>
           <div style={{ fontSize: "36px", marginBottom: "12px" }}>🪙</div>
           <div style={{ fontSize: "16px", fontWeight: 600, marginBottom: "8px" }}>No pages yet</div>
           <div style={{ fontSize: "13px", color: "#666", marginBottom: "20px" }}>
@@ -125,13 +205,11 @@ export default function Dashboard() {
           </Link>
         </div>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-            gap: "16px",
-          }}
-        >
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+          gap: "16px",
+        }}>
           {pages.map((page) => (
             <PageCard key={page.id} page={page} domain={DOMAIN} />
           ))}
