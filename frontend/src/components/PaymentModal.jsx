@@ -4,15 +4,14 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const PLANS = [
-  { id: "1month", label: "1 Month", usd: 15 },
-  { id: "3months", label: "3 Months", usd: 35 },
-  { id: "12months", label: "12 Months", usd: 99 },
+  { id: "1month", label: "Monthly", usd: 4.99 },
+  { id: "12months", label: "Yearly", usd: 39 },
 ];
 
-const PAYMENTS_COMING_SOON = false;
+const PAYMENTS_COMING_SOON = true;
 
 export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
-  const { publicKey, sendTransaction, signTransaction } = useWallet();
+  const { publicKey, sendTransaction } = useWallet();
   const [selectedPlan, setSelectedPlan] = useState(PLANS[0]);
   const [solPrice, setSolPrice] = useState(null);
   const [status, setStatus] = useState("idle");
@@ -71,8 +70,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
       }
 
       const { amountSol, treasuryWallet, referenceId } = res.data;
-
-      const { data: { blockhash, lastValidBlockHeight } } = await axios.get("/api/payments/blockhash");
+      const { data: { blockhash } } = await axios.get("/api/payments/blockhash");
 
       const lamports = Math.round(parseFloat(amountSol) * LAMPORTS_PER_SOL);
       const transaction = new Transaction().add(
@@ -88,18 +86,11 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
 
       setStatus("signing");
       const { Connection } = await import("@solana/web3.js");
-      const conn = new Connection(
-        "https://api.mainnet-beta.solana.com",
-        { commitment: "finalized" }
-      );
+      const conn = new Connection("https://api.mainnet-beta.solana.com", { commitment: "finalized" });
       const signature = await sendTransaction(transaction, conn);
 
       setStatus("confirming");
-
-      await axios.post("/api/payments/confirm-tx", {
-        referenceId,
-        txHash: signature,
-      });
+      await axios.post("/api/payments/confirm-tx", { referenceId, txHash: signature });
 
       setStatus("activated");
       onActivated && onActivated();
@@ -139,36 +130,61 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
             <div style={{ fontSize: "16px", fontWeight: 700, color: "#ffcc44", marginBottom: "8px" }}>
               Payments launching very soon!
             </div>
-            <div style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>
-              We are putting the finishing touches on our payment system. Check back shortly — it won't be long!
+            <div style={{ fontSize: "13px", color: "#888", marginBottom: "8px" }}>
+              We are putting the finishing touches on our payment system. Check back shortly!
             </div>
-            <button className="btn-secondary" style={{ width: "100%" }} onClick={onClose}>
-              Got it
+            <div style={{ fontSize: "12px", color: "#555", marginBottom: "20px" }}>
+              Have an access code? Use it below to activate now.
+            </div>
+            <button onClick={() => setShowOwnerField(!showOwnerField)} style={{
+              background: "none", border: "none", color: "#9945FF",
+              fontSize: "13px", cursor: "pointer", textDecoration: "underline", marginBottom: "12px",
+            }}>
+              Enter access code
             </button>
+            {showOwnerField && (
+              <div style={{ marginBottom: "12px" }}>
+                <input type="password" placeholder="Access code"
+                  value={ownerCode} onChange={(e) => setOwnerCode(e.target.value)}
+                  style={{ marginBottom: "8px" }}
+                />
+                {error && <div style={{ color: "#ff6464", fontSize: "12px", marginBottom: "8px" }}>{error}</div>}
+                <button className="btn-primary" style={{ width: "100%" }}
+                  onClick={handlePayment} disabled={status === "initiating"}>
+                  {status === "initiating" ? "Processing…" : "Activate with code →"}
+                </button>
+              </div>
+            )}
+            {!showOwnerField && (
+              <button className="btn-secondary" style={{ width: "100%" }} onClick={onClose}>
+                Got it
+              </button>
+            )}
           </div>
         ) : (
           <>
             <p style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>
-              <strong style={{ color: "#ffcc44" }}>⚠ Heads up:</strong> Top up within 30 days of expiry to keep your page alive. After that the slug gets released.
+              <strong style={{ color: "#ffcc44" }}>⚠ Heads up:</strong> Your page stays live as long as it's topped up. If you don't renew within 30 days of expiry, the slug gets released.
             </p>
 
             {(status === "idle" || status === "initiating") && (
               <>
                 <div style={{ marginBottom: "20px" }}>
                   <label>Pick your plan</label>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
+                  <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
                     {PLANS.map((plan) => (
                       <div key={plan.id} onClick={() => setSelectedPlan(plan)} style={{
-                        padding: "12px 16px", borderRadius: "10px", cursor: "pointer",
+                        flex: 1, padding: "14px 12px", borderRadius: "10px", cursor: "pointer",
                         border: selectedPlan.id === plan.id ? "2px solid #9945FF" : "2px solid rgba(255,255,255,0.08)",
                         background: selectedPlan.id === plan.id ? "rgba(153,69,255,0.1)" : "rgba(255,255,255,0.03)",
-                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        textAlign: "center",
                       }}>
-                        <span style={{ fontWeight: 600 }}>{plan.label}</span>
-                        <span>
-                          <span style={{ color: "#9945FF", fontWeight: 700 }}>{getSolAmount(plan.usd)} SOL</span>
-                          <span style={{ color: "#555", fontSize: "12px", marginLeft: "6px" }}>(${plan.usd})</span>
-                        </span>
+                        <div style={{ fontWeight: 700, fontSize: "14px", marginBottom: "4px" }}>{plan.label}</div>
+                        <div style={{ color: "#9945FF", fontWeight: 800, fontSize: "18px" }}>${plan.usd}</div>
+                        <div style={{ color: "#555", fontSize: "11px", marginTop: "2px" }}>{getSolAmount(plan.usd)} SOL</div>
+                        {plan.id === "12months" && (
+                          <div style={{ color: "#14F195", fontSize: "10px", fontWeight: 700, marginTop: "4px" }}>SAVE 35%</div>
+                        )}
                       </div>
                     ))}
                   </div>
