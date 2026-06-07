@@ -54,8 +54,8 @@ export default function Dashboard() {
           TokenSite
         </div>
 
-        <div style={{ fontSize: "17px", color: "#888", maxWidth: "380px", lineHeight: 1.6 }}>
-          Your token deserves its own page. Set it up in minutes, powered by Solana.
+        <div style={{ fontSize: "17px", color: "#888", maxWidth: "400px", lineHeight: 1.6 }}>
+          One wallet. One page. Go from zero to legit faster than anyone else on Solana.
         </div>
 
         {/* Feature pills */}
@@ -86,24 +86,23 @@ export default function Dashboard() {
 
           {/* How it works */}
           <div style={{ marginBottom: "24px" }}>
-            <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
+            <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "16px" }}>
               HOW IT WORKS
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               {[
-                { step: "01", text: "Connect your Solana wallet" },
-                { step: "02", text: "Fill in your project details and pick a template" },
-                { step: "03", text: "Top up with SOL and your page goes live instantly" },
-              ].map(({ step, text }) => (
-                <div key={step} style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                "Connect your Solana wallet",
+                "Create your page in seconds",
+                "Pay as you go, leave when you're done",
+              ].map((text) => (
+                <div key={text} style={{ display: "flex", alignItems: "center", gap: "14px" }}>
                   <span style={{
-                    fontSize: "11px",
-                    fontWeight: 800,
+                    fontSize: "18px",
                     color: "#9945FF",
-                    fontFamily: "monospace",
-                    minWidth: "24px",
-                  }}>{step}</span>
-                  <span style={{ fontSize: "14px", color: "#bbb" }}>{text}</span>
+                    lineHeight: 1,
+                    flexShrink: 0,
+                  }}>●</span>
+                  <span style={{ fontSize: "15px", fontWeight: 500, color: "#ccc", lineHeight: 1.4 }}>{text}</span>
                 </div>
               ))}
             </div>
