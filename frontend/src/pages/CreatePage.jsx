@@ -301,7 +301,11 @@ export default function CreatePage() {
         {step === 5 && (
           <div>
             <div style={{ fontSize: "13px", color: "#888", marginBottom: "10px" }}>Preview</div>
-            <PagePreview data={{ name, description, avatar, banner, socials }} templateId={templateId} />
+            <PagePreview
+  data={{ name, description, avatar, banner, socials, contractAddress, buyLinks }}
+  templateId={templateId}
+/>
+
           </div>
         )}
       </div>
