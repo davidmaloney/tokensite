@@ -3,7 +3,7 @@ import {
   createPage,
   getPageById,
   getPagesByWallet,
-  activatePage,
+  updatePageContent,
 } from "../services/pageService.js";
 import { validateSlug } from "../utils/slugValidator.js";
 import { createPageRateLimiter } from "../middleware/rateLimiter.js";
@@ -47,6 +47,22 @@ router.post("/", createPageRateLimiter, async (req, res) => {
       return res.status(400).json({ error: "Slug already taken." });
     }
     res.status(500).json({ error: "Failed to create page." });
+  }
+});
+
+router.put("/:id", async (req, res) => {
+  const { walletAddress, templateId, content } = req.body;
+  const { id } = req.params;
+
+  if (!walletAddress) return res.status(400).json({ error: "walletAddress required" });
+
+  try {
+    const page = await updatePageContent(id, walletAddress, { templateId, content });
+    res.json({ page });
+  } catch (err) {
+    if (err.message === "Unauthorized") return res.status(403).json({ error: "Unauthorized" });
+    if (err.message === "Page not found") return res.status(404).json({ error: "Page not found" });
+    res.status(500).json({ error: "Failed to update page." });
   }
 });
 
