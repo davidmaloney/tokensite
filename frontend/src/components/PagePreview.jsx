@@ -37,6 +37,7 @@ export default function PagePreview({ data, templateId }) {
       fontFamily: "Inter, system-ui, sans-serif",
       maxWidth: "480px",
       width: "100%",
+      minHeight: "600px",
     }}>
 
       {/* Banner */}
@@ -46,7 +47,9 @@ export default function PagePreview({ data, templateId }) {
       ) : (
         <div style={{
           width: "100%", height: "80px",
-          background: isDark ? "linear-gradient(135deg, #1a0a2e, #0a1628)" : "linear-gradient(135deg, #e8f5e9, #e3f2fd)",
+          background: isDark
+            ? "linear-gradient(135deg, #1a0a2e, #0a1628)"
+            : "linear-gradient(135deg, #e8f5e9, #e3f2fd)",
         }} />
       )}
 
@@ -106,7 +109,9 @@ export default function PagePreview({ data, templateId }) {
               <span key={key} style={{
                 display: "inline-flex", alignItems: "center", gap: "4px",
                 padding: "5px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: 700,
-                background: isDark ? "linear-gradient(135deg, #9945FF, #14F195)" : "linear-gradient(135deg, #14a37f, #0d7a5f)",
+                background: isDark
+                  ? "linear-gradient(135deg, #9945FF, #14F195)"
+                  : "linear-gradient(135deg, #14a37f, #0d7a5f)",
                 color: "#000",
               }}>
                 {BUY_LABELS[key] || key}
