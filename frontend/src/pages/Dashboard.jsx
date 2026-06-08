@@ -37,7 +37,7 @@ export default function Dashboard() {
         alignItems: "center",
         justifyContent: "center",
         minHeight: "calc(100vh - 64px)",
-        gap: "24px",
+        gap: "32px",
         textAlign: "center",
         padding: "24px 20px",
       }}>
@@ -55,12 +55,12 @@ export default function Dashboard() {
         </div>
 
         {/* What it is */}
-        <div style={{ fontSize: "18px", color: "#ccc", maxWidth: "380px", lineHeight: 1.5, fontWeight: 600 }}>
+        <div style={{ fontSize: "20px", color: "#ccc", maxWidth: "380px", lineHeight: 1.5, fontWeight: 600 }}>
           Instant crypto landing pages for your token
         </div>
 
         {/* Tagline */}
-        <div style={{ fontSize: "14px", color: "#555", maxWidth: "340px", lineHeight: 1.6 }}>
+        <div style={{ fontSize: "16px", fontWeight: 700, color: "#888", maxWidth: "340px", lineHeight: 1.6, marginTop: "-16px" }}>
           One wallet. One page. Yours in seconds.
         </div>
 
@@ -82,7 +82,6 @@ export default function Dashboard() {
             <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
               {[
                 "Connect your Solana wallet",
-                "Create your page in seconds",
                 "Pay as you go, leave when you're done",
               ].map((text) => (
                 <div key={text} style={{ display: "flex", alignItems: "center", gap: "14px" }}>
