@@ -39,6 +39,24 @@ export async function createPage({ walletAddress, slug, templateId, content }) {
   });
 }
 
+export async function updatePageContent(pageId, walletAddress, { templateId, content }) {
+  return dbWriteQueue.push(() => {
+    const db = getDb();
+    const page = db.prepare("SELECT * FROM pages WHERE id = ?").get(pageId);
+    if (!page) throw new Error("Page not found");
+    if (page.wallet_address !== walletAddress) throw new Error("Unauthorized");
+
+    const now = Math.floor(Date.now() / 1000);
+    db.prepare(`
+      UPDATE pages SET template_id = ?, content_json = ?, updated_at = ?
+      WHERE id = ?
+    `).run(templateId || page.template_id, JSON.stringify(content || {}), now, pageId);
+
+    logger.info("page_updated", { pageId, walletAddress });
+    return db.prepare("SELECT * FROM pages WHERE id = ?").get(pageId);
+  });
+}
+
 export async function activatePage(pageId, planId, daysOverride) {
   return dbWriteQueue.push(() => {
     const db = getDb();
