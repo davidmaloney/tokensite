@@ -54,37 +54,27 @@ export default function Dashboard() {
           TokenSite
         </div>
 
-        <div style={{ fontSize: "17px", color: "#888", maxWidth: "400px", lineHeight: 1.6 }}>
-          One wallet. One page. Go from zero to legit faster than anyone else on Solana.
+        {/* What it is */}
+        <div style={{ fontSize: "18px", color: "#ccc", maxWidth: "380px", lineHeight: 1.5, fontWeight: 600 }}>
+          Instant crypto landing pages for your token
         </div>
 
-        {/* Feature pills */}
-        <div style={{
-          display: "flex",
-          gap: "12px",
-          flexWrap: "wrap",
-          justifyContent: "center",
-          fontSize: "13px",
-          color: "#666",
-        }}>
-          <span>🚀 Instant setup</span>
-          <span>🔒 Wallet-based</span>
-          <span>⚡ SOL payments</span>
-          <span>🌐 Custom subdomain</span>
+        {/* Tagline */}
+        <div style={{ fontSize: "14px", color: "#555", maxWidth: "340px", lineHeight: 1.6 }}>
+          One wallet. One page. Yours in seconds.
         </div>
 
         {/* How it works + Pricing panel */}
         <div className="glass" style={{
           borderRadius: "16px",
           padding: "28px 24px",
-          maxWidth: "480px",
+          maxWidth: "460px",
           width: "100%",
           textAlign: "left",
           border: "1px solid rgba(153,69,255,0.2)",
           boxShadow: "0 0 40px rgba(153,69,255,0.08)",
         }}>
 
-          {/* How it works */}
           <div style={{ marginBottom: "24px" }}>
             <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "16px" }}>
               HOW IT WORKS
@@ -96,47 +86,34 @@ export default function Dashboard() {
                 "Pay as you go, leave when you're done",
               ].map((text) => (
                 <div key={text} style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-                  <span style={{
-                    fontSize: "18px",
-                    color: "#9945FF",
-                    lineHeight: 1,
-                    flexShrink: 0,
-                  }}>●</span>
+                  <span style={{ fontSize: "18px", color: "#9945FF", lineHeight: 1, flexShrink: 0 }}>●</span>
                   <span style={{ fontSize: "15px", fontWeight: 500, color: "#ccc", lineHeight: 1.4 }}>{text}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Divider */}
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginBottom: "20px" }} />
 
-          {/* Pricing */}
           <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
             SIMPLE PRICING
           </div>
           <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
             <div style={{
-              flex: 1,
-              minWidth: "120px",
+              flex: 1, minWidth: "120px",
               background: "rgba(255,255,255,0.03)",
               border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "10px",
-              padding: "14px",
-              textAlign: "center",
+              borderRadius: "10px", padding: "14px", textAlign: "center",
             }}>
               <div style={{ fontSize: "11px", color: "#666", marginBottom: "6px" }}>MONTHLY</div>
               <div style={{ fontSize: "22px", fontWeight: 800, color: "#fff" }}>$4.99</div>
               <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>per month</div>
             </div>
             <div style={{
-              flex: 1,
-              minWidth: "120px",
+              flex: 1, minWidth: "120px",
               background: "rgba(153,69,255,0.08)",
               border: "1px solid rgba(153,69,255,0.3)",
-              borderRadius: "10px",
-              padding: "14px",
-              textAlign: "center",
+              borderRadius: "10px", padding: "14px", textAlign: "center",
             }}>
               <div style={{ fontSize: "11px", color: "#9945FF", marginBottom: "6px" }}>YEARLY</div>
               <div style={{ fontSize: "22px", fontWeight: 800, color: "#fff" }}>$39</div>
@@ -145,7 +122,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Big connect button */}
+        {/* Connect button */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
           <WalletMultiButton style={{
             background: "linear-gradient(135deg, #9945FF, #14F195)",
