@@ -48,10 +48,16 @@ export default function CreatePage() {
           boxShadow: "0 0 40px rgba(153,69,255,0.08)",
           textAlign: "center",
         }}>
+          <button
+            onClick={() => navigate("/")}
+            style={{ background: "none", border: "none", color: "#9945FF", cursor: "pointer", fontSize: "13px", fontWeight: 600, marginBottom: "16px", display: "block" }}
+          >
+            ← Back to Dashboard
+          </button>
           <div style={{ fontSize: "36px", marginBottom: "16px" }}>🚀</div>
           <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>Before you launch</h2>
           <p style={{ fontSize: "14px", color: "#888", lineHeight: 1.7, marginBottom: "20px" }}>
-            Take a moment to get everything ready. Once your page is live, some things cannot be changed — so make sure your details are good to go before you hit launch.
+            Almost there! Just a heads up — your slug cannot be changed once your page is created. Everything else is flexible. Take a moment to make sure everything is ready before you continue.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px", textAlign: "left" }}>
             {[
@@ -153,7 +159,15 @@ export default function CreatePage() {
 
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto", padding: "32px 20px" }}>
-      <h1 style={{ fontSize: "22px", fontWeight: 800, marginBottom: "6px" }}>Create Your Page</h1>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+        <h1 style={{ fontSize: "22px", fontWeight: 800 }}>Create Your Page</h1>
+        <button
+          onClick={() => navigate("/")}
+          style={{ background: "none", border: "none", color: "#9945FF", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
+        >
+          ← Dashboard
+        </button>
+      </div>
       <p style={{ fontSize: "13px", color: "#666", marginBottom: "28px" }}>
         Everything is optional except your slug. Fill in as much or as little as you like.
       </p>
@@ -302,10 +316,9 @@ export default function CreatePage() {
           <div>
             <div style={{ fontSize: "13px", color: "#888", marginBottom: "10px" }}>Preview</div>
             <PagePreview
-  data={{ name, description, avatar, banner, socials, contractAddress, buyLinks }}
-  templateId={templateId}
-/>
-
+              data={{ name, description, avatar, banner, socials, contractAddress, buyLinks }}
+              templateId={templateId}
+            />
           </div>
         )}
       </div>
