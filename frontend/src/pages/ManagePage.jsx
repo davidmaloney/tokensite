@@ -50,8 +50,8 @@ export default function ManagePage() {
       setEditBuyLinks({ raydium: c.buyLinks?.raydium || "", jupiter: c.buyLinks?.jupiter || "", pumpfun: c.buyLinks?.pumpfun || "" });
       setEditSocials(c.socials || {});
       setEditTemplateId(p.template_id || "template_1");
-      if (c.avatar) setEditAvatar({ preview: c.avatar, file: null });
-      if (c.banner) setEditBanner({ preview: c.banner, file: null });
+      if (c.avatar) setEditAvatar({ preview: `https://${DOMAIN}${c.avatar}`, file: null });
+      if (c.banner) setEditBanner({ preview: `https://${DOMAIN}${c.banner}`, file: null });
     } catch {
       navigate("/");
     }
