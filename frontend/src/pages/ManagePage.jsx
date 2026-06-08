@@ -50,6 +50,8 @@ export default function ManagePage() {
       setEditBuyLinks({ raydium: c.buyLinks?.raydium || "", jupiter: c.buyLinks?.jupiter || "", pumpfun: c.buyLinks?.pumpfun || "" });
       setEditSocials(c.socials || {});
       setEditTemplateId(p.template_id || "template_1");
+      if (c.avatar) setEditAvatar({ preview: c.avatar, file: null });
+      if (c.banner) setEditBanner({ preview: c.banner, file: null });
     } catch {
       navigate("/");
     }
@@ -72,15 +74,16 @@ export default function ManagePage() {
         Object.entries(editSocials).filter(([, v]) => v && v.trim())
       );
 
+      const existing = JSON.parse(page.content_json || "{}");
+
       if (editAvatar?.file) {
         const form = new FormData();
         form.append("image", editAvatar.file);
         form.append("type", "avatar");
         const r = await axios.post("/api/media/upload", form, { headers: { "Content-Type": "multipart/form-data" } });
         content.avatar = r.data.url;
-      } else if (page) {
-        const existing = JSON.parse(page.content_json || "{}");
-        if (existing.avatar) content.avatar = existing.avatar;
+      } else if (existing.avatar) {
+        content.avatar = existing.avatar;
       }
 
       if (editBanner?.file) {
@@ -89,9 +92,8 @@ export default function ManagePage() {
         form.append("type", "banner");
         const r = await axios.post("/api/media/upload", form, { headers: { "Content-Type": "multipart/form-data" } });
         content.banner = r.data.url;
-      } else if (page) {
-        const existing = JSON.parse(page.content_json || "{}");
-        if (existing.banner) content.banner = existing.banner;
+      } else if (existing.banner) {
+        content.banner = existing.banner;
       }
 
       await axios.put(`/api/pages/${pageId}`, {
@@ -255,7 +257,7 @@ export default function ManagePage() {
         <button className="btn-secondary" onClick={() => setShowPayment(true)}>
           {isActive ? "Top Up / Extend" : "Activate Page"}
         </button>
-        <button className="btn-secondary" onClick={() => setShowEdit(true)}>
+        <button className="btn-secondary" onClick={() => { setSaveMessage(""); setShowEdit(true); }}>
           Edit Page
         </button>
       </div>
