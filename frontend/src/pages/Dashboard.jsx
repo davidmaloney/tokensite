@@ -65,6 +65,66 @@ export default function Dashboard() {
           One wallet. One page. Yours in seconds.
         </div>
 
+        {/* Live example showcase — ABOVE the glass panel */}
+        <div style={{ maxWidth: "460px", width: "100%", textAlign: "left" }}>
+          <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
+            SEE IT IN ACTION
+          </div>
+          <div style={{
+            borderRadius: "14px",
+            overflow: "hidden",
+            border: "1px solid rgba(153,69,255,0.3)",
+            boxShadow: "0 0 40px rgba(153,69,255,0.15), 0 0 80px rgba(20,241,149,0.05)",
+            background: "#1a1a2e",
+          }}>
+            <div style={{
+              background: "#111",
+              padding: "10px 14px",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              borderBottom: "1px solid rgba(255,255,255,0.06)",
+            }}>
+              <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#FF5F57" }} />
+                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#FFBD2E" }} />
+                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#28C840" }} />
+              </div>
+              <div style={{
+                flex: 1, background: "rgba(255,255,255,0.06)", borderRadius: "6px",
+                padding: "4px 10px", fontSize: "11px", color: "#666", fontFamily: "monospace", textAlign: "center",
+              }}>
+                fomoyodl.shillit.fun
+              </div>
+              <a href="https://fomoyodl.shillit.fun" target="_blank" rel="noreferrer"
+                style={{ fontSize: "10px", color: "#9945FF", textDecoration: "none", flexShrink: 0 }}>
+                ↗
+              </a>
+            </div>
+            {!iframeError ? (
+              <iframe
+                src="https://fomoyodl.shillit.fun"
+                style={{ width: "100%", height: "320px", border: "none", display: "block", background: "#0d0d0d" }}
+                title="Live example"
+                onError={() => setIframeError(true)}
+                sandbox="allow-scripts allow-same-origin"
+              />
+            ) : (
+              <a href="https://fomoyodl.shillit.fun" target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
+                <div style={{
+                  height: "320px", display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: "12px",
+                  background: "#0d0d0d", cursor: "pointer",
+                }}>
+                  <div style={{ fontSize: "32px" }}>🚀</div>
+                  <div style={{ fontSize: "14px", color: "#9945FF", fontWeight: 600 }}>View live example →</div>
+                  <div style={{ fontSize: "11px", color: "#555" }}>fomoyodl.shillit.fun</div>
+                </div>
+              </a>
+            )}
+          </div>
+        </div>
+
         {/* How it works + Pricing panel */}
         <div className="glass" style={{
           borderRadius: "16px",
@@ -76,6 +136,7 @@ export default function Dashboard() {
           boxShadow: "0 0 40px rgba(153,69,255,0.08)",
         }}>
 
+          {/* How it works */}
           <div style={{ marginBottom: "24px" }}>
             <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "16px" }}>
               HOW IT WORKS
@@ -95,6 +156,7 @@ export default function Dashboard() {
 
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginBottom: "20px" }} />
 
+          {/* Pricing */}
           <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
             SIMPLE PRICING
           </div>
@@ -105,9 +167,8 @@ export default function Dashboard() {
               border: "1px solid rgba(255,255,255,0.08)",
               borderRadius: "10px", padding: "14px", textAlign: "center",
             }}>
-              <div style={{ fontSize: "11px", color: "#666", marginBottom: "6px" }}>MONTHLY</div>
+              <div style={{ fontSize: "11px", color: "#666", marginBottom: "6px" }}>TOP UP MONTHLY</div>
               <div style={{ fontSize: "22px", fontWeight: 800, color: "#fff" }}>$4.99</div>
-              <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>per month</div>
             </div>
             <div style={{
               flex: 1, minWidth: "120px",
@@ -115,105 +176,17 @@ export default function Dashboard() {
               border: "1px solid rgba(153,69,255,0.3)",
               borderRadius: "10px", padding: "14px", textAlign: "center",
             }}>
-              <div style={{ fontSize: "11px", color: "#9945FF", marginBottom: "6px" }}>YEARLY</div>
+              <div style={{ fontSize: "11px", color: "#9945FF", marginBottom: "6px" }}>TOP UP YEARLY</div>
               <div style={{ fontSize: "22px", fontWeight: 800, color: "#fff" }}>$39</div>
-              <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>save 35%</div>
+              <div style={{ fontSize: "10px", color: "#14F195", fontWeight: 700, marginTop: "4px" }}>SAVE 35%</div>
             </div>
           </div>
-        </div>
 
-        {/* Live example showcase */}
-        <div style={{ maxWidth: "460px", width: "100%", textAlign: "left" }}>
-          <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
-            SEE IT IN ACTION
+          {/* Stays online while funded */}
+          <div style={{ textAlign: "center", marginTop: "14px", fontSize: "12px", color: "#555", fontStyle: "italic" }}>
+            Stays online while funded
           </div>
 
-          {/* Browser mockup */}
-          <div style={{
-            borderRadius: "14px",
-            overflow: "hidden",
-            border: "1px solid rgba(153,69,255,0.3)",
-            boxShadow: "0 0 40px rgba(153,69,255,0.15), 0 0 80px rgba(20,241,149,0.05)",
-            background: "#1a1a2e",
-          }}>
-            {/* Browser chrome */}
-            <div style={{
-              background: "#111",
-              padding: "10px 14px",
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              borderBottom: "1px solid rgba(255,255,255,0.06)",
-            }}>
-              {/* Traffic lights */}
-              <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
-                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#FF5F57" }} />
-                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#FFBD2E" }} />
-                <div style={{ width: "10px", height: "10px", borderRadius: "50%", background: "#28C840" }} />
-              </div>
-              {/* URL bar */}
-              <div style={{
-                flex: 1,
-                background: "rgba(255,255,255,0.06)",
-                borderRadius: "6px",
-                padding: "4px 10px",
-                fontSize: "11px",
-                color: "#666",
-                fontFamily: "monospace",
-                textAlign: "center",
-              }}>
-                fomoyodl.shillit.fun
-              </div>
-              {/* Open link */}
-              <a
-                href="https://fomoyodl.shillit.fun"
-                target="_blank"
-                rel="noreferrer"
-                style={{ fontSize: "10px", color: "#9945FF", textDecoration: "none", flexShrink: 0 }}
-              >
-                ↗
-              </a>
-            </div>
-
-            {/* Scrollable iframe */}
-            {!iframeError ? (
-              <iframe
-                src="https://fomoyodl.shillit.fun"
-                style={{
-                  width: "100%",
-                  height: "320px",
-                  border: "none",
-                  display: "block",
-                  background: "#0d0d0d",
-                }}
-                title="Live example"
-                onError={() => setIframeError(true)}
-                sandbox="allow-scripts allow-same-origin"
-              />
-            ) : (
-              <a
-                href="https://fomoyodl.shillit.fun"
-                target="_blank"
-                rel="noreferrer"
-                style={{ textDecoration: "none" }}
-              >
-                <div style={{
-                  height: "320px",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "12px",
-                  background: "#0d0d0d",
-                  cursor: "pointer",
-                }}>
-                  <div style={{ fontSize: "32px" }}>🚀</div>
-                  <div style={{ fontSize: "14px", color: "#9945FF", fontWeight: 600 }}>View live example →</div>
-                  <div style={{ fontSize: "11px", color: "#555" }}>fomoyodl.shillit.fun</div>
-                </div>
-              </a>
-            )}
-          </div>
         </div>
 
         {/* Connect button */}
