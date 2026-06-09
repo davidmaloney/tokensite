@@ -202,7 +202,7 @@ export default function CreatePage() {
                 <input value={slug} onChange={(e) => handleSlugChange(e.target.value)} onBlur={handleSlugBlur} placeholder="e.g. pepecoin" />
                 {slugError && <div style={{ color: "#ff6464", fontSize: "12px", marginTop: "4px" }}>{slugError}</div>}
                 <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>
-                  Your page: {slug || "yourslug"}.tokensite.fun
+                  Your page: {slug || "yourslug"}.shillit.fun
                 </div>
               </div>
 
@@ -288,7 +288,7 @@ export default function CreatePage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Almost there!</h2>
               <div style={{ fontSize: "13px", color: "#aaa" }}>
-                <div>Page: <strong style={{ color: "#fff" }}>{slug}.tokensite.fun</strong></div>
+                <div>Page: <strong style={{ color: "#fff" }}>{slug}.shillit.fun</strong></div>
                 {name && <div style={{ marginTop: "4px" }}>Name: <strong style={{ color: "#fff" }}>{name}</strong></div>}
                 {contractAddress && <div style={{ marginTop: "4px" }}>Contract: <strong style={{ color: "#9945FF", fontFamily: "monospace", fontSize: "11px" }}>{contractAddress.slice(0, 8)}…{contractAddress.slice(-8)}</strong></div>}
                 <div style={{ marginTop: "4px" }}>Template: <strong style={{ color: "#fff" }}>{templateId}</strong></div>
