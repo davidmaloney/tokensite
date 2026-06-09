@@ -13,7 +13,6 @@ export function startExpiryJob() {
         const db = getDb();
         const now = Math.floor(Date.now() / 1000);
 
-        // Get slugs BEFORE deleting
         const expiredPages = db.prepare(`
           SELECT id, slug FROM pages
           WHERE status = 'active'
@@ -22,7 +21,6 @@ export function startExpiryJob() {
         `).all(now);
 
         if (expiredPages.length > 0) {
-          // Blacklist slugs permanently first
           const insertSlug = db.prepare(`
             INSERT OR IGNORE INTO deleted_slugs (slug, deleted_at, reason)
             VALUES (?, ?, 'expired')
@@ -31,7 +29,6 @@ export function startExpiryJob() {
             insertSlug.run(slug, now);
           });
 
-          // Then hard delete the pages
           db.prepare(`
             DELETE FROM pages
             WHERE status = 'active'
