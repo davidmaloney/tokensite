@@ -10,6 +10,7 @@ import {
 import { getPageById, activatePage } from "../services/pageService.js";
 import { verifyPayment } from "../solana/verifier.js";
 import { logger } from "../utils/logger.js";
+import { getDb } from "../db/index.js";
 
 const router = express.Router();
 
@@ -38,6 +39,13 @@ router.post("/initiate", async (req, res) => {
 
   if (ownerCode && ownerCode === process.env.OWNER_ACCESS_CODE) {
     await activatePage(pageId, plan);
+    // Insert confirmed transaction so cleanup job never deletes this page
+    const db = getDb();
+    const now = Math.floor(Date.now() / 1000);
+    db.prepare(`
+      INSERT OR IGNORE INTO transactions (id, wallet_address, page_id, reference_id, amount_sol, amount_usd, plan, confirmed, created_at, confirmed_at)
+      VALUES (lower(hex(randomblob(16))), ?, ?, ?, 0, 0, ?, 1, ?, ?)
+    `).run(page.wallet_address, pageId, `OWNER-${pageId}`, plan, now, now);
     logger.info("owner_code_activation", { pageId, plan });
     return res.json({ activated: true });
   }
