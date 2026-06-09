@@ -234,7 +234,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
                 <div style={{ fontSize: "40px", marginBottom: "12px" }}>🎉</div>
                 <div style={{ fontSize: "20px", fontWeight: 700, color: "#14F195", marginBottom: "8px" }}>You're live!</div>
                 <div style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>
-                  Your page is ready at <span style={{ color: "#9945FF" }}>{slug}.tokensite.fun</span>
+                  Your page is ready at <span style={{ color: "#9945FF" }}>{slug}.shillit.fun</span>
                 </div>
                 <button className="btn-primary" style={{ width: "100%" }} onClick={onClose}>Let's go →</button>
               </div>
