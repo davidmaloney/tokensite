@@ -3,8 +3,11 @@ import { getPageById, activatePage, deactivatePage } from "../services/pageServi
 import { dbWriteQueue } from "../utils/asyncQueue.js";
 import { getDb } from "../db/index.js";
 import { logger } from "../utils/logger.js";
+import { adminRateLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
+
+router.use(adminRateLimiter);
 
 function verifyCode(code) {
   return code && code === process.env.OWNER_ACCESS_CODE;
