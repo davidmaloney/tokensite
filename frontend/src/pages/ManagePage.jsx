@@ -7,7 +7,7 @@ import SocialLinksInput from "../components/SocialLinksInput";
 import ImageUpload from "../components/ImageUpload";
 import TemplateSelector from "../components/TemplateSelector";
 
-const DOMAIN = import.meta.env.VITE_DOMAIN || "tokensite.fun";
+const DOMAIN = import.meta.env.VITE_DOMAIN || "shillit.fun";
 
 export default function ManagePage() {
   const { pageId } = useParams();
