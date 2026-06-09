@@ -28,9 +28,19 @@ export function isSlugTaken(slug) {
 }
 
 export function validateSlug(slug) {
-  if (!isSlugFormatValid(slug)) return { valid: false, reason: "Invalid format. Use 2–40 lowercase letters, numbers, hyphens." };
+  if (!isSlugFormatValid(slug)) return { valid: false, reason: "Invalid format. Use 2-40 lowercase letters, numbers, hyphens." };
   if (isSlugReserved(slug)) return { valid: false, reason: "That slug is reserved." };
   if (isSlugBlacklisted(slug)) return { valid: false, reason: "That slug is not available." };
   if (isSlugTaken(slug)) return { valid: false, reason: "That slug is already taken." };
   return { valid: true };
+}
+
+export function isValidUrl(url) {
+  if (!url || !url.trim()) return true;
+  try {
+    const parsed = new URL(url.trim());
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch {
+    return false;
+  }
 }
