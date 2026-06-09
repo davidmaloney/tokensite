@@ -15,3 +15,16 @@ export const createPageRateLimiter = rateLimit({
   keyGenerator: (req) => req.body?.walletAddress || req.ip,
   message: { error: "Too many page creation requests. Try again later." },
 });
+
+export const paymentRateLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  keyGenerator: (req) => req.body?.walletAddress || req.ip,
+  message: { error: "Too many payment requests. Try again later." },
+});
+
+export const adminRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  message: { error: "Too many admin requests. Slow down." },
+});
