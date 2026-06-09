@@ -61,8 +61,8 @@ export default function ManagePage() {
       setEditTokenomics(c.tokenomics || {});
       setEditSocials(c.socials || {});
       setEditTemplateId(p.template_id || "template_1");
-      if (c.avatar) setEditAvatar({ preview: `https://${DOMAIN}${c.avatar}`, file: null });
-      if (c.banner) setEditBanner({ preview: `https://${DOMAIN}${c.banner}`, file: null });
+      if (c.avatar) setEditAvatar({ preview: `${window.location.origin}${c.avatar}`, file: null });
+      if (c.banner) setEditBanner({ preview: `${window.location.origin}${c.banner}`, file: null });
     } catch {
       navigate("/");
     }
