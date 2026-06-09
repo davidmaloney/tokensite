@@ -19,6 +19,7 @@ export default function CreatePage() {
   const [description, setDescription] = useState("");
   const [contractAddress, setContractAddress] = useState("");
   const [buyLinks, setBuyLinks] = useState({ raydium: "", jupiter: "", pumpfun: "" });
+  const [tokenomics, setTokenomics] = useState({});
   const [avatar, setAvatar] = useState(null);
   const [banner, setBanner] = useState(null);
   const [socials, setSocials] = useState({});
@@ -128,12 +129,16 @@ export default function CreatePage() {
       const filteredBuyLinks = Object.fromEntries(
         Object.entries(buyLinks).filter(([, v]) => v && v.trim())
       );
+      const filteredTokenomics = Object.fromEntries(
+        Object.entries(tokenomics).filter(([, v]) => v && v.trim())
+      );
 
       const content = {};
       if (name) content.name = name;
       if (description) content.description = description;
       if (contractAddress) content.contractAddress = contractAddress;
       if (Object.keys(filteredBuyLinks).length > 0) content.buyLinks = filteredBuyLinks;
+      if (Object.keys(filteredTokenomics).length > 0) content.tokenomics = filteredTokenomics;
       if (avatarUrl) content.avatar = avatarUrl;
       if (bannerUrl) content.banner = bannerUrl;
       content.socials = Object.fromEntries(
@@ -156,6 +161,15 @@ export default function CreatePage() {
   };
 
   const STEPS = ["Info", "Media", "Socials", "Template", "Review"];
+
+  const TOKENOMICS_FIELDS = [
+    { key: "totalSupply", label: "Total Supply", hint: "e.g. 1,000,000,000" },
+    { key: "tax", label: "Buy/Sell Tax", hint: "e.g. 0% / 0%" },
+    { key: "liquidity", label: "Liquidity", hint: "e.g. Locked on Raydium" },
+    { key: "renounced", label: "Contract Renounced", hint: "Yes or No" },
+    { key: "launchDate", label: "Launch Date", hint: "e.g. June 2025" },
+    { key: "network", label: "Network", hint: "e.g. Solana" },
+  ];
 
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto", padding: "32px 20px" }}>
@@ -242,6 +256,22 @@ export default function CreatePage() {
                 </div>
               </div>
 
+              <div>
+                <label>Tokenomics <span style={{ color: "#555" }}>(optional)</span></label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
+                  {TOKENOMICS_FIELDS.map(({ key, label, hint }) => (
+                    <div key={key}>
+                      <div style={{ fontSize: "11px", color: "#9945FF", marginBottom: "3px", fontWeight: 600 }}>{label}</div>
+                      <input
+                        value={tokenomics[key] || ""}
+                        onChange={(e) => setTokenomics({ ...tokenomics, [key]: e.target.value })}
+                        placeholder={hint}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               <button className="btn-primary" style={{ marginTop: "8px" }}
                 onClick={() => { const err = validateSlug(slug); if (err) { setSlugError(err); return; } setStep(2); }}>
                 Next →
@@ -316,7 +346,7 @@ export default function CreatePage() {
           <div>
             <div style={{ fontSize: "13px", color: "#888", marginBottom: "10px" }}>Preview</div>
             <PagePreview
-              data={{ name, description, avatar, banner, socials, contractAddress, buyLinks }}
+              data={{ name, description, avatar, banner, socials, contractAddress, buyLinks, tokenomics }}
               templateId={templateId}
             />
           </div>
