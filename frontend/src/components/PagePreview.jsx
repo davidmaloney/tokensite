@@ -17,20 +17,27 @@ const BUY_LABELS = {
   pumpfun: "Pump.fun",
 };
 
+const TOKENOMICS_LABELS = {
+  totalSupply: "Total Supply",
+  tax: "Buy/Sell Tax",
+  liquidity: "Liquidity",
+  renounced: "Contract Renounced",
+  launchDate: "Launch Date",
+  network: "Network",
+};
+
 export default function PagePreview({ data, templateId }) {
-  const isDark = templateId === "template_1";
+  const isDark = templateId === "template_1" || templateId === "template_3" || templateId === "template_4";
 
-  const socialEntries = Object.entries(data.socials || {}).filter(
-    ([, v]) => v && v.trim() !== ""
-  );
+  const socialEntries = Object.entries(data.socials || {}).filter(([, v]) => v && v.trim() !== "");
+  const buyEntries = Object.entries(data.buyLinks || {}).filter(([, v]) => v && v.trim() !== "");
+  const tokenomicsEntries = Object.entries(data.tokenomics || {}).filter(([, v]) => v && v.trim() !== "");
 
-  const buyEntries = Object.entries(data.buyLinks || {}).filter(
-    ([, v]) => v && v.trim() !== ""
-  );
+  const accentColor = templateId === "template_3" ? "#FF007A" : templateId === "template_4" ? "#1E90FF" : templateId === "template_2" ? "#14a37f" : "#9945FF";
 
   return (
     <div style={{
-      background: isDark ? "#0d0d0d" : "#f5f7fa",
+      background: templateId === "template_2" ? "#f5f7fa" : "#0d0d0d",
       borderRadius: "12px",
       overflow: "hidden",
       border: isDark ? "1px solid #222" : "1px solid #ddd",
@@ -47,9 +54,7 @@ export default function PagePreview({ data, templateId }) {
       ) : (
         <div style={{
           width: "100%", height: "80px",
-          background: isDark
-            ? "linear-gradient(135deg, #1a0a2e, #0a1628)"
-            : "linear-gradient(135deg, #e8f5e9, #e3f2fd)",
+          background: isDark ? "linear-gradient(135deg, #1a0a2e, #0a1628)" : "linear-gradient(135deg, #e8f5e9, #e3f2fd)",
         }} />
       )}
 
@@ -80,22 +85,28 @@ export default function PagePreview({ data, templateId }) {
           )}
         </div>
 
-        {/* Description */}
+        {/* Description — always in glass box */}
         {data.description && (
-          <p style={{ fontSize: "14px", lineHeight: 1.6, color: isDark ? "#aaa" : "#555", marginBottom: "14px" }}>
-            {data.description}
-          </p>
+          <div style={{
+            background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)",
+            border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
+            borderRadius: "10px", padding: "12px 14px", marginBottom: "12px",
+          }}>
+            <p style={{ fontSize: "13px", lineHeight: 1.6, color: isDark ? "#aaa" : "#555" }}>
+              {data.description}
+            </p>
+          </div>
         )}
 
         {/* Contract Address */}
         {data.contractAddress && (
           <div style={{
             display: "flex", alignItems: "center", gap: "8px",
-            background: isDark ? "rgba(153,69,255,0.08)" : "rgba(20,163,127,0.06)",
-            border: isDark ? "1px solid rgba(153,69,255,0.2)" : "1px solid rgba(20,163,127,0.2)",
+            background: isDark ? `rgba(${accentColor === "#9945FF" ? "153,69,255" : "30,144,255"},0.08)` : "rgba(20,163,127,0.06)",
+            border: `1px solid ${isDark ? `rgba(${accentColor === "#9945FF" ? "153,69,255" : "30,144,255"},0.2)` : "rgba(20,163,127,0.2)"}`,
             borderRadius: "8px", padding: "8px 12px", marginBottom: "12px", flexWrap: "wrap",
           }}>
-            <span style={{ fontSize: "10px", fontWeight: 800, color: isDark ? "#9945FF" : "#14a37f", letterSpacing: "1px", flexShrink: 0 }}>CA</span>
+            <span style={{ fontSize: "10px", fontWeight: 800, color: accentColor, letterSpacing: "1px", flexShrink: 0 }}>CA</span>
             <span style={{ fontFamily: "monospace", fontSize: "10px", color: isDark ? "#aaa" : "#666", wordBreak: "break-all", flex: 1 }}>
               {data.contractAddress}
             </span>
@@ -109,13 +120,34 @@ export default function PagePreview({ data, templateId }) {
               <span key={key} style={{
                 display: "inline-flex", alignItems: "center", gap: "4px",
                 padding: "5px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: 700,
-                background: isDark
-                  ? "linear-gradient(135deg, #9945FF, #14F195)"
-                  : "linear-gradient(135deg, #14a37f, #0d7a5f)",
-                color: "#000",
+                background: templateId === "template_2"
+                  ? "linear-gradient(135deg, #14a37f, #0d7a5f)"
+                  : templateId === "template_3"
+                  ? "linear-gradient(135deg, #FF007A, #00F5FF)"
+                  : templateId === "template_4"
+                  ? "linear-gradient(135deg, #1E90FF, #00BFFF)"
+                  : "linear-gradient(135deg, #9945FF, #14F195)",
+                color: templateId === "template_2" ? "#fff" : "#000",
               }}>
                 {BUY_LABELS[key] || key}
               </span>
+            ))}
+          </div>
+        )}
+
+        {/* Tokenomics */}
+        {tokenomicsEntries.length > 0 && (
+          <div style={{
+            background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)",
+            border: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"}`,
+            borderRadius: "10px", padding: "12px 14px", marginBottom: "12px",
+          }}>
+            <div style={{ fontSize: "10px", fontWeight: 700, color: accentColor, letterSpacing: "1.5px", marginBottom: "8px" }}>TOKENOMICS</div>
+            {tokenomicsEntries.map(([key, value]) => (
+              <div key={key} style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"}` }}>
+                <span style={{ fontSize: "11px", color: isDark ? "#666" : "#888" }}>{TOKENOMICS_LABELS[key] || key}</span>
+                <span style={{ fontSize: "11px", fontWeight: 600, color: isDark ? "#fff" : "#111" }}>{value}</span>
+              </div>
             ))}
           </div>
         )}
