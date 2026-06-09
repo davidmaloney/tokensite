@@ -65,7 +65,6 @@ export async function verifyPayment({ treasuryWallet, expectedAmountSol, walletA
   try {
     const conn = getConnection();
 
-    // If we have a specific txHash verify it directly — much more secure
     if (txHash) {
       const verified = await verifySpecificTransaction({
         conn,
@@ -84,7 +83,6 @@ export async function verifyPayment({ treasuryWallet, expectedAmountSol, walletA
       return { verified: false, txHash: null };
     }
 
-    // Fallback — scan recent transactions if no txHash provided
     const treasury = new PublicKey(treasuryWallet);
     const signatures = await withRetry(() =>
       conn.getSignaturesForAddress(treasury, { limit: 50 }, "finalized")
