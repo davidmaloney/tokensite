@@ -1,35 +1,111 @@
-export const PLANS = {
-  "1month": { usd: 4.99, days: 30 },
-  "12months": { usd: 39, days: 365 },
-};
+import cron from “node-cron”;
+import { getDb } from “../db/index.js”;
+import { dbWriteQueue } from “../utils/asyncQueue.js”;
+import { logger } from “../utils/logger.js”;
+import {
+CLEANUP_JOB_INTERVAL_HOURS,
+SOFT_DELETE_AFTER_EXPIRY_DAYS,
+HARD_DELETE_AFTER_SOFT_DELETE_DAYS,
+UNPAID_PAGE_CLEANUP_HOURS,
+} from “../config/constants.js”;
+import fs from “fs”;
+import path from “path”;
 
-export const SOFT_DELETE_AFTER_EXPIRY_DAYS = 30;
-export const HARD_DELETE_AFTER_SOFT_DELETE_DAYS = 30;
-export const UNPAID_PAGE_CLEANUP_HOURS = 1;
+const UPLOAD_DIR = process.env.UPLOAD_DIR || “/data/uploads”;
 
-export const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-export const RATE_LIMIT_MAX = 100;
-export const PAGE_CREATE_LIMIT_PER_WALLET_PER_HOUR = 5;
+export function startCleanupJob() {
+const cronExpr = 0 */${CLEANUP_JOB_INTERVAL_HOURS} * * *;
 
-export const RPC_RETRY_ATTEMPTS = 4;
-export const RPC_RETRY_DELAY_MS = 1500;
+cron.schedule(cronExpr, async () => {
+try {
+await runCleanup();
+} catch (err) {
+logger.error(“cleanup_job_error”, { err: err.message });
+}
+});
 
-export const EXPIRY_JOB_INTERVAL_MINUTES = 30;
-export const CLEANUP_JOB_INTERVAL_HOURS = 6;
+logger.info(“cleanup_job_started”, { interval: ${CLEANUP_JOB_INTERVAL_HOURS}h });
+}
 
-export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
-export const BANNER_MAX_BYTES = 5 * 1024 * 1024;
-export const AVATAR_OUTPUT_SIZE = 400;
-export const BANNER_OUTPUT_WIDTH = 1200;
-export const BANNER_OUTPUT_HEIGHT = 300;
+export async function runCleanup() {
+return dbWriteQueue.push(() => {
+const db = getDb();
+const now = Math.floor(Date.now() / 1000);
 
-export const RESERVED_SLUGS = new Set([
-  "api","admin","dashboard","app","mail","email","ftp","ssh","sftp","cdn",
-  "assets","static","media","files","uploads","img","images","video","videos",
-  "dev","development","test","testing","stage","staging","prod","production",
-  "internal","intranet","vpn","support","help","status","health","auth",
-  "login","logout","billing","payment","payments","checkout","docs",
-  "documentation","backend","frontend","proxy","router","gateway","tokensite",
-  "www","http","https","buy","create","contact","about","home","index",
-  "null","undefined","root","system","server","host","localhost",
-]);
+// Delete unpaid pages older than 1 hour
+const unpaidCutoff = now - UNPAID_PAGE_CLEANUP_HOURS * 3600;
+const unpaidResult = db.prepare(`
+  DELETE FROM pages
+  WHERE status = 'inactive'
+    AND expires_at IS NULL
+    AND created_at < ?
+    AND id NOT IN (
+      SELECT page_id FROM transactions WHERE confirmed = 1
+    )
+`).run(unpaidCutoff);
+
+if (unpaidResult.changes > 0) {
+  logger.info("unpaid_pages_deleted", { count: unpaidResult.changes });
+}
+
+const softDeleteCutoff = now - SOFT_DELETE_AFTER_EXPIRY_DAYS * 86400;
+const softDeleteResult = db.prepare(`
+  UPDATE pages
+  SET status = 'inactive', soft_deleted_at = ?, updated_at = ?
+  WHERE soft_deleted_at IS NULL
+    AND expires_at IS NOT NULL
+    AND expires_at < ?
+`).run(now, now, softDeleteCutoff);
+
+if (softDeleteResult.changes > 0) {
+  logger.info("pages_soft_deleted", { count: softDeleteResult.changes });
+}
+
+const hardDeleteCutoff = now - HARD_DELETE_AFTER_SOFT_DELETE_DAYS * 86400;
+const toDelete = db.prepare(`
+  SELECT id, slug, content_json FROM pages
+  WHERE soft_deleted_at IS NOT NULL AND soft_deleted_at < ?
+`).all(hardDeleteCutoff);
+
+for (const page of toDelete) {
+  try {
+    const content = JSON.parse(page.content_json || "{}");
+    for (const field of ["avatar", "banner"]) {
+      if (content[field]) {
+        const filename = content[field].replace("/media/", "");
+        const filepath = path.join(UPLOAD_DIR, filename);
+        if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+      }
+    }
+  } catch {}
+
+  db.prepare("INSERT OR IGNORE INTO deleted_slugs (slug, reason) VALUES (?, 'auto_cleanup')").run(page.slug);
+  db.prepare("DELETE FROM transactions WHERE page_id = ?").run(page.id);
+  db.prepare("DELETE FROM pages WHERE id = ?").run(page.id);
+  logger.info("page_hard_deleted", { pageId: page.id, slug: page.slug });
+}
+
+processEnvDeleteSlugs(db, now);
+
+
+});
+}
+
+function processEnvDeleteSlugs(db, now) {
+const deleteList = (process.env.DELETE_SLUGS || “”)
+.split(”,”)
+.map((s) => s.trim().toLowerCase())
+.filter(Boolean);
+
+for (const slug of deleteList) {
+const page = db.prepare(“SELECT id FROM pages WHERE slug = ?”).get(slug);
+if (page) {
+db.prepare(“INSERT OR IGNORE INTO deleted_slugs (slug, reason) VALUES (?, ‘admin_env_delete’)”).run(slug);
+db.prepare(“DELETE FROM transactions WHERE page_id = ?”).run(page.id);
+db.prepare(“DELETE FROM pages WHERE id = ?”).run(page.id);
+logger.info(“page_admin_deleted”, { slug });
+} else {
+db.prepare(“INSERT OR IGNORE INTO deleted_slugs (slug, reason) VALUES (?, ‘admin_env_block’)”).run(slug);
+}
+}
+}
