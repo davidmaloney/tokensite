@@ -4,8 +4,8 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const PLANS = [
-  { id: "1month", label: "Monthly", usd: 4.99 },
-  { id: "12months", label: "Yearly", usd: 39 },
+  { id: "1month", label: "Top up monthly", usd: 4.99 },
+  { id: "12months", label: "Top up yearly", usd: 39 },
 ];
 
 const PAYMENTS_COMING_SOON = true;
@@ -168,7 +168,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
 
             {(status === "idle" || status === "initiating") && (
               <>
-                <div style={{ marginBottom: "20px" }}>
+                <div style={{ marginBottom: "8px" }}>
                   <label>Pick your plan</label>
                   <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
                     {PLANS.map((plan) => (
@@ -178,8 +178,8 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
                         background: selectedPlan.id === plan.id ? "rgba(153,69,255,0.1)" : "rgba(255,255,255,0.03)",
                         textAlign: "center",
                       }}>
-                        <div style={{ fontWeight: 700, fontSize: "14px", marginBottom: "4px" }}>{plan.label}</div>
-                        <div style={{ color: "#9945FF", fontWeight: 800, fontSize: "18px" }}>${plan.usd}</div>
+                        <div style={{ fontWeight: 700, fontSize: "13px", marginBottom: "6px", color: "#ccc" }}>{plan.label}</div>
+                        <div style={{ color: "#9945FF", fontWeight: 800, fontSize: "20px" }}>${plan.usd}</div>
                         <div style={{ color: "#555", fontSize: "11px", marginTop: "2px" }}>{getSolAmount(plan.usd)} SOL</div>
                         {plan.id === "12months" && (
                           <div style={{ color: "#14F195", fontSize: "10px", fontWeight: 700, marginTop: "4px" }}>SAVE 35%</div>
@@ -187,6 +187,10 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                <div style={{ fontSize: "11px", color: "#555", textAlign: "center", marginBottom: "20px", fontStyle: "italic" }}>
+                  Stays online while funded
                 </div>
 
                 <div style={{ marginBottom: "16px" }}>
