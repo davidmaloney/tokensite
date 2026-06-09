@@ -43,7 +43,6 @@ export default function Dashboard() {
         padding: "24px 20px",
       }}>
 
-        {/* Logo */}
         <div style={{
           fontSize: "56px",
           fontWeight: 900,
@@ -55,17 +54,15 @@ export default function Dashboard() {
           SHILLit
         </div>
 
-        {/* What it is */}
         <div style={{ fontSize: "20px", color: "#ccc", maxWidth: "380px", lineHeight: 1.5, fontWeight: 600 }}>
           Instant crypto landing pages for your token
         </div>
 
-        {/* Tagline */}
         <div style={{ fontSize: "16px", fontWeight: 700, color: "#888", maxWidth: "340px", lineHeight: 1.6, marginTop: "-16px" }}>
           One wallet. One page. Yours in seconds.
         </div>
 
-        {/* Live example showcase — ABOVE the glass panel */}
+        {/* Live example showcase */}
         <div style={{ maxWidth: "460px", width: "100%", textAlign: "left" }}>
           <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
             SEE IT IN ACTION
@@ -136,7 +133,6 @@ export default function Dashboard() {
           boxShadow: "0 0 40px rgba(153,69,255,0.08)",
         }}>
 
-          {/* How it works */}
           <div style={{ marginBottom: "24px" }}>
             <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "16px" }}>
               HOW IT WORKS
@@ -156,7 +152,6 @@ export default function Dashboard() {
 
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginBottom: "20px" }} />
 
-          {/* Pricing */}
           <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
             SIMPLE PRICING
           </div>
@@ -182,9 +177,14 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Stays online while funded */}
-          <div style={{ textAlign: "center", marginTop: "14px", fontSize: "12px", color: "#555", fontStyle: "italic" }}>
-            Stays online while funded
+          {/* Updated stays online text */}
+          <div style={{ textAlign: "center", marginTop: "14px", display: "flex", flexDirection: "column", gap: "4px" }}>
+            <div style={{ fontSize: "12px", color: "#fff", fontWeight: 600 }}>
+              Stays online while funded
+            </div>
+            <div style={{ fontSize: "11px", color: "#555" }}>
+              Page deleted on expiry
+            </div>
           </div>
 
         </div>
