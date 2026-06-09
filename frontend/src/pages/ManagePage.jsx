@@ -9,6 +9,15 @@ import TemplateSelector from "../components/TemplateSelector";
 
 const DOMAIN = import.meta.env.VITE_DOMAIN || "shillit.fun";
 
+const TOKENOMICS_FIELDS = [
+  { key: "totalSupply", label: "Total Supply", hint: "e.g. 1,000,000,000" },
+  { key: "tax", label: "Buy/Sell Tax", hint: "e.g. 0% / 0%" },
+  { key: "liquidity", label: "Liquidity", hint: "e.g. Locked on Raydium" },
+  { key: "renounced", label: "Contract Renounced", hint: "Yes or No" },
+  { key: "launchDate", label: "Launch Date", hint: "e.g. June 2025" },
+  { key: "network", label: "Network", hint: "e.g. Solana" },
+];
+
 export default function ManagePage() {
   const { pageId } = useParams();
   const { publicKey } = useWallet();
@@ -28,6 +37,7 @@ export default function ManagePage() {
   const [editDescription, setEditDescription] = useState("");
   const [editContractAddress, setEditContractAddress] = useState("");
   const [editBuyLinks, setEditBuyLinks] = useState({ raydium: "", jupiter: "", pumpfun: "" });
+  const [editTokenomics, setEditTokenomics] = useState({});
   const [editSocials, setEditSocials] = useState({});
   const [editAvatar, setEditAvatar] = useState(null);
   const [editBanner, setEditBanner] = useState(null);
@@ -48,6 +58,7 @@ export default function ManagePage() {
       setEditDescription(c.description || "");
       setEditContractAddress(c.contractAddress || "");
       setEditBuyLinks({ raydium: c.buyLinks?.raydium || "", jupiter: c.buyLinks?.jupiter || "", pumpfun: c.buyLinks?.pumpfun || "" });
+      setEditTokenomics(c.tokenomics || {});
       setEditSocials(c.socials || {});
       setEditTemplateId(p.template_id || "template_1");
       if (c.avatar) setEditAvatar({ preview: `https://${DOMAIN}${c.avatar}`, file: null });
@@ -65,11 +76,15 @@ export default function ManagePage() {
       const filteredBuyLinks = Object.fromEntries(
         Object.entries(editBuyLinks).filter(([, v]) => v && v.trim())
       );
+      const filteredTokenomics = Object.fromEntries(
+        Object.entries(editTokenomics).filter(([, v]) => v && v.trim())
+      );
       const content = {};
       if (editName) content.name = editName;
       if (editDescription) content.description = editDescription;
       if (editContractAddress) content.contractAddress = editContractAddress;
       if (Object.keys(filteredBuyLinks).length > 0) content.buyLinks = filteredBuyLinks;
+      if (Object.keys(filteredTokenomics).length > 0) content.tokenomics = filteredTokenomics;
       content.socials = Object.fromEntries(
         Object.entries(editSocials).filter(([, v]) => v && v.trim())
       );
@@ -187,6 +202,22 @@ export default function ManagePage() {
                   <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#14F195", pointerEvents: "none" }}>{label}</span>
                   <input value={editBuyLinks[key]} onChange={(e) => setEditBuyLinks({ ...editBuyLinks, [key]: e.target.value })}
                     placeholder={placeholder} style={{ paddingLeft: pl }} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label>Tokenomics <span style={{ color: "#555" }}>(optional)</span></label>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
+              {TOKENOMICS_FIELDS.map(({ key, label, hint }) => (
+                <div key={key}>
+                  <div style={{ fontSize: "11px", color: "#9945FF", marginBottom: "3px", fontWeight: 600 }}>{label}</div>
+                  <input
+                    value={editTokenomics[key] || ""}
+                    onChange={(e) => setEditTokenomics({ ...editTokenomics, [key]: e.target.value })}
+                    placeholder={hint}
+                  />
                 </div>
               ))}
             </div>
