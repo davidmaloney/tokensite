@@ -11,8 +11,12 @@ import { getPageById, activatePage } from "../services/pageService.js";
 import { verifyPayment } from "../solana/verifier.js";
 import { logger } from "../utils/logger.js";
 import { getDb } from "../db/index.js";
+import { paymentRateLimiter } from "../middleware/rateLimiter.js";
+import { isValidUrl } from "../utils/slugValidator.js";
 
 const router = express.Router();
+
+router.use(paymentRateLimiter);
 
 router.get("/sol-rate", async (req, res) => {
   const price = await getSolPriceUsd();
@@ -39,13 +43,11 @@ router.post("/initiate", async (req, res) => {
 
   if (ownerCode && ownerCode === process.env.OWNER_ACCESS_CODE) {
     await activatePage(pageId, plan);
-    // Insert confirmed transaction so cleanup job never deletes this page
     const db = getDb();
     const now = Math.floor(Date.now() / 1000);
-    db.prepare(`
-      INSERT OR IGNORE INTO transactions (id, wallet_address, page_id, reference_id, amount_sol, amount_usd, plan, confirmed, created_at, confirmed_at)
-      VALUES (lower(hex(randomblob(16))), ?, ?, ?, 0, 0, ?, 1, ?, ?)
-    `).run(page.wallet_address, pageId, `OWNER-${pageId}`, plan, now, now);
+    db.prepare(
+      "INSERT OR IGNORE INTO transactions (id, wallet_address, page_id, reference_id, amount_sol, amount_usd, plan, confirmed, created_at, confirmed_at) VALUES (lower(hex(randomblob(16))), ?, ?, ?, 0, 0, ?, 1, ?, ?)"
+    ).run(page.wallet_address, pageId, "OWNER-" + pageId, plan, now, now);
     logger.info("owner_code_activation", { pageId, plan });
     return res.json({ activated: true });
   }
@@ -116,10 +118,28 @@ router.post("/confirm-tx", async (req, res) => {
     return res.status(400).json({ error: "Transaction already used." });
   }
 
-  await confirmTransaction(referenceId, txHash);
-  await activatePage(tx.page_id, tx.plan);
-  logger.info("tx_confirmed_direct", { referenceId, txHash });
-  res.json({ confirmed: true });
+  try {
+    const conn = new Connection(process.env.SOLANA_RPC_URL, "finalized");
+    const result = await verifyPayment({
+      treasuryWallet: process.env.TREASURY_WALLET,
+      expectedAmountSol: tx.amount_sol,
+      walletAddress: tx.wallet_address,
+      txHash,
+    });
+
+    if (!result.verified) {
+      logger.warn("confirm_tx_verification_failed", { referenceId, txHash });
+      return res.status(400).json({ error: "Transaction could not be verified on-chain." });
+    }
+
+    await confirmTransaction(referenceId, txHash);
+    await activatePage(tx.page_id, tx.plan);
+    logger.info("tx_confirmed_direct", { referenceId, txHash });
+    res.json({ confirmed: true });
+  } catch (err) {
+    logger.error("confirm_tx_error", { err: err.message });
+    res.status(500).json({ error: "Verification failed." });
+  }
 });
 
 export default router;
