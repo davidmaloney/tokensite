@@ -3,9 +3,6 @@ export const PLANS = {
   "12months": { usd: 39, days: 365 },
 };
 
-export const RETENTION_DAYS_AFTER_EXPIRY = 90;
-export const SOFT_DELETE_AFTER_EXPIRY_DAYS = 30;
-export const HARD_DELETE_AFTER_SOFT_DELETE_DAYS = 30;
 export const UNPAID_PAGE_CLEANUP_HOURS = 1;
 
 export const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
