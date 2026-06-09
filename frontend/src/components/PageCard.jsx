@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 export default function PageCard({ page, domain }) {
   const isActive = page.status === "active";
-  const expires = page.expires_at ? new Date(page.expires_at).toLocaleDateString() : "—";
+  const expires = page.expires_at ? new Date(page.expires_at * 1000).toLocaleDateString() : "—";
 
   return (
     <div
