@@ -13,17 +13,31 @@ export function startExpiryJob() {
         const db = getDb();
         const now = Math.floor(Date.now() / 1000);
 
+        // Hard delete pages immediately on expiry — no grace period
         const result = db.prepare(`
-          UPDATE pages
-          SET status = 'inactive', updated_at = ?
+          DELETE FROM pages
           WHERE status = 'active'
             AND expires_at IS NOT NULL
             AND expires_at < ?
-            AND soft_deleted_at IS NULL
-        `).run(now, now);
+        `).run(now);
 
         if (result.changes > 0) {
-          logger.info("pages_expired", { count: result.changes });
+          logger.info("pages_expired_and_deleted", { count: result.changes });
+
+          // Also blacklist the slugs permanently
+          const deleted = db.prepare(`
+            SELECT slug FROM pages
+            WHERE status = 'active'
+              AND expires_at IS NOT NULL
+              AND expires_at < ?
+          `).all(now);
+
+          deleted.forEach(({ slug }) => {
+            db.prepare(`
+              INSERT OR IGNORE INTO deleted_slugs (slug, deleted_at, reason)
+              VALUES (?, ?, 'expired')
+            `).run(slug, now);
+          });
         }
       });
     } catch (err) {
