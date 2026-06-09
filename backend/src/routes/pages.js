@@ -5,10 +5,23 @@ import {
   getPagesByWallet,
   updatePageContent,
 } from "../services/pageService.js";
-import { validateSlug } from "../utils/slugValidator.js";
+import { validateSlug, isValidUrl } from "../utils/slugValidator.js";
 import { createPageRateLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
+
+function validateContent(content) {
+  if (!content) return null;
+  const socials = content.socials || {};
+  for (const [key, url] of Object.entries(socials)) {
+    if (url && !isValidUrl(url)) return "Invalid URL in social links: " + key;
+  }
+  const buyLinks = content.buyLinks || {};
+  for (const [key, url] of Object.entries(buyLinks)) {
+    if (url && !isValidUrl(url)) return "Invalid URL in buy links: " + key;
+  }
+  return null;
+}
 
 router.get("/", async (req, res) => {
   const { wallet } = req.query;
@@ -39,6 +52,9 @@ router.post("/", createPageRateLimiter, async (req, res) => {
   const validation = validateSlug(slug);
   if (!validation.valid) return res.status(400).json({ error: validation.reason });
 
+  const urlError = validateContent(content);
+  if (urlError) return res.status(400).json({ error: urlError });
+
   try {
     const page = await createPage({ walletAddress, slug, templateId, content });
     res.json({ page });
@@ -55,6 +71,9 @@ router.put("/:id", async (req, res) => {
   const { id } = req.params;
 
   if (!walletAddress) return res.status(400).json({ error: "walletAddress required" });
+
+  const urlError = validateContent(content);
+  if (urlError) return res.status(400).json({ error: urlError });
 
   try {
     const page = await updatePageContent(id, walletAddress, { templateId, content });
