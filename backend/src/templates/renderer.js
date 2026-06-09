@@ -6,11 +6,7 @@ import { logger } from "../utils/logger.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const TEMPLATES_DIR = path.join(__dirname);
 
-const templateCache = new Map();
-
 function loadTemplate(templateId) {
-  if (templateCache.has(templateId)) return templateCache.get(templateId);
-
   const dir = path.join(TEMPLATES_DIR, templateId);
   const htmlPath = path.join(dir, "index.html");
   const cssPath = path.join(dir, "style.css");
@@ -22,10 +18,7 @@ function loadTemplate(templateId) {
 
   const html = fs.readFileSync(htmlPath, "utf8");
   const css = fs.existsSync(cssPath) ? fs.readFileSync(cssPath, "utf8") : "";
-
-  const tmpl = { html, css };
-  templateCache.set(templateId, tmpl);
-  return tmpl;
+  return { html, css };
 }
 
 function escapeHtml(str) {
@@ -59,6 +52,15 @@ const BUY_LABELS = {
   raydium: "Buy on Raydium",
   jupiter: "Buy on Jupiter",
   pumpfun: "Buy on Pump.fun",
+};
+
+const TOKENOMICS_LABELS = {
+  totalSupply: "Total Supply",
+  tax: "Buy/Sell Tax",
+  liquidity: "Liquidity",
+  renounced: "Contract Renounced",
+  launchDate: "Launch Date",
+  network: "Network",
 };
 
 export function renderPage(page) {
@@ -103,6 +105,27 @@ export function renderPage(page) {
       </div>`
     : "";
 
+  const tokenomics = content.tokenomics || {};
+  const tokenomicsRows = Object.entries(tokenomics)
+    .filter(([, v]) => v && v.trim())
+    .map(([key, value]) =>
+      `<div class="tokenomics-row">
+        <span class="tokenomics-label">${TOKENOMICS_LABELS[key] || key}</span>
+        <span class="tokenomics-value">${escapeHtml(value)}</span>
+      </div>`
+    ).join("\n");
+
+  const tokenomicsHtml = tokenomicsRows
+    ? `<div class="tokenomics-block">
+        <div class="tokenomics-title">Tokenomics</div>
+        ${tokenomicsRows}
+      </div>`
+    : "";
+
+  const descHtml = content.description
+    ? `<div class="description-block"><p class="description">${escapeHtml(content.description)}</p></div>`
+    : "";
+
   let html = tmpl.html;
 
   html = html.replace(/\{\{CSS\}\}/g, `<style>${tmpl.css}</style>`);
@@ -110,47 +133,23 @@ export function renderPage(page) {
   html = html.replace(/\{\{DESCRIPTION\}\}/g, content.description ? escapeHtml(content.description) : "");
   html = html.replace(/\{\{SLUG\}\}/g, escapeHtml(page.slug));
 
-  if (content.avatar) {
-    html = html.replace(/\{\{AVATAR_BLOCK\}\}/g, `<img src="${escapeHtml(content.avatar)}" alt="avatar" class="avatar-img" />`);
-  } else {
-    html = html.replace(/\{\{AVATAR_BLOCK\}\}/g, `<div class="avatar-placeholder">🪙</div>`);
-  }
+  html = html.replace(/\{\{AVATAR_BLOCK\}\}/g, content.avatar
+    ? `<img src="${escapeHtml(content.avatar)}" alt="avatar" class="avatar-img" />`
+    : `<div class="avatar-placeholder">🪙</div>`);
 
-  if (content.banner) {
-    html = html.replace(/\{\{BANNER_BLOCK\}\}/g, `<img src="${escapeHtml(content.banner)}" alt="banner" class="banner-img" />`);
-  } else {
-    html = html.replace(/\{\{BANNER_BLOCK\}\}/g, `<div class="banner-placeholder"></div>`);
-  }
+  html = html.replace(/\{\{BANNER_BLOCK\}\}/g, content.banner
+    ? `<img src="${escapeHtml(content.banner)}" alt="banner" class="banner-img" />`
+    : `<div class="banner-placeholder"></div>`);
 
-  if (content.name) {
-    html = html.replace(/\{\{NAME_BLOCK\}\}/g, `<h1 class="token-name">${escapeHtml(content.name)}</h1>`);
-  } else {
-    html = html.replace(/\{\{NAME_BLOCK\}\}/g, "");
-  }
+  html = html.replace(/\{\{NAME_BLOCK\}\}/g, content.name
+    ? `<h1 class="token-name">${escapeHtml(content.name)}</h1>`
+    : "");
 
-  if (content.description) {
-    html = html.replace(/\{\{DESC_BLOCK\}\}/g, `<p class="description">${escapeHtml(content.description)}</p>`);
-  } else {
-    html = html.replace(/\{\{DESC_BLOCK\}\}/g, "");
-  }
-
-  if (contractHtml) {
-    html = html.replace(/\{\{CONTRACT_BLOCK\}\}/g, contractHtml);
-  } else {
-    html = html.replace(/\{\{CONTRACT_BLOCK\}\}/g, "");
-  }
-
-  if (buyHtml) {
-    html = html.replace(/\{\{BUY_BLOCK\}\}/g, `<div class="buy-links">${buyHtml}</div>`);
-  } else {
-    html = html.replace(/\{\{BUY_BLOCK\}\}/g, "");
-  }
-
-  if (socialHtml) {
-    html = html.replace(/\{\{SOCIAL_BLOCK\}\}/g, `<div class="social-links">${socialHtml}</div>`);
-  } else {
-    html = html.replace(/\{\{SOCIAL_BLOCK\}\}/g, "");
-  }
+  html = html.replace(/\{\{DESC_BLOCK\}\}/g, descHtml);
+  html = html.replace(/\{\{CONTRACT_BLOCK\}\}/g, contractHtml);
+  html = html.replace(/\{\{BUY_BLOCK\}\}/g, buyHtml ? `<div class="buy-links">${buyHtml}</div>` : "");
+  html = html.replace(/\{\{TOKENOMICS_BLOCK\}\}/g, tokenomicsHtml);
+  html = html.replace(/\{\{SOCIAL_BLOCK\}\}/g, socialHtml ? `<div class="social-links">${socialHtml}</div>` : "");
 
   return html;
 }
