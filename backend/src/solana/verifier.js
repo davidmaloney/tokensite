@@ -31,29 +31,47 @@ async function verifySpecificTransaction({ conn, txHash, treasuryWallet, expecte
   const expectedLamports = Math.round(expectedAmountSol * LAMPORTS_PER_SOL);
   const toleranceLamports = Math.round(expectedLamports * 0.01);
 
-  const tx = await withRetry(() =>
-    conn.getTransaction(txHash, {
-      commitment: "finalized",
-      maxSupportedTransactionVersion: 0,
-    })
-  );
+  // Retry until transaction is found or max attempts reached
+  let tx = null;
+  for (let i = 0; i < 10; i++) {
+    try {
+      tx = await conn.getTransaction(txHash, {
+        commitment: "finalized",
+        maxSupportedTransactionVersion: 0,
+      });
+      if (tx) break;
+    } catch (err) {
+      logger.warn("get_transaction_retry", { attempt: i + 1, err: err.message });
+    }
+    logger.info("waiting_for_finalization", { attempt: i + 1, txHash });
+    await sleep(4000);
+  }
 
-  if (!tx || tx.meta?.err) return false;
+  if (!tx || tx.meta?.err) {
+    logger.warn("transaction_not_found_or_failed", { txHash });
+    return false;
+  }
 
   const accountKeys = tx.transaction.message.getAccountKeys
     ? tx.transaction.message.getAccountKeys().staticAccountKeys
     : tx.transaction.message.accountKeys;
 
-  const senderIndex = accountKeys.findIndex((k) => k.toString() === walletAddress);
+  // Find treasury wallet in any position
   const receiverIndex = accountKeys.findIndex((k) => k.toString() === treasuryWallet);
-
-  if (senderIndex === -1 || receiverIndex === -1) return false;
+  if (receiverIndex === -1) {
+    logger.warn("treasury_not_found_in_tx", { txHash, treasuryWallet });
+    return false;
+  }
 
   const preBalance = tx.meta.preBalances[receiverIndex];
   const postBalance = tx.meta.postBalances[receiverIndex];
   const received = postBalance - preBalance;
 
-  return Math.abs(received - expectedLamports) <= toleranceLamports;
+  const verified = Math.abs(received - expectedLamports) <= toleranceLamports;
+  if (!verified) {
+    logger.warn("amount_mismatch", { received, expectedLamports, txHash });
+  }
+  return verified;
 }
 
 export async function verifyPayment({ treasuryWallet, expectedAmountSol, walletAddress, txHash }) {
@@ -105,10 +123,8 @@ export async function verifyPayment({ treasuryWallet, expectedAmountSol, walletA
           ? tx.transaction.message.getAccountKeys().staticAccountKeys
           : tx.transaction.message.accountKeys;
 
-        const senderIndex = accountKeys.findIndex((k) => k.toString() === walletAddress);
         const receiverIndex = accountKeys.findIndex((k) => k.toString() === treasuryWallet);
-
-        if (senderIndex === -1 || receiverIndex === -1) continue;
+        if (receiverIndex === -1) continue;
 
         const preBalance = tx.meta.preBalances[receiverIndex];
         const postBalance = tx.meta.postBalances[receiverIndex];
