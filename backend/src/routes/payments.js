@@ -119,7 +119,9 @@ router.post("/confirm-tx", async (req, res) => {
   }
 
   try {
-    const conn = new Connection(process.env.SOLANA_RPC_URL, "finalized");
+    // Wait 8 seconds for Solana finalization before verifying
+    await new Promise((r) => setTimeout(r, 8000));
+
     const result = await verifyPayment({
       treasuryWallet: process.env.TREASURY_WALLET,
       expectedAmountSol: tx.amount_sol,
