@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, TransactionInstruction } from "@solana/web3.js";
+import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const PLANS = [
   { id: "1month", label: "Top up monthly", usd: 4.99 },
@@ -74,26 +74,17 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
 
       const lamports = Math.round(parseFloat(amountSol) * LAMPORTS_PER_SOL);
 
-      const memoText = "SHILLit payment " + referenceId + " for " + slug;
-      const memoInstruction = new TransactionInstruction({
-        keys: [{ pubkey: publicKey, isSigner: true, isWritable: false }],
-        programId: new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
-        data: new TextEncoder().encode(memoText),
-      });
-
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: new PublicKey(treasuryWallet.trim()),
           lamports,
-        }),
-        memoInstruction
+        })
       );
 
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      setStatus("signing");
       const { Connection } = await import("@solana/web3.js");
       const conn = new Connection("https://api.mainnet-beta.solana.com", { commitment: "finalized" });
       const signature = await sendTransaction(transaction, conn);
@@ -229,14 +220,6 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
                   {status === "initiating" ? "Processing…" : "Pay with Phantom →"}
                 </button>
               </>
-            )}
-
-            {status === "signing" && (
-              <div style={{ textAlign: "center", padding: "20px 0" }}>
-                <div style={{ fontSize: "32px", marginBottom: "12px" }}>👻</div>
-                <div style={{ fontSize: "16px", fontWeight: 700 }}>Approve in your wallet</div>
-                <div style={{ fontSize: "13px", color: "#888", marginTop: "8px" }}>Check your Phantom app</div>
-              </div>
             )}
 
             {status === "confirming" && (
