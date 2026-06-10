@@ -8,5 +8,5 @@ Solana-powered crypto landing page generator.
 - Cloudflare DNS with wildcard record: `*.tokensite.fun → VPS IP`
 
 ## Contact
-lesabeillesduvallon at gmail o com
+lesabeillesduvallon at gmail <*> com
 
