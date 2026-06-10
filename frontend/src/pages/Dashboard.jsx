@@ -203,7 +203,13 @@ export default function Dashboard() {
             cursor: "pointer",
           }} />
           <div style={{ fontSize: "12px", color: "#555" }}>
-            Phantom, Solflare and Backpack supported
+  Phantom, Solflare and Backpack supported
+</div>
+<a href="https://t.me/shillitsocials" target="_blank" rel="noreferrer"
+  style={{ fontSize: "12px", color: "#555", textDecoration: "none", marginTop: "4px" }}>
+  Community & Support →
+</a>
+
           </div>
         </div>
 
