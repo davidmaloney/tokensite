@@ -14,5 +14,6 @@ Our platform is designed for short-term and fast-moving projects. If a service i
 This includes all associated data, content, and settings, which are permanently removed and cannot be recovered. This system is intentional and ensures the platform remains clean and efficient while allowing names and slugs to be reused for future projects.
 
 ## Contact
+Owner-David Maloney
 lesabeillesduvallon at gmail <*> com
 
