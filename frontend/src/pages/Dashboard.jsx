@@ -177,7 +177,6 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Updated stays online text */}
           <div style={{ textAlign: "center", marginTop: "14px", display: "flex", flexDirection: "column", gap: "4px" }}>
             <div style={{ fontSize: "12px", color: "#fff", fontWeight: 600 }}>
               Stays online while funded
@@ -203,14 +202,12 @@ export default function Dashboard() {
             cursor: "pointer",
           }} />
           <div style={{ fontSize: "12px", color: "#555" }}>
-  Phantom, Solflare and Backpack supported
-</div>
-<a href="https://t.me/shillitsocials" target="_blank" rel="noreferrer"
-  style={{ fontSize: "12px", color: "#555", textDecoration: "none", marginTop: "4px" }}>
-  Community & Support →
-</a>
-
+            Phantom, Solflare and Backpack supported
           </div>
+          <a href="https://t.me/shillitsocials" target="_blank" rel="noreferrer"
+            style={{ fontSize: "12px", color: "#555", textDecoration: "none", marginTop: "4px" }}>
+            Community & Support →
+          </a>
         </div>
 
       </div>
