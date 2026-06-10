@@ -7,7 +7,6 @@ Solana-powered crypto landing page generator.
 - Traefik reverse proxy running externally
 - Cloudflare DNS with wildcard record: `*.tokensite.fun → VPS IP`
 
-## Setup
-
-1. Clone repo
+## Contact
+lesabeillesduvallon at gmail o com
 
