@@ -325,7 +325,8 @@ export default function CreatePage() {
               </div>
 
               <div style={{ padding: "12px 16px", borderRadius: "8px", background: "rgba(255,204,68,0.08)", border: "1px solid rgba(255,204,68,0.2)", fontSize: "12px", color: "#ffcc44" }}>
-                ⚡ Your page stays live as long as it's topped up. If you don't renew within 30 days of expiry, the slug gets released.
+                ⚡ Your page stays live as long as it's topped up. Page is permanently deleted on expiry.
+
               </div>
 
               <div style={{ padding: "12px 16px", borderRadius: "8px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", fontSize: "12px", color: "#888" }}>
