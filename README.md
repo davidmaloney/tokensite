@@ -1,4 +1,4 @@
-# TokenSite
+# TokenSite renamed to SHILLit
 
 Solana-powered crypto landing page generator.
 
