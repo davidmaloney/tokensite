@@ -8,7 +8,7 @@ const PLANS = [
   { id: "12months", label: "Top up yearly", usd: 39 },
 ];
 
-const PAYMENTS_COMING_SOON = false;
+const PAYMENTS_COMING_SOON = true;
 
 export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
   const { publicKey, sendTransaction } = useWallet();
