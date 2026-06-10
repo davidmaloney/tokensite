@@ -11,8 +11,8 @@ export const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 export const RATE_LIMIT_MAX = 100;
 export const PAGE_CREATE_LIMIT_PER_WALLET_PER_HOUR = 5;
 
-export const RPC_RETRY_ATTEMPTS = 4;
-export const RPC_RETRY_DELAY_MS = 1500;
+export const RPC_RETRY_ATTEMPTS = 8;
+export const RPC_RETRY_DELAY_MS = 3000;
 
 export const EXPIRY_JOB_INTERVAL_MINUTES = 30;
 export const CLEANUP_JOB_INTERVAL_HOURS = 6;
