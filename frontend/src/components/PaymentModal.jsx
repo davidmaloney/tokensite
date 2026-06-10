@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL, TransactionInstruction } from "@solana/web3.js";
 
 const PLANS = [
   { id: "1month", label: "Top up monthly", usd: 4.99 },
@@ -73,12 +73,21 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
       const { data: { blockhash } } = await axios.get("/api/payments/blockhash");
 
       const lamports = Math.round(parseFloat(amountSol) * LAMPORTS_PER_SOL);
+
+      const memoText = "SHILLit payment " + referenceId + " for " + slug;
+      const memoInstruction = new TransactionInstruction({
+        keys: [{ pubkey: publicKey, isSigner: true, isWritable: false }],
+        programId: new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
+        data: Buffer.from(memoText, "utf-8"),
+      });
+
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: new PublicKey(treasuryWallet.trim()),
           lamports,
-        })
+        }),
+        memoInstruction
       );
 
       transaction.recentBlockhash = blockhash;
@@ -163,7 +172,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
         ) : (
           <>
             <p style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>
-              <strong style={{ color: "#ffcc44" }}>⚠ Heads up:</strong> Your page stays live as long as it's topped up. If you don't renew within 30 days of expiry, the slug gets released.
+              <strong style={{ color: "#ffcc44" }}>⚠ Heads up:</strong> Your page stays live as long as it is topped up. Page deleted on expiry.
             </p>
 
             {(status === "idle" || status === "initiating") && (
@@ -189,8 +198,13 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
                   </div>
                 </div>
 
-                <div style={{ fontSize: "11px", color: "#555", textAlign: "center", marginBottom: "20px", fontStyle: "italic" }}>
-                  Stays online while funded
+                <div style={{ textAlign: "center", marginTop: "8px", marginBottom: "16px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                  <div style={{ fontSize: "12px", color: "#fff", fontWeight: 600 }}>
+                    Stays online while funded
+                  </div>
+                  <div style={{ fontSize: "11px", color: "#555" }}>
+                    Page deleted on expiry
+                  </div>
                 </div>
 
                 <div style={{ marginBottom: "16px" }}>
