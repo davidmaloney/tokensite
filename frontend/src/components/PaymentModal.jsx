@@ -78,7 +78,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
       const memoInstruction = new TransactionInstruction({
         keys: [{ pubkey: publicKey, isSigner: true, isWritable: false }],
         programId: new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"),
-        data: Buffer.from(memoText, "utf-8"),
+        data: new TextEncoder().encode(memoText),
       });
 
       const transaction = new Transaction().add(
