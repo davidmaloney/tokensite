@@ -86,6 +86,15 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
       transaction.lastValidBlockHeight = lastValidBlockHeight;
       transaction.feePayer = publicKey;
 
+      // Simulate transaction server-side before sending to Phantom
+      const serialized = transaction.serialize({ requireAllSignatures: false }).toString("base64");
+      const simRes = await axios.post("/api/payments/simulate", { transaction: serialized });
+      if (!simRes.data.success) {
+        setError("Transaction simulation failed. Please try again.");
+        setStatus("idle");
+        return;
+      }
+
       const { Connection } = await import("@solana/web3.js");
       const conn = new Connection("https://api.mainnet-beta.solana.com", { commitment: "finalized" });
       const signature = await sendTransaction(transaction, conn);
