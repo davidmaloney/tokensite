@@ -216,6 +216,10 @@ export default function Dashboard() {
             style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
             Developer Info →
           </a>
+          <a href="https://report.shillit.fun" target="_blank" rel="noreferrer"
+            style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
+            Report →
+          </a>
           <a href="mailto:support@shillit.fun"
             style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
             support@shillit.fun
