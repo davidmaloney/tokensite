@@ -1,26 +1,100 @@
-TokenSite (renamed to SHILLit)
+Here is the complete README.md as plain text without any code boxes:
 
-Solana-powered crypto landing page generator.
+SHILLit — Solana Crypto Landing Pages
 
-Requirements
+https://shillit.fun
 
-* VPS with Docker + Docker Compose
-* NGINX reverse proxy (external setup)
-* Cloudflare DNS with wildcard record: *.tokensite.fun → VPS IP
-* Additional server configuration for lightweight and stable deployments
+SHILLit is a Solana-powered platform that lets token creators launch professional crypto landing pages in seconds. Connect your wallet, choose a template, pay in SOL, and your page is live at yourtoken.shillit.fun.
 
-Features
+No accounts. No email. No passwords. Just your wallet.
 
-SHILLit is designed for short-lived, fast-moving projects, making it especially well-suited for meme coin creators who typically need landing pages for limited timeframes, often aligned with early launch phases and short-term campaigns.
+Built for Crypto’s Pace
 
-If a service is not renewed before its expiration date, it is automatically deactivated and permanently deleted. All associated data, content, and configuration settings are fully removed and cannot be recovered. This ensures the platform remains clean, efficient, and optimized for active deployments while still allowing flexibility for creators to reuse names and slugs for future projects.
+Most token launches need a landing page for days or weeks — not years. The hype window is short. The launch phase is intense. After that, projects either grow into something bigger or move on.
 
-For projects that grow beyond their initial phase, the pricing model is designed to scale with them. Annual subscriptions are kept intentionally low, making it easy for teams to renew or top up their service as momentum increases.
+SHILLit is designed around this reality. Pay for exactly what you need, leave when you are done. No long term commitments. No wasted money. No abandoned pages clogging up the internet.
 
-All payments are processed exclusively via Solana, the dominant payment rail within the meme coin ecosystem. At the time of payment, pricing is automatically converted into SOL in the backend using the current exchange rate, and the exact SOL amount is what gets charged. This ensures users always pay a transparent and accurate amount without needing manual calculation.
+When a page expires it is permanently deleted — all data, images and configuration removed completely. This keeps the platform clean, fast and optimised for active projects. Slugs can be reused for future launches.
 
-Additional blockchain ecosystems are not supported at this time.
+For projects that do grow — the yearly plan at $39 keeps costs minimal while the project finds its feet.
 
-Contact
+How It Works
 
-support@shillit.fun
+	1.	Connect your Solana wallet — Phantom, Solflare or Backpack
+	2.	Choose your slug — becomes yourtoken.shillit.fun
+	3.	Add your token details — project name and description, contract address with one-click copy button, buy links for Raydium, Jupiter and Pump.fun, tokenomics including supply, tax, liquidity, launch date and network, social links for Twitter, Telegram, Discord and more, avatar and banner images
+	4.	Pick a template — 4 designs available
+	5.	Pay $4.99/month or $39/year in SOL
+	6.	Page is live instantly
+
+Pricing
+
+Monthly — $4.99 — 30 days
+Yearly — $39 — 365 days — save 35%
+
+Pricing is converted to SOL at the current market rate at time of payment. The exact SOL amount is shown before confirmation. Pages are permanently deleted on expiry — top up before expiry to keep live.
+
+Payments
+
+All payments are processed on Solana mainnet using standard SystemProgram.transfer — a clean, transparent SOL transfer from the user wallet directly to the treasury wallet.
+
+No tokens. No smart contracts. No programs. Just a direct SOL transfer.
+
+Every payment is verified on-chain before the page is activated. The transaction hash is captured, verified against the treasury wallet and expected amount, and only then is the page activated. All transactions are publicly visible on Solana Explorer.
+
+USD pricing is converted server-side using the live CoinGecko rate so users always pay a fair and accurate amount.
+
+Templates
+
+Four templates included:
+
+Dark Crypto — black background, purple and green neon
+Clean Launch — white minimal DeFi style
+Neon Degen — pure black with hot pink and electric cyan
+Midnight Blue — deep navy with electric blue accents
+
+All templates are fully responsive — optimised for mobile and desktop. All include contract address display, buy buttons, tokenomics panel, social links and banner and avatar support.
+
+Technical Architecture
+
+Frontend — React and Vite, built to static files, served via Docker
+
+Backend — Node.js and Express, multi-process via PM2 using all CPU cores
+
+Database — SQLite with WAL mode and serialized write queue for safe concurrent access
+
+Caching — In-memory page cache with 60 second TTL, auto-invalidated on any page update, activation or deletion. Handles viral traffic spikes without database pressure.
+
+Blockchain — Solana Web3.js for transaction building and verification. Helius RPC for reliable on-chain data.
+
+Security — Rate limiting on all payment and admin endpoints. URL validation on all user-submitted links. On-chain transaction verification before activation. Transaction replay protection — each transaction hash can only be used once.
+
+Infrastructure — VPS with Docker and Docker Compose. Nginx Proxy Manager for subdomain routing. Cloudflare DNS with wildcard A record for subdomains. SSL via Cloudflare Full mode.
+
+Jobs — Expiry job runs every 30 minutes, pages deleted immediately on expiry. Cleanup job runs every 6 hours, unpaid pages deleted after 1 hour.
+
+Setup for Developers
+
+Requirements:
+VPS with Docker and Docker Compose
+Cloudflare DNS with wildcard A record pointing *.shillit.fun to VPS IP
+Nginx Proxy Manager for routing
+
+Environment variables needed on the server in a .env file:
+DOMAIN=shillit.fun
+SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
+TREASURY_WALLET=YOUR_SOLANA_WALLET_ADDRESS
+OWNER_ACCESS_CODE=YOUR_SECRET_CODE
+NODE_ENV=production
+MOCK_MODE=false
+
+Deploy commands:
+git pull
+docker compose up -d –build
+
+Community and Support
+
+Telegram Chat: https://t.me/shillitchat
+Terms and Privacy: https://t.me/shillitsocials
+Email: support@shillit.fun
+GitHub: https://github.com/davidmaloney/tokensite
