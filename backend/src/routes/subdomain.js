@@ -8,6 +8,31 @@ import fs from "fs";
 const router = express.Router();
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "/data/uploads";
 
+const pageCache = new Map();
+const CACHE_TTL_MS = 60 * 1000;
+
+function getCached(slug) {
+  const entry = pageCache.get(slug);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > CACHE_TTL_MS) {
+    pageCache.delete(slug);
+    return null;
+  }
+  return entry.html;
+}
+
+function setCache(slug, html) {
+  pageCache.set(slug, { html, ts: Date.now() });
+  if (pageCache.size > 1000) {
+    const oldest = pageCache.keys().next().value;
+    pageCache.delete(oldest);
+  }
+}
+
+export function invalidatePageCache(slug) {
+  pageCache.delete(slug);
+}
+
 const notFoundHtml = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Page Not Found</title>" +
   "<style>body{background:#0d0d0d;color:#666;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}</style>" +
   "</head><body><div><div style=\"font-size:36px;margin-bottom:12px\">🔍</div>" +
@@ -38,6 +63,13 @@ router.get("*", async (req, res) => {
   }
 
   try {
+    const cached = getCached(slug);
+    if (cached) {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=60");
+      return res.send(cached);
+    }
+
     const page = getPageBySlug(slug);
 
     if (!page || page.soft_deleted_at) {
@@ -49,8 +81,10 @@ router.get("*", async (req, res) => {
     }
 
     const html = renderPage(page);
+    setCache(slug, html);
+
     res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Cache-Control", "public, max-age=60");
     res.send(html);
 
     logger.debug("page_served", { slug });
