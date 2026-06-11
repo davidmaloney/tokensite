@@ -35,6 +35,9 @@ export default function PagePreview({ data, templateId }) {
 
   const accentColor = templateId === "template_3" ? "#FF007A" : templateId === "template_4" ? "#1E90FF" : templateId === "template_2" ? "#14a37f" : "#9945FF";
 
+  const contractBg = templateId === "template_2" ? "rgba(20,163,127,0.06)" : templateId === "template_3" ? "rgba(255,0,122,0.06)" : templateId === "template_4" ? "rgba(30,144,255,0.08)" : "rgba(153,69,255,0.08)";
+  const contractBorder = templateId === "template_2" ? "1px solid rgba(20,163,127,0.2)" : templateId === "template_3" ? "1px solid rgba(255,0,122,0.2)" : templateId === "template_4" ? "1px solid rgba(30,144,255,0.2)" : "1px solid rgba(153,69,255,0.2)";
+
   return (
     <div style={{
       background: templateId === "template_2" ? "#f5f7fa" : "#0d0d0d",
@@ -54,7 +57,7 @@ export default function PagePreview({ data, templateId }) {
       ) : (
         <div style={{
           width: "100%", height: "80px",
-          background: isDark ? "linear-gradient(135deg, #1a0a2e, #0a1628)" : "linear-gradient(135deg, #e8f5e9, #e3f2fd)",
+          background: templateId === "template_2" ? "linear-gradient(135deg, #e8f5e9, #e3f2fd)" : templateId === "template_3" ? "linear-gradient(135deg, #1a0010, #00101a)" : templateId === "template_4" ? "linear-gradient(135deg, #0a0f1e, #0d1f3c)" : "linear-gradient(135deg, #1a0a2e, #0a1628)",
         }} />
       )}
 
@@ -85,7 +88,7 @@ export default function PagePreview({ data, templateId }) {
           )}
         </div>
 
-        {/* Description — always in glass box */}
+        {/* Description */}
         {data.description && (
           <div style={{
             background: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)",
@@ -102,8 +105,8 @@ export default function PagePreview({ data, templateId }) {
         {data.contractAddress && (
           <div style={{
             display: "flex", alignItems: "center", gap: "8px",
-            background: isDark ? `rgba(${accentColor === "#9945FF" ? "153,69,255" : "30,144,255"},0.08)` : "rgba(20,163,127,0.06)",
-            border: `1px solid ${isDark ? `rgba(${accentColor === "#9945FF" ? "153,69,255" : "30,144,255"},0.2)` : "rgba(20,163,127,0.2)"}`,
+            background: contractBg,
+            border: contractBorder,
             borderRadius: "8px", padding: "8px 12px", marginBottom: "12px", flexWrap: "wrap",
           }}>
             <span style={{ fontSize: "10px", fontWeight: 800, color: accentColor, letterSpacing: "1px", flexShrink: 0 }}>CA</span>
