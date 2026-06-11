@@ -1,5 +1,3 @@
-Here is the complete README.md as plain text without any code boxes:
-
 SHILLit — Solana Crypto Landing Pages
 
 https://shillit.fun
