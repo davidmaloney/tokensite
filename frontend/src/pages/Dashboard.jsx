@@ -54,16 +54,16 @@ export default function Dashboard() {
           SHILLit
         </div>
 
-        <div style={{ fontSize: "20px", color: "#ccc", maxWidth: "380px", lineHeight: 1.5, fontWeight: 600 }}>
+        <div style={{ fontSize: "20px", color: "#ccc", maxWidth: "600px", lineHeight: 1.5, fontWeight: 600 }}>
           Instant crypto landing pages for your token
         </div>
 
-        <div style={{ fontSize: "16px", fontWeight: 700, color: "#888", maxWidth: "340px", lineHeight: 1.6, marginTop: "-16px" }}>
+        <div style={{ fontSize: "16px", fontWeight: 700, color: "#888", maxWidth: "600px", lineHeight: 1.6, marginTop: "-16px" }}>
           One wallet. One page. Yours in seconds.
         </div>
 
         {/* Live example showcase */}
-        <div style={{ maxWidth: "460px", width: "100%", textAlign: "left" }}>
+        <div style={{ maxWidth: "600px", width: "100%", textAlign: "left" }}>
           <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
             SEE IT IN ACTION
           </div>
@@ -126,7 +126,7 @@ export default function Dashboard() {
         <div className="glass" style={{
           borderRadius: "16px",
           padding: "28px 24px",
-          maxWidth: "460px",
+          maxWidth: "600px",
           width: "100%",
           textAlign: "left",
           border: "1px solid rgba(153,69,255,0.2)",
@@ -215,6 +215,10 @@ export default function Dashboard() {
           <a href="https://github.com/davidmaloney/tokensite" target="_blank" rel="noreferrer"
             style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
             Developer Info →
+          </a>
+          <a href="mailto:support@shillit.fun"
+            style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
+            support@shillit.fun
           </a>
         </div>
 
