@@ -8,6 +8,15 @@ import path from "path";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "/data/uploads";
 
+// Page cache invalidation — imported from subdomain router
+let _invalidateCache = null;
+export function registerCacheInvalidator(fn) {
+  _invalidateCache = fn;
+}
+function invalidateCache(slug) {
+  if (_invalidateCache) _invalidateCache(slug);
+}
+
 export function getPageById(id) {
   const db = getDb();
   return db.prepare("SELECT * FROM pages WHERE id = ?").get(id);
@@ -65,12 +74,10 @@ export async function updatePageContent(pageId, walletAddress, { templateId, con
 
     const existing = JSON.parse(page.content_json || "{}");
 
-    // Delete old avatar if replaced
     if (content.avatar && existing.avatar && content.avatar !== existing.avatar) {
       deleteOldImage(existing.avatar, content.avatar);
     }
 
-    // Delete old banner if replaced
     if (content.banner && existing.banner && content.banner !== existing.banner) {
       deleteOldImage(existing.banner, content.banner);
     }
@@ -80,6 +87,7 @@ export async function updatePageContent(pageId, walletAddress, { templateId, con
       "UPDATE pages SET template_id = ?, content_json = ?, updated_at = ? WHERE id = ?"
     ).run(templateId || page.template_id, JSON.stringify(content || {}), now, pageId);
 
+    invalidateCache(page.slug);
     logger.info("page_updated", { pageId, walletAddress });
     return db.prepare("SELECT * FROM pages WHERE id = ?").get(pageId);
   });
@@ -101,6 +109,7 @@ export async function activatePage(pageId, planId, daysOverride) {
       "UPDATE pages SET status = 'active', expires_at = ?, soft_deleted_at = NULL, updated_at = ? WHERE id = ?"
     ).run(newExpiry, now, pageId);
 
+    invalidateCache(page.slug);
     logger.info("page_activated", { pageId, planId, newExpiry });
     return db.prepare("SELECT * FROM pages WHERE id = ?").get(pageId);
   });
@@ -109,8 +118,10 @@ export async function activatePage(pageId, planId, daysOverride) {
 export async function deactivatePage(pageId) {
   return dbWriteQueue.push(() => {
     const db = getDb();
+    const page = db.prepare("SELECT slug FROM pages WHERE id = ?").get(pageId);
     const now = Math.floor(Date.now() / 1000);
     db.prepare("UPDATE pages SET status = 'inactive', updated_at = ? WHERE id = ?").run(now, pageId);
+    if (page) invalidateCache(page.slug);
     logger.info("page_deactivated", { pageId });
   });
 }
@@ -118,8 +129,10 @@ export async function deactivatePage(pageId) {
 export async function softDeletePage(pageId) {
   return dbWriteQueue.push(() => {
     const db = getDb();
+    const page = db.prepare("SELECT slug FROM pages WHERE id = ?").get(pageId);
     const now = Math.floor(Date.now() / 1000);
     db.prepare("UPDATE pages SET status = 'inactive', soft_deleted_at = ?, updated_at = ? WHERE id = ?").run(now, now, pageId);
+    if (page) invalidateCache(page.slug);
     logger.info("page_soft_deleted", { pageId });
   });
 }
@@ -129,7 +142,6 @@ export async function hardDeletePage(pageId) {
     const db = getDb();
     const page = db.prepare("SELECT slug, content_json FROM pages WHERE id = ?").get(pageId);
     if (page) {
-      // Delete images from disk
       try {
         const content = JSON.parse(page.content_json || "{}");
         for (const field of ["avatar", "banner"]) {
@@ -141,6 +153,7 @@ export async function hardDeletePage(pageId) {
         }
       } catch {}
 
+      invalidateCache(page.slug);
       db.prepare("INSERT OR IGNORE INTO deleted_slugs (slug, reason) VALUES (?, 'hard_delete')").run(page.slug);
       db.prepare("DELETE FROM pages WHERE id = ?").run(pageId);
       db.prepare("DELETE FROM transactions WHERE page_id = ?").run(pageId);
