@@ -181,7 +181,7 @@ export default function Dashboard() {
             <div style={{ fontSize: "12px", color: "#fff", fontWeight: 600 }}>
               Stays online while funded
             </div>
-            <div style={{ fontSize: "11px", color: "#555" }}>
+            <div style={{ fontSize: "11px", color: "#fff" }}>
               Page deleted on expiry
             </div>
           </div>
@@ -204,9 +204,17 @@ export default function Dashboard() {
           <div style={{ fontSize: "12px", color: "#555" }}>
             Phantom, Solflare and Backpack supported
           </div>
-          <a href="https://t.me/shillitsocials" target="_blank" rel="noreferrer"
+          <a href="https://t.me/shillitchat" target="_blank" rel="noreferrer"
             style={{ fontSize: "12px", color: "#555", textDecoration: "none", marginTop: "4px" }}>
             Community & Support →
+          </a>
+          <a href="https://t.me/shillitsocials" target="_blank" rel="noreferrer"
+            style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
+            Terms & Privacy →
+          </a>
+          <a href="https://t.me/shillitsocials/9" target="_blank" rel="noreferrer"
+            style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
+            Developer Info →
           </a>
         </div>
 
