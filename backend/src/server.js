@@ -18,6 +18,9 @@ import pagesRouter from "./routes/pages.js";
 import paymentsRouter from "./routes/payments.js";
 import adminRouter from "./routes/admin.js";
 import subdomainRouter from "./routes/subdomain.js";
+import { invalidatePageCache } from "./routes/subdomain.js";
+import { registerCacheInvalidator } from "./services/pageService.js";
+
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "/data/uploads";
@@ -25,7 +28,7 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || "/data/uploads";
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-getDb();
+getDb(); registerCacheInvalidator(invalidatePageCache);
 getOrCreateWalletAuthSecret();
 logger.info("system_start", { domain: DOMAIN, mockMode: process.env.MOCK_MODE === "true" });
 
