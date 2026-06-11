@@ -18,15 +18,50 @@ const router = express.Router();
 
 router.use(paymentRateLimiter);
 
-router.get("/sol-rate", async (req, res) => {
+// Cache SOL price for 60 seconds
+let solPriceCache = null;
+let solPriceCacheTs = 0;
+const SOL_PRICE_TTL = 60 * 1000;
+
+async function getCachedSolPrice() {
+  if (solPriceCache && Date.now() - solPriceCacheTs < SOL_PRICE_TTL) {
+    return solPriceCache;
+  }
   const price = await getSolPriceUsd();
-  res.json({ usdPerSol: price, solPerUsd: 1 / price });
+  solPriceCache = price;
+  solPriceCacheTs = Date.now();
+  return price;
+}
+
+// Cache blockhash for 10 seconds only — keeps it fresh for Phantom
+let blockhashCache = null;
+let blockhashCacheTs = 0;
+const BLOCKHASH_TTL = 10 * 1000;
+
+async function getCachedBlockhash() {
+  if (blockhashCache && Date.now() - blockhashCacheTs < BLOCKHASH_TTL) {
+    return blockhashCache;
+  }
+  const conn = new Connection(process.env.SOLANA_RPC_URL, "finalized");
+  const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash();
+  blockhashCache = { blockhash, lastValidBlockHeight };
+  blockhashCacheTs = Date.now();
+  return blockhashCache;
+}
+
+router.get("/sol-rate", async (req, res) => {
+  try {
+    const price = await getCachedSolPrice();
+    res.json({ usdPerSol: price, solPerUsd: 1 / price });
+  } catch (err) {
+    logger.error("sol_rate_error", { err: err.message });
+    res.status(500).json({ error: "Failed to get SOL price" });
+  }
 });
 
 router.get("/blockhash", async (req, res) => {
   try {
-    const conn = new Connection(process.env.SOLANA_RPC_URL, "finalized");
-    const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash();
+    const { blockhash, lastValidBlockHeight } = await getCachedBlockhash();
     res.json({ blockhash, lastValidBlockHeight });
   } catch (err) {
     logger.error("blockhash_error", { err: err.message });
