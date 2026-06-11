@@ -27,7 +27,7 @@ How It Works
 
 Pricing
 
-Monthly — $4.99 — 30 days
+Topup Monthly — $4.99 — 30 days or
 Yearly — $39 — 365 days — save 35%
 
 Pricing is converted to SOL at the current market rate at time of payment. The exact SOL amount is shown before confirmation. Pages are permanently deleted on expiry — top up before expiry to keep live.
