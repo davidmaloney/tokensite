@@ -1,5 +1,5 @@
 import express from "express";
-import { Connection } from "@solana/web3.js";
+import { Connection, Transaction } from "@solana/web3.js";
 import { getPlanWithSol, getSolPriceUsd } from "../services/pricingService.js";
 import {
   createPendingTransaction,
@@ -31,6 +31,33 @@ router.get("/blockhash", async (req, res) => {
   } catch (err) {
     logger.error("blockhash_error", { err: err.message });
     res.status(500).json({ error: "Failed to get blockhash" });
+  }
+});
+
+router.post("/simulate", async (req, res) => {
+  const { transaction: serializedTx } = req.body;
+  if (!serializedTx) return res.status(400).json({ error: "transaction required" });
+
+  try {
+    const conn = new Connection(process.env.SOLANA_RPC_URL, "finalized");
+    const txBuffer = Buffer.from(serializedTx, "base64");
+    const tx = Transaction.from(txBuffer);
+
+    const simulation = await conn.simulateTransaction(tx, {
+      sigVerify: false,
+      replaceRecentBlockhash: true,
+    });
+
+    if (simulation.value.err) {
+      logger.warn("simulation_failed", { err: simulation.value.err });
+      return res.json({ success: false, error: simulation.value.err });
+    }
+
+    logger.info("simulation_passed");
+    res.json({ success: true });
+  } catch (err) {
+    logger.error("simulate_error", { err: err.message });
+    res.status(500).json({ error: "Simulation failed" });
   }
 });
 
@@ -119,7 +146,6 @@ router.post("/confirm-tx", async (req, res) => {
   }
 
   try {
-
     const result = await verifyPayment({
       treasuryWallet: process.env.TREASURY_WALLET,
       expectedAmountSol: tx.amount_sol,
