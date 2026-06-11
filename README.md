@@ -95,6 +95,6 @@ docker compose up -d –build
 Community and Support
 
 Telegram Chat: https://t.me/shillitchat
-Terms and Privacy: https://t.me/shillitsocials
+Terms and Privacy: (https://t.me/shillitPolicies)
 Email: support@shillit.fun
 GitHub: https://github.com/davidmaloney/tokensite
