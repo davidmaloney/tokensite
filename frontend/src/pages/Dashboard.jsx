@@ -212,7 +212,7 @@ export default function Dashboard() {
             style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
             Terms & Privacy →
           </a>
-          <a href="https://t.me/shillitsocials/9" target="_blank" rel="noreferrer"
+          <a href="https://github.com/davidmaloney/tokensite" target="_blank" rel="noreferrer"
             style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
             Developer Info →
           </a>
