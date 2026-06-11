@@ -96,4 +96,4 @@ Telegram Chat: https://t.me/shillitchat
 Terms and Privacy: (https://t.me/shillitPolicies)
 Email: support@shillit.fun
 GitHub: https://github.com/davidmaloney/tokensite
-Report page: https://report.shillit.fun
+Report a page: https://report.shillit.fun
