@@ -6,7 +6,7 @@ Solana-powered crypto landing page generator.
 - VPS with Docker + Docker Compose
 - Traefik reverse proxy running externally
 - Cloudflare DNS with wildcard record: `*.tokensite.fun → VPS IP`
-
+## Features
 - Service Availability & Deletion
 
 Our platform is designed for short-term and fast-moving projects. If a service is not renewed before its expiration date, it is automatically deleted.
