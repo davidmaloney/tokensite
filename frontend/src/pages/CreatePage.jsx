@@ -101,7 +101,7 @@ export default function CreatePage() {
     if (err) { setSlugError(err); return; }
     try {
       const res = await axios.get(`/api/pages/check-slug/${slug}`);
-      if (!res.data.available) setSlugError("That slug is already taken — try another!");
+      if (!res.data.available) setSlugError(res.data.reason || "That slug is not available — try another!");
     } catch {
       setSlugError("Could not check availability right now.");
     }
@@ -326,7 +326,6 @@ export default function CreatePage() {
 
               <div style={{ padding: "12px 16px", borderRadius: "8px", background: "rgba(255,204,68,0.08)", border: "1px solid rgba(255,204,68,0.2)", fontSize: "12px", color: "#ffcc44" }}>
                 ⚡ Your page stays live as long as it's topped up. Page is permanently deleted on expiry.
-
               </div>
 
               <div style={{ padding: "12px 16px", borderRadius: "8px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", fontSize: "12px", color: "#888" }}>
