@@ -1,205 +1,96 @@
 import express from "express";
-import { Connection, Transaction } from "@solana/web3.js";
-import { getPlanWithSol, getSolPriceUsd } from "../services/pricingService.js";
-import {
-  createPendingTransaction,
-  getTransactionByReference,
-  confirmTransaction,
-  isTransactionAlreadyConfirmed,
-} from "../services/paymentService.js";
-import { getPageById, activatePage } from "../services/pageService.js";
-import { verifyPayment } from "../solana/verifier.js";
+import { getPageBySlug } from "../services/pageService.js";
+import { renderPage } from "../templates/renderer.js";
 import { logger } from "../utils/logger.js";
-import { getDb } from "../db/index.js";
-import { paymentRateLimiter } from "../middleware/rateLimiter.js";
-import { isValidUrl } from "../utils/slugValidator.js";
+import path from "path";
+import fs from "fs";
 
 const router = express.Router();
+const UPLOAD_DIR = process.env.UPLOAD_DIR || "/data/uploads";
 
-router.use(paymentRateLimiter);
+const pageCache = new Map();
+const CACHE_TTL_MS = 60 * 1000;
 
-// Cache SOL price for 60 seconds
-let solPriceCache = null;
-let solPriceCacheTs = 0;
-const SOL_PRICE_TTL = 60 * 1000;
-
-async function getCachedSolPrice() {
-  if (solPriceCache && Date.now() - solPriceCacheTs < SOL_PRICE_TTL) {
-    return solPriceCache;
+function getCached(slug) {
+  const entry = pageCache.get(slug);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > CACHE_TTL_MS) {
+    pageCache.delete(slug);
+    return null;
   }
-  const price = await getSolPriceUsd();
-  solPriceCache = price;
-  solPriceCacheTs = Date.now();
-  return price;
+  return entry.html;
 }
 
-// Cache blockhash for 30 seconds
-let blockhashCache = null;
-let blockhashCacheTs = 0;
-const BLOCKHASH_TTL = 30 * 1000;
-
-async function getCachedBlockhash() {
-  if (blockhashCache && Date.now() - blockhashCacheTs < BLOCKHASH_TTL) {
-    return blockhashCache;
+function setCache(slug, html) {
+  pageCache.set(slug, { html, ts: Date.now() });
+  if (pageCache.size > 1000) {
+    const oldest = pageCache.keys().next().value;
+    pageCache.delete(oldest);
   }
-  const conn = new Connection(process.env.SOLANA_RPC_URL, "finalized");
-  const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash();
-  blockhashCache = { blockhash, lastValidBlockHeight };
-  blockhashCacheTs = Date.now();
-  return blockhashCache;
 }
 
-router.get("/sol-rate", async (req, res) => {
-  try {
-    const price = await getCachedSolPrice();
-    res.json({ usdPerSol: price, solPerUsd: 1 / price });
-  } catch (err) {
-    logger.error("sol_rate_error", { err: err.message });
-    res.status(500).json({ error: "Failed to get SOL price" });
-  }
+export function invalidatePageCache(slug) {
+  pageCache.delete(slug);
+}
+
+const notFoundHtml = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Page Not Found</title>" +
+  "<style>body{background:#0d0d0d;color:#666;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}</style>" +
+  "</head><body><div><div style=\"font-size:36px;margin-bottom:12px\">🔍</div>" +
+  "<div style=\"font-size:16px\">Page not found</div>" +
+  "<div style=\"font-size:13px;margin-top:8px\"><a href=\"https://" + (process.env.DOMAIN || "shillit.fun") + "\" style=\"color:#9945FF;text-decoration:none\">Create yours on SHILLit →</a></div>" +
+  "</div></body></html>";
+
+const inactiveHtml = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><title>Page Inactive</title>" +
+  "<style>body{background:#0d0d0d;color:#666;font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center}</style>" +
+  "</head><body><div><div style=\"font-size:36px;margin-bottom:12px\">💤</div>" +
+  "<div style=\"font-size:16px\">This page is currently inactive</div>" +
+  "<div style=\"font-size:13px;margin-top:8px;color:#555\">The owner needs to top up their page</div>" +
+  "<div style=\"font-size:12px;margin-top:12px\"><a href=\"https://" + (process.env.DOMAIN || "shillit.fun") + "\" style=\"color:#9945FF;text-decoration:none\">SHILLit</a></div>" +
+  "</div></body></html>";
+
+router.get("/media/:filename", (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const filepath = path.join(UPLOAD_DIR, filename);
+  if (!fs.existsSync(filepath)) return res.status(404).send("Not found");
+  res.sendFile(filepath);
 });
 
-router.get("/blockhash", async (req, res) => {
-  try {
-    const { blockhash, lastValidBlockHeight } = await getCachedBlockhash();
-    res.json({ blockhash, lastValidBlockHeight });
-  } catch (err) {
-    logger.error("blockhash_error", { err: err.message });
-    res.status(500).json({ error: "Failed to get blockhash" });
+router.get("*", async (req, res) => {
+  const slug = req.subdomain;
+
+  if (!slug) {
+    return res.status(404).send(notFoundHtml);
   }
-});
-
-router.post("/simulate", async (req, res) => {
-  const { transaction: serializedTx } = req.body;
-  if (!serializedTx) return res.status(400).json({ error: "transaction required" });
 
   try {
-    const conn = new Connection(process.env.SOLANA_RPC_URL, "finalized");
-    const txBuffer = Buffer.from(serializedTx, "base64");
-    const tx = Transaction.from(txBuffer);
-
-    const simulation = await conn.simulateTransaction(tx, {
-      sigVerify: false,
-      replaceRecentBlockhash: true,
-    });
-
-    if (simulation.value.err) {
-      logger.warn("simulation_failed", { err: simulation.value.err });
-      return res.json({ success: false, error: simulation.value.err });
+    const cached = getCached(slug);
+    if (cached) {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=60");
+      return res.send(cached);
     }
 
-    logger.info("simulation_passed");
-    res.json({ success: true });
-  } catch (err) {
-    logger.error("simulate_error", { err: err.message });
-    res.status(500).json({ error: "Simulation failed" });
-  }
-});
+    const page = getPageBySlug(slug);
 
-router.post("/initiate", async (req, res) => {
-  const { pageId, plan, ownerCode } = req.body;
-  if (!pageId || !plan) return res.status(400).json({ error: "pageId and plan required" });
-
-  const page = getPageById(pageId);
-  if (!page) return res.status(404).json({ error: "Page not found" });
-
-  if (ownerCode && ownerCode === process.env.OWNER_ACCESS_CODE) {
-    await activatePage(pageId, plan);
-    const db = getDb();
-    const now = Math.floor(Date.now() / 1000);
-    db.prepare(
-      "INSERT OR IGNORE INTO transactions (id, wallet_address, page_id, reference_id, amount_sol, amount_usd, plan, confirmed, created_at, confirmed_at) VALUES (lower(hex(randomblob(16))), ?, ?, ?, 0, 0, ?, 1, ?, ?)"
-    ).run(page.wallet_address, pageId, "OWNER-" + pageId, plan, now, now);
-    logger.info("owner_code_activation", { pageId, plan });
-    return res.json({ activated: true });
-  }
-
-  try {
-    const planData = await getPlanWithSol(plan);
-    const tx = createPendingTransaction({
-      walletAddress: page.wallet_address,
-      pageId,
-      amountSol: planData.solAmount,
-      amountUsd: planData.usd,
-      plan,
-    });
-
-    res.json({
-      referenceId: tx.referenceId,
-      amountSol: planData.solAmount,
-      amountUsd: planData.usd,
-      treasuryWallet: process.env.TREASURY_WALLET,
-      plan: planData,
-    });
-  } catch (err) {
-    logger.error("payment_initiate_error", { err: err.message });
-    res.status(500).json({ error: "Failed to initiate payment." });
-  }
-});
-
-router.get("/status/:referenceId", async (req, res) => {
-  const { referenceId } = req.params;
-  const tx = getTransactionByReference(referenceId);
-  if (!tx) return res.status(404).json({ error: "Transaction not found" });
-
-  if (tx.confirmed) {
-    return res.json({ confirmed: true, referenceId });
-  }
-
-  try {
-    const result = await verifyPayment({
-      treasuryWallet: process.env.TREASURY_WALLET,
-      expectedAmountSol: tx.amount_sol,
-      walletAddress: tx.wallet_address,
-    });
-
-    if (result.verified) {
-      if (result.txHash && isTransactionAlreadyConfirmed(result.txHash)) {
-        return res.status(400).json({ error: "Transaction already used." });
-      }
-      await confirmTransaction(referenceId, result.txHash);
-      await activatePage(tx.page_id, tx.plan);
-      return res.json({ confirmed: true, referenceId });
+    if (!page || page.soft_deleted_at) {
+      return res.status(404).send(notFoundHtml);
     }
 
-    res.json({ confirmed: false, referenceId });
-  } catch (err) {
-    logger.error("payment_status_error", { err: err.message });
-    res.status(500).json({ error: "Verification error." });
-  }
-});
-
-router.post("/confirm-tx", async (req, res) => {
-  const { referenceId, txHash } = req.body;
-  if (!referenceId || !txHash) return res.status(400).json({ error: "Missing fields" });
-
-  const tx = getTransactionByReference(referenceId);
-  if (!tx) return res.status(404).json({ error: "Transaction not found" });
-
-  if (isTransactionAlreadyConfirmed(txHash)) {
-    return res.status(400).json({ error: "Transaction already used." });
-  }
-
-  try {
-    const result = await verifyPayment({
-      treasuryWallet: process.env.TREASURY_WALLET,
-      expectedAmountSol: tx.amount_sol,
-      walletAddress: tx.wallet_address,
-      txHash,
-    });
-
-    if (!result.verified) {
-      logger.warn("confirm_tx_verification_failed", { referenceId, txHash });
-      return res.status(400).json({ error: "Transaction could not be verified on-chain." });
+    if (page.status !== "active") {
+      return res.status(200).send(inactiveHtml);
     }
 
-    await confirmTransaction(referenceId, txHash);
-    await activatePage(tx.page_id, tx.plan);
-    logger.info("tx_confirmed_direct", { referenceId, txHash });
-    res.json({ confirmed: true });
+    const html = renderPage(page);
+    setCache(slug, html);
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=60");
+    res.send(html);
+
+    logger.debug("page_served", { slug });
   } catch (err) {
-    logger.error("confirm_tx_error", { err: err.message });
-    res.status(500).json({ error: "Verification failed." });
+    logger.error("subdomain_serve_error", { slug, err: err.message });
+    res.status(500).send("Internal error");
   }
 });
 
