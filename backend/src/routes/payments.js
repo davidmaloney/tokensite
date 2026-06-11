@@ -18,21 +18,6 @@ const router = express.Router();
 
 router.use(paymentRateLimiter);
 
-// Cache SOL price for 60 seconds
-let solPriceCache = null;
-let solPriceCacheTs = 0;
-const SOL_PRICE_TTL = 60 * 1000;
-
-async function getCachedSolPrice() {
-  if (solPriceCache && Date.now() - solPriceCacheTs < SOL_PRICE_TTL) {
-    return solPriceCache;
-  }
-  const price = await getSolPriceUsd();
-  solPriceCache = price;
-  solPriceCacheTs = Date.now();
-  return price;
-}
-
 // Cache blockhash for 10 seconds only — keeps it fresh for Phantom
 let blockhashCache = null;
 let blockhashCacheTs = 0;
@@ -51,7 +36,7 @@ async function getCachedBlockhash() {
 
 router.get("/sol-rate", async (req, res) => {
   try {
-    const price = await getCachedSolPrice();
+    const price = await getSolPriceUsd();
     res.json({ usdPerSol: price, solPerUsd: 1 / price });
   } catch (err) {
     logger.error("sol_rate_error", { err: err.message });
