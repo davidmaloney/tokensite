@@ -5,20 +5,21 @@ Solana-powered crypto landing page generator.
 Requirements
 
 * VPS with Docker + Docker Compose
-* Traefik reverse proxy running externally
+* NGINX reverse proxy (external setup)
 * Cloudflare DNS with wildcard record: *.tokensite.fun → VPS IP
+* Additional server configuration for lightweight and stable deployments
 
 Features
 
 SHILLit is designed for short-lived, fast-moving projects, making it especially well-suited for meme coin creators who typically need landing pages for limited timeframes, often aligned with early launch phases and short-term campaigns.
 
-If a service is not renewed before its expiration date, it is automatically deactivated and permanently deleted. All associated data, content, and configuration settings are fully removed and cannot be recovered. This design keeps the platform lean and efficient while allowing flexibility for creators to reuse names and slugs for future deployments.
+If a service is not renewed before its expiration date, it is automatically deactivated and permanently deleted. All associated data, content, and configuration settings are fully removed and cannot be recovered. This ensures the platform remains clean, efficient, and optimized for active deployments while still allowing flexibility for creators to reuse names and slugs for future projects.
 
-For projects that evolve beyond their initial stage, the pricing model is structured to scale with them. Annual subscriptions are intentionally kept low, making it easy for teams to renew or top up their service as momentum grows.
+For projects that grow beyond their initial phase, the pricing model is designed to scale with them. Annual subscriptions are kept intentionally low, making it easy for teams to renew or top up their service as momentum increases.
 
-To ensure full transparency, the platform includes a built-in pricing calculator that converts all costs into SOL (Solana) at the current exchange rate, so users always know the exact amount required at the time of payment.
+All payments are processed exclusively via Solana, the dominant payment rail within the meme coin ecosystem. At the time of payment, pricing is automatically converted into SOL in the backend using the current exchange rate, and the exact SOL amount is what gets charged. This ensures users always pay a transparent and accurate amount without needing manual calculation.
 
-Payments are currently supported exclusively via Solana, the dominant payment rail within the meme coin ecosystem. Additional blockchain ecosystems are not supported at this time.
+Additional blockchain ecosystems are not supported at this time.
 
 Contact
 
