@@ -70,7 +70,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
       }
 
       const { amountSol, treasuryWallet, referenceId } = res.data;
-      const { data: { blockhash } } = await axios.get("/api/payments/blockhash");
+      const { data: { blockhash, lastValidBlockHeight } } = await axios.get("/api/payments/blockhash");
 
       const lamports = Math.round(parseFloat(amountSol) * LAMPORTS_PER_SOL);
 
@@ -83,6 +83,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
       );
 
       transaction.recentBlockhash = blockhash;
+      transaction.lastValidBlockHeight = lastValidBlockHeight;
       transaction.feePayer = publicKey;
 
       const { Connection } = await import("@solana/web3.js");
