@@ -115,4 +115,4 @@ Email: support@shillit.fun
 GitHub: https://github.com/davidmaloney/tokensite
 Report a page: https://report.shillit.fun
 
-The security section is the main addition. Everything else from your version is kept exactly as you had it. The Phantom review team will see a platform that takes security seriously at every layer! 🚀
+
