@@ -1,19 +1,33 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: #0a0f1e;
+  background: #060b18;
   color: #f0f0f0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
 }
 
-.page-wrapper { max-width: 100%; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
+.page-wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-.banner-container { width: 100%; height: 300px; overflow: hidden; background: linear-gradient(135deg, #0a0f1e, #0d1f3c); flex-shrink: 0; }
+.banner-container {
+  width: 100%;
+  height: 280px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #0a0f1e, #0d1f3c);
+  flex-shrink: 0;
+  margin-top: 20px;
+  border-radius: 16px;
+}
 .banner-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .banner-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #0a0f1e 0%, #0d1f3c 100%); }
 
-.content-container { padding: 0 40px 48px; flex: 1; max-width: 1100px; margin: 0 auto; width: 100%; }
+.content-container { padding: 0 24px 48px; flex: 1; width: 100%; }
 .header-row { display: flex; align-items: flex-end; gap: 16px; margin-top: -40px; margin-bottom: 20px; }
 .avatar-container { flex-shrink: 0; }
 .avatar-img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #1E90FF; display: block; box-shadow: 0 0 20px rgba(30,144,255,0.3); }
@@ -25,7 +39,7 @@ body {
 .description-block { background: rgba(30,144,255,0.05); border: 1px solid rgba(30,144,255,0.15); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; }
 .description { font-size: 15px; line-height: 1.7; color: #bbb; white-space: pre-wrap; word-break: break-word; }
 
-.contract-block { display: flex; align-items: center; gap: 8px; background: rgba(30,144,255,0.06); border: 1px solid rgba(30,144,255,0.2); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; flex-wrap: wrap; }
+.contract-block { display: flex; align-items: center; gap: 8px; background: rgba(30,144,255,0.06); border: 1px solid rgba(30,144,255,0.2); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; flex-wrap: wrap; max-width: 680px; }
 .contract-label { font-size: 10px; font-weight: 800; color: #1E90FF; letter-spacing: 1px; flex-shrink: 0; }
 .contract-address { font-family: monospace; font-size: 11px; color: #aaa; word-break: break-all; flex: 1; }
 .copy-btn { background: rgba(30,144,255,0.1); border: 1px solid rgba(30,144,255,0.3); color: #1E90FF; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; cursor: pointer; flex-shrink: 0; transition: background 0.2s; }
@@ -36,7 +50,7 @@ body {
 .buy-btn:hover { opacity: 0.85; }
 .buy-icon { display: flex; align-items: center; }
 
-.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-bottom: 16px; align-items: start; }
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; margin-bottom: 16px; align-items: start; }
 
 .card { background: rgba(30,144,255,0.04); border: 1px solid rgba(30,144,255,0.12); border-radius: 12px; padding: 16px 18px; }
 .card-title { font-size: 11px; font-weight: 700; color: #1E90FF; letter-spacing: 1.5px; margin-bottom: 12px; text-transform: uppercase; }
@@ -54,7 +68,7 @@ body {
 .ticker-change { font-size: 14px; font-weight: 700; margin-left: 8px; }
 .ticker-change.positive { color: #00BFFF; }
 .ticker-change.negative { color: #ff6464; }
-.ticker-stats { display: flex; gap: 16px; font-size: 12px; color: #556; }
+.ticker-stats { display: flex; gap: 16px; font-size: 12px; color: #556; flex-wrap: wrap; }
 .ticker-na { font-size: 13px; color: #444; }
 
 .chart-card { grid-column: 1 / -1; }
@@ -104,7 +118,8 @@ body {
 .social-icon { display: flex; align-items: center; }
 
 @media (max-width: 480px) {
-  .banner-container { height: 130px; }
+  .page-wrapper { max-width: 100%; }
+  .banner-container { height: 130px; margin-top: 0; border-radius: 0; }
   .avatar-img, .avatar-placeholder { width: 76px; height: 76px; }
   .header-row { margin-top: -28px; gap: 12px; }
   .token-name { font-size: 20px; }
