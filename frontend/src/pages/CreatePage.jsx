@@ -29,6 +29,15 @@ export default function CreatePage() {
   const [createdPage, setCreatedPage] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
 
+  // New extras state
+  const [showTicker, setShowTicker] = useState(false);
+  const [showChart, setShowChart] = useState(false);
+  const [countdownDate, setCountdownDate] = useState("");
+  const [countdownLabel, setCountdownLabel] = useState("");
+  const [aboutText, setAboutText] = useState("");
+  const [team, setTeam] = useState([{ name: "", role: "", twitter: "" }]);
+  const [roadmap, setRoadmap] = useState([{ title: "", description: "", status: "upcoming" }]);
+
   if (!connected) {
     return (
       <div style={{ textAlign: "center", padding: "80px 20px", color: "#888" }}>
@@ -49,16 +58,14 @@ export default function CreatePage() {
           boxShadow: "0 0 40px rgba(153,69,255,0.08)",
           textAlign: "center",
         }}>
-          <button
-            onClick={() => navigate("/")}
-            style={{ background: "none", border: "none", color: "#9945FF", cursor: "pointer", fontSize: "13px", fontWeight: 600, marginBottom: "16px", display: "block" }}
-          >
+          <button onClick={() => navigate("/")}
+            style={{ background: "none", border: "none", color: "#9945FF", cursor: "pointer", fontSize: "13px", fontWeight: 600, marginBottom: "16px", display: "block" }}>
             ← Back to Dashboard
           </button>
           <div style={{ fontSize: "36px", marginBottom: "16px" }}>🚀</div>
           <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>Before you launch</h2>
           <p style={{ fontSize: "14px", color: "#888", lineHeight: 1.7, marginBottom: "20px" }}>
-            Almost there! Just a heads up — your slug cannot be changed once your page is created. Everything else is flexible. Take a moment to make sure everything is ready before you continue.
+            Almost there! Just a heads up — your slug cannot be changed once your page is created. Everything else is flexible.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px", textAlign: "left" }}>
             {[
@@ -72,11 +79,8 @@ export default function CreatePage() {
               </div>
             ))}
           </div>
-          <button
-            className="btn-primary"
-            style={{ width: "100%", fontSize: "15px", padding: "13px" }}
-            onClick={() => setShowWarning(false)}
-          >
+          <button className="btn-primary" style={{ width: "100%", fontSize: "15px", padding: "13px" }}
+            onClick={() => setShowWarning(false)}>
             Let's build it →
           </button>
         </div>
@@ -100,7 +104,7 @@ export default function CreatePage() {
     const err = validateSlug(slug);
     if (err) { setSlugError(err); return; }
     try {
-      const res = await axios.get(`/api/pages/check-slug/${slug}`);
+      const res = await axios.get("/api/pages/check-slug/" + slug);
       if (!res.data.available) setSlugError(res.data.reason || "That slug is not available — try another!");
     } catch {
       setSlugError("Could not check availability right now.");
@@ -112,10 +116,36 @@ export default function CreatePage() {
     const form = new FormData();
     form.append("image", imageObj.file);
     form.append("type", type);
-    const res = await axios.post("/api/media/upload", form, {
-      headers: { "Content-Type": "multipart/form-data" },
-    });
+    const res = await axios.post("/api/media/upload", form, { headers: { "Content-Type": "multipart/form-data" } });
     return res.data.url;
+  };
+
+  const addTeamMember = () => {
+    if (team.length < 4) setTeam([...team, { name: "", role: "", twitter: "" }]);
+  };
+
+  const updateTeamMember = (i, field, val) => {
+    const updated = [...team];
+    updated[i][field] = val;
+    setTeam(updated);
+  };
+
+  const removeTeamMember = (i) => {
+    setTeam(team.filter((_, idx) => idx !== i));
+  };
+
+  const addMilestone = () => {
+    if (roadmap.length < 8) setRoadmap([...roadmap, { title: "", description: "", status: "upcoming" }]);
+  };
+
+  const updateMilestone = (i, field, val) => {
+    const updated = [...roadmap];
+    updated[i][field] = val;
+    setRoadmap(updated);
+  };
+
+  const removeMilestone = (i) => {
+    setRoadmap(roadmap.filter((_, idx) => idx !== i));
   };
 
   const handleSubmit = async () => {
@@ -126,12 +156,10 @@ export default function CreatePage() {
       const avatarUrl = await uploadImage(avatar, "avatar");
       const bannerUrl = await uploadImage(banner, "banner");
 
-      const filteredBuyLinks = Object.fromEntries(
-        Object.entries(buyLinks).filter(([, v]) => v && v.trim())
-      );
-      const filteredTokenomics = Object.fromEntries(
-        Object.entries(tokenomics).filter(([, v]) => v && v.trim())
-      );
+      const filteredBuyLinks = Object.fromEntries(Object.entries(buyLinks).filter(([, v]) => v && v.trim()));
+      const filteredTokenomics = Object.fromEntries(Object.entries(tokenomics).filter(([, v]) => v && v.trim()));
+      const filteredTeam = team.filter((m) => m.name && m.name.trim());
+      const filteredRoadmap = roadmap.filter((m) => m.title && m.title.trim());
 
       const content = {};
       if (name) content.name = name;
@@ -141,9 +169,12 @@ export default function CreatePage() {
       if (Object.keys(filteredTokenomics).length > 0) content.tokenomics = filteredTokenomics;
       if (avatarUrl) content.avatar = avatarUrl;
       if (bannerUrl) content.banner = bannerUrl;
-      content.socials = Object.fromEntries(
-        Object.entries(socials).filter(([, v]) => v && v.trim())
-      );
+      content.socials = Object.fromEntries(Object.entries(socials).filter(([, v]) => v && v.trim()));
+      if (contractAddress && showTicker) content.showTicker = true;
+      if (contractAddress && showChart) content.showChart = true;
+      if (countdownDate) content.countdown = { date: countdownDate, label: countdownLabel || "Countdown" };
+      if (aboutText.trim() || filteredTeam.length > 0) content.about = { text: aboutText, team: filteredTeam };
+      if (filteredRoadmap.length > 0) content.roadmap = filteredRoadmap;
 
       const res = await axios.post("/api/pages", {
         walletAddress: publicKey.toString(),
@@ -160,7 +191,7 @@ export default function CreatePage() {
     setSubmitting(false);
   };
 
-  const STEPS = ["Info", "Media", "Socials", "Template", "Review"];
+  const STEPS = ["Info", "Media", "Socials", "Template", "Extras", "Review"];
 
   const TOKENOMICS_FIELDS = [
     { key: "totalSupply", label: "Total Supply", hint: "e.g. 1,000,000,000" },
@@ -175,10 +206,8 @@ export default function CreatePage() {
     <div style={{ maxWidth: "900px", margin: "0 auto", padding: "32px 20px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
         <h1 style={{ fontSize: "22px", fontWeight: 800 }}>Create Your Page</h1>
-        <button
-          onClick={() => navigate("/")}
-          style={{ background: "none", border: "none", color: "#9945FF", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}
-        >
+        <button onClick={() => navigate("/")}
+          style={{ background: "none", border: "none", color: "#9945FF", cursor: "pointer", fontSize: "13px", fontWeight: 600 }}>
           ← Dashboard
         </button>
       </div>
@@ -202,7 +231,7 @@ export default function CreatePage() {
 
       <div style={{
         display: "grid",
-        gridTemplateColumns: step === 5 ? "1fr 1fr" : "1fr",
+        gridTemplateColumns: step === 6 ? "1fr 1fr" : "1fr",
         gap: "24px", alignItems: "start",
       }}>
         <div className="glass" style={{ borderRadius: "12px", padding: "24px" }}>
@@ -210,27 +239,21 @@ export default function CreatePage() {
           {step === 1 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Basic Info</h2>
-
               <div>
                 <label>Slug (your subdomain) *</label>
                 <input value={slug} onChange={(e) => handleSlugChange(e.target.value)} onBlur={handleSlugBlur} placeholder="e.g. pepecoin" />
                 {slugError && <div style={{ color: "#ff6464", fontSize: "12px", marginTop: "4px" }}>{slugError}</div>}
-                <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>
-                  Your page: {slug || "yourslug"}.shillit.fun
-                </div>
+                <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>Your page: {slug || "yourslug"}.shillit.fun</div>
               </div>
-
               <div>
                 <label>Project Name <span style={{ color: "#555" }}>(optional)</span></label>
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. PepeCoin" />
               </div>
-
               <div>
                 <label>Description <span style={{ color: "#555" }}>(optional)</span></label>
                 <textarea value={description} onChange={(e) => setDescription(e.target.value)}
                   placeholder="Tell people what your project is about…" rows={4} style={{ resize: "vertical" }} />
               </div>
-
               <div>
                 <label>Contract Address <span style={{ color: "#555" }}>(optional)</span></label>
                 <input value={contractAddress} onChange={(e) => setContractAddress(e.target.value)}
@@ -238,7 +261,6 @@ export default function CreatePage() {
                   style={{ fontFamily: "monospace", fontSize: "12px" }} />
                 <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>Shows on your page with a copy button</div>
               </div>
-
               <div>
                 <label>Buy Links <span style={{ color: "#555" }}>(optional)</span></label>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
@@ -255,23 +277,17 @@ export default function CreatePage() {
                   ))}
                 </div>
               </div>
-
               <div>
                 <label>Tokenomics <span style={{ color: "#555" }}>(optional)</span></label>
                 <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
                   {TOKENOMICS_FIELDS.map(({ key, label, hint }) => (
                     <div key={key}>
                       <div style={{ fontSize: "11px", color: "#9945FF", marginBottom: "3px", fontWeight: 600 }}>{label}</div>
-                      <input
-                        value={tokenomics[key] || ""}
-                        onChange={(e) => setTokenomics({ ...tokenomics, [key]: e.target.value })}
-                        placeholder={hint}
-                      />
+                      <input value={tokenomics[key] || ""} onChange={(e) => setTokenomics({ ...tokenomics, [key]: e.target.value })} placeholder={hint} />
                     </div>
                   ))}
                 </div>
               </div>
-
               <button className="btn-primary" style={{ marginTop: "8px" }}
                 onClick={() => { const err = validateSlug(slug); if (err) { setSlugError(err); return; } setStep(2); }}>
                 Next →
@@ -309,12 +325,122 @@ export default function CreatePage() {
               <TemplateSelector value={templateId} onChange={setTemplateId} />
               <div style={{ display: "flex", gap: "10px" }}>
                 <button className="btn-secondary" onClick={() => setStep(3)}>← Back</button>
-                <button className="btn-primary" onClick={() => setStep(5)}>Review →</button>
+                <button className="btn-primary" onClick={() => setStep(5)}>Next →</button>
               </div>
             </div>
           )}
 
           {step === 5 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+              <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Extras <span style={{ fontSize: "13px", color: "#666", fontWeight: 400 }}>(all optional)</span></h2>
+
+              {contractAddress && (
+                <div className="glass" style={{ borderRadius: "10px", padding: "16px", border: "1px solid rgba(153,69,255,0.2)" }}>
+                  <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "12px", color: "#9945FF" }}>Live Data</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                      <input type="checkbox" checked={showTicker} onChange={(e) => setShowTicker(e.target.checked)} style={{ width: "auto" }} />
+                      <span style={{ fontSize: "14px" }}>Show live price ticker</span>
+                    </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                      <input type="checkbox" checked={showChart} onChange={(e) => setShowChart(e.target.checked)} style={{ width: "auto" }} />
+                      <span style={{ fontSize: "14px" }}>Show price chart</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {!contractAddress && (
+                <div style={{ fontSize: "12px", color: "#555", padding: "10px", background: "rgba(255,255,255,0.03)", borderRadius: "8px" }}>
+                  Add a contract address in Step 1 to enable live price ticker and chart
+                </div>
+              )}
+
+              <div className="glass" style={{ borderRadius: "10px", padding: "16px", border: "1px solid rgba(153,69,255,0.2)" }}>
+                <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "12px", color: "#9945FF" }}>Countdown Timer</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div>
+                    <label>Label <span style={{ color: "#555" }}>(e.g. Token Launch, Presale Ends)</span></label>
+                    <input value={countdownLabel} onChange={(e) => setCountdownLabel(e.target.value.slice(0, 30))} placeholder="Token Launch" />
+                  </div>
+                  <div>
+                    <label>Target Date & Time</label>
+                    <input type="datetime-local" value={countdownDate} onChange={(e) => setCountdownDate(e.target.value)} />
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass" style={{ borderRadius: "10px", padding: "16px", border: "1px solid rgba(153,69,255,0.2)" }}>
+                <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "12px", color: "#9945FF" }}>About & Team</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                  <div>
+                    <label>About text <span style={{ color: "#555" }}>(max 500 chars)</span></label>
+                    <textarea value={aboutText} onChange={(e) => setAboutText(e.target.value.slice(0, 500))}
+                      placeholder="Tell your story…" rows={3} style={{ resize: "vertical" }} />
+                    <div style={{ fontSize: "11px", color: "#555", marginTop: "2px" }}>{aboutText.length}/500</div>
+                  </div>
+                  <div>
+                    <label>Team Members <span style={{ color: "#555" }}>(max 4)</span></label>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" }}>
+                      {team.map((member, i) => (
+                        <div key={i} style={{ background: "rgba(255,255,255,0.03)", borderRadius: "8px", padding: "12px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                            <div style={{ fontSize: "12px", color: "#9945FF", fontWeight: 600 }}>Member {i + 1}</div>
+                            {team.length > 1 && (
+                              <button onClick={() => removeTeamMember(i)} style={{ background: "none", border: "none", color: "#ff6464", cursor: "pointer", fontSize: "12px" }}>Remove</button>
+                            )}
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                            <input value={member.name} onChange={(e) => updateTeamMember(i, "name", e.target.value)} placeholder="Name" />
+                            <input value={member.role} onChange={(e) => updateTeamMember(i, "role", e.target.value)} placeholder="Role (e.g. Developer)" />
+                            <input value={member.twitter} onChange={(e) => updateTeamMember(i, "twitter", e.target.value)} placeholder="Twitter @handle (optional)" />
+                          </div>
+                        </div>
+                      ))}
+                      {team.length < 4 && (
+                        <button className="btn-secondary" style={{ fontSize: "12px" }} onClick={addTeamMember}>+ Add Team Member</button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass" style={{ borderRadius: "10px", padding: "16px", border: "1px solid rgba(153,69,255,0.2)" }}>
+                <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "12px", color: "#9945FF" }}>Roadmap <span style={{ fontSize: "11px", color: "#555", fontWeight: 400 }}>(max 8 milestones)</span></div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {roadmap.map((item, i) => (
+                    <div key={i} style={{ background: "rgba(255,255,255,0.03)", borderRadius: "8px", padding: "12px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                        <div style={{ fontSize: "12px", color: "#9945FF", fontWeight: 600 }}>Milestone {i + 1}</div>
+                        {roadmap.length > 1 && (
+                          <button onClick={() => removeMilestone(i)} style={{ background: "none", border: "none", color: "#ff6464", cursor: "pointer", fontSize: "12px" }}>Remove</button>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <input value={item.title} onChange={(e) => updateMilestone(i, "title", e.target.value.slice(0, 40))} placeholder="Milestone title (max 40 chars)" />
+                        <input value={item.description} onChange={(e) => updateMilestone(i, "description", e.target.value.slice(0, 100))} placeholder="Short description (max 100 chars)" />
+                        <select value={item.status} onChange={(e) => updateMilestone(i, "status", e.target.value)}>
+                          <option value="upcoming">⚪ Upcoming</option>
+                          <option value="inprogress">🔵 In Progress</option>
+                          <option value="completed">✅ Completed</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
+                  {roadmap.length < 8 && (
+                    <button className="btn-secondary" style={{ fontSize: "12px" }} onClick={addMilestone}>+ Add Milestone</button>
+                  )}
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <button className="btn-secondary" onClick={() => setStep(4)}>← Back</button>
+                <button className="btn-primary" onClick={() => setStep(6)}>Review →</button>
+              </div>
+            </div>
+          )}
+
+          {step === 6 && (
             <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Almost there!</h2>
               <div style={{ fontSize: "13px", color: "#aaa" }}>
@@ -322,6 +448,11 @@ export default function CreatePage() {
                 {name && <div style={{ marginTop: "4px" }}>Name: <strong style={{ color: "#fff" }}>{name}</strong></div>}
                 {contractAddress && <div style={{ marginTop: "4px" }}>Contract: <strong style={{ color: "#9945FF", fontFamily: "monospace", fontSize: "11px" }}>{contractAddress.slice(0, 8)}…{contractAddress.slice(-8)}</strong></div>}
                 <div style={{ marginTop: "4px" }}>Template: <strong style={{ color: "#fff" }}>{templateId}</strong></div>
+                {showTicker && <div style={{ marginTop: "4px", color: "#14F195" }}>✓ Live price ticker enabled</div>}
+                {showChart && <div style={{ marginTop: "4px", color: "#14F195" }}>✓ Price chart enabled</div>}
+                {countdownDate && <div style={{ marginTop: "4px", color: "#14F195" }}>✓ Countdown timer set</div>}
+                {(aboutText || team.filter(m => m.name).length > 0) && <div style={{ marginTop: "4px", color: "#14F195" }}>✓ About section added</div>}
+                {roadmap.filter(m => m.title).length > 0 && <div style={{ marginTop: "4px", color: "#14F195" }}>✓ Roadmap with {roadmap.filter(m => m.title).length} milestones</div>}
               </div>
 
               <div style={{ padding: "12px 16px", borderRadius: "8px", background: "rgba(255,204,68,0.08)", border: "1px solid rgba(255,204,68,0.2)", fontSize: "12px", color: "#ffcc44" }}>
@@ -329,11 +460,11 @@ export default function CreatePage() {
               </div>
 
               <div style={{ padding: "12px 16px", borderRadius: "8px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", fontSize: "12px", color: "#888" }}>
-                📋 No illegal content — racism, explicit material or extremist content will result in permanent deletion. Crypto slang and meme culture are totally fine.
+                📋 No illegal content — racism, explicit material or extremist content will result in permanent deletion.
               </div>
 
               <div style={{ display: "flex", gap: "10px" }}>
-                <button className="btn-secondary" onClick={() => setStep(4)}>← Back</button>
+                <button className="btn-secondary" onClick={() => setStep(5)}>← Back</button>
                 <button className="btn-primary" style={{ flex: 1 }} onClick={handleSubmit} disabled={submitting}>
                   {submitting ? "Creating…" : "Let's go →"}
                 </button>
@@ -342,11 +473,11 @@ export default function CreatePage() {
           )}
         </div>
 
-        {step === 5 && (
+        {step === 6 && (
           <div>
             <div style={{ fontSize: "13px", color: "#888", marginBottom: "10px" }}>Preview</div>
             <PagePreview
-              data={{ name, description, avatar, banner, socials, contractAddress, buyLinks, tokenomics }}
+              data={{ name, description, avatar, banner, socials, contractAddress, buyLinks, tokenomics, showTicker, showChart, countdownDate, countdownLabel, aboutText, team, roadmap }}
               templateId={templateId}
             />
           </div>
@@ -357,8 +488,8 @@ export default function CreatePage() {
         <PaymentModal
           pageId={createdPage.id}
           slug={createdPage.slug}
-          onClose={() => { setShowPayment(false); navigate(`/manage/${createdPage.id}`); }}
-          onActivated={() => { setTimeout(() => navigate(`/manage/${createdPage.id}`), 2000); }}
+          onClose={() => { setShowPayment(false); navigate("/manage/" + createdPage.id); }}
+          onActivated={() => { setTimeout(() => navigate("/manage/" + createdPage.id), 2000); }}
         />
       )}
     </div>
