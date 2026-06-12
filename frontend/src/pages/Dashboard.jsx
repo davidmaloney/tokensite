@@ -54,11 +54,11 @@ export default function Dashboard() {
           SHILLit
         </div>
 
-        <div style={{ fontSize: "20px", color: "#ccc", maxWidth: "600px", lineHeight: 1.5, fontWeight: 600 }}>
+        <div style={{ fontSize: "20px", color: "#ccc", maxWidth: "800px", lineHeight: 1.5, fontWeight: 600 }}>
           Instant crypto landing pages for your token
         </div>
 
-        <div style={{ fontSize: "16px", fontWeight: 700, color: "#888", maxWidth: "600px", lineHeight: 1.6, marginTop: "-16px" }}>
+        <div style={{ fontSize: "16px", fontWeight: 700, color: "#888", maxWidth: "800px", lineHeight: 1.6, marginTop: "-16px" }}>
           One wallet. One page. The fastest setup on Solana.
         </div>
 
@@ -66,8 +66,7 @@ export default function Dashboard() {
           Looks based on any device.
         </div>
 
-        {/* Live example showcase */}
-        <div style={{ maxWidth: "600px", width: "100%", textAlign: "left" }}>
+        <div style={{ maxWidth: "800px", width: "100%", textAlign: "left" }}>
           <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
             SEE IT IN ACTION
           </div>
@@ -105,7 +104,7 @@ export default function Dashboard() {
             {!iframeError ? (
               <iframe
                 src="https://fomoyodl.shillit.fun"
-                style={{ width: "100%", height: "320px", border: "none", display: "block", background: "#0d0d0d" }}
+                style={{ width: "100%", height: "400px", border: "none", display: "block", background: "#0d0d0d" }}
                 title="Live example"
                 onError={() => setIframeError(true)}
                 sandbox="allow-scripts allow-same-origin"
@@ -113,7 +112,7 @@ export default function Dashboard() {
             ) : (
               <a href="https://fomoyodl.shillit.fun" target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
                 <div style={{
-                  height: "320px", display: "flex", flexDirection: "column",
+                  height: "400px", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: "12px",
                   background: "#0d0d0d", cursor: "pointer",
                 }}>
@@ -126,18 +125,20 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* How it works + Pricing panel */}
-        <div className="glass" style={{
-          borderRadius: "16px",
-          padding: "28px 24px",
-          maxWidth: "600px",
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
+          gap: "20px",
+          maxWidth: "800px",
           width: "100%",
-          textAlign: "left",
-          border: "1px solid rgba(153,69,255,0.2)",
-          boxShadow: "0 0 40px rgba(153,69,255,0.08)",
         }}>
-
-          <div style={{ marginBottom: "24px" }}>
+          <div className="glass" style={{
+            borderRadius: "16px",
+            padding: "28px 24px",
+            textAlign: "left",
+            border: "1px solid rgba(153,69,255,0.2)",
+            boxShadow: "0 0 40px rgba(153,69,255,0.08)",
+          }}>
             <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "16px" }}>
               HOW IT WORKS
             </div>
@@ -155,45 +156,44 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginBottom: "20px" }} />
-
-          <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
-            SIMPLE PRICING
+          <div className="glass" style={{
+            borderRadius: "16px",
+            padding: "28px 24px",
+            textAlign: "left",
+            border: "1px solid rgba(153,69,255,0.2)",
+            boxShadow: "0 0 40px rgba(153,69,255,0.08)",
+          }}>
+            <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
+              SIMPLE PRICING
+            </div>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <div style={{
+                flex: 1, minWidth: "120px",
+                background: "rgba(255,255,255,0.03)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "10px", padding: "14px", textAlign: "center",
+              }}>
+                <div style={{ fontSize: "11px", color: "#666", marginBottom: "6px" }}>TOP UP MONTHLY</div>
+                <div style={{ fontSize: "22px", fontWeight: 800, color: "#fff" }}>$4.99</div>
+              </div>
+              <div style={{
+                flex: 1, minWidth: "120px",
+                background: "rgba(153,69,255,0.08)",
+                border: "1px solid rgba(153,69,255,0.3)",
+                borderRadius: "10px", padding: "14px", textAlign: "center",
+              }}>
+                <div style={{ fontSize: "11px", color: "#9945FF", marginBottom: "6px" }}>TOP UP YEARLY</div>
+                <div style={{ fontSize: "22px", fontWeight: 800, color: "#fff" }}>$39</div>
+                <div style={{ fontSize: "10px", color: "#14F195", fontWeight: 700, marginTop: "4px" }}>SAVE 35%</div>
+              </div>
+            </div>
+            <div style={{ textAlign: "center", marginTop: "14px", display: "flex", flexDirection: "column", gap: "4px" }}>
+              <div style={{ fontSize: "12px", color: "#fff", fontWeight: 600 }}>Stays online while funded</div>
+              <div style={{ fontSize: "11px", color: "#fff" }}>Page deleted on expiry</div>
+            </div>
           </div>
-          <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
-            <div style={{
-              flex: 1, minWidth: "120px",
-              background: "rgba(255,255,255,0.03)",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: "10px", padding: "14px", textAlign: "center",
-            }}>
-              <div style={{ fontSize: "11px", color: "#666", marginBottom: "6px" }}>TOP UP MONTHLY</div>
-              <div style={{ fontSize: "22px", fontWeight: 800, color: "#fff" }}>$4.99</div>
-            </div>
-            <div style={{
-              flex: 1, minWidth: "120px",
-              background: "rgba(153,69,255,0.08)",
-              border: "1px solid rgba(153,69,255,0.3)",
-              borderRadius: "10px", padding: "14px", textAlign: "center",
-            }}>
-              <div style={{ fontSize: "11px", color: "#9945FF", marginBottom: "6px" }}>TOP UP YEARLY</div>
-              <div style={{ fontSize: "22px", fontWeight: 800, color: "#fff" }}>$39</div>
-              <div style={{ fontSize: "10px", color: "#14F195", fontWeight: 700, marginTop: "4px" }}>SAVE 35%</div>
-            </div>
-          </div>
-
-          <div style={{ textAlign: "center", marginTop: "14px", display: "flex", flexDirection: "column", gap: "4px" }}>
-            <div style={{ fontSize: "12px", color: "#fff", fontWeight: 600 }}>
-              Stays online while funded
-            </div>
-            <div style={{ fontSize: "11px", color: "#fff" }}>
-              Page deleted on expiry
-            </div>
-          </div>
-
         </div>
 
-        {/* Connect button */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
           <WalletMultiButton style={{
             background: "linear-gradient(135deg, #9945FF, #14F195)",
