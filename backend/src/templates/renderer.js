@@ -37,7 +37,6 @@ const SOCIAL_ICONS = {
   coingecko: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><circle cx="12" cy="12" r="10"/></svg>',
   coinmarketcap: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 0C5.374 0 0 5.374 0 12s5.374 12 12 12 12-5.374 12-12S18.626 0 12 0zm5.237 14.625a.735.735 0 01-1.037.046c-1.46-1.294-3.54-2.036-5.8-2.036s-4.34.742-5.8 2.036a.735.735 0 01-.991-1.083c1.755-1.558 4.13-2.453 6.79-2.453s5.036.895 6.79 2.453a.735.735 0 01.048.037z"/></svg>',
   pumpfun: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
-  custom: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>',
 };
 
 const BUY_ICONS = {
@@ -61,78 +60,39 @@ const TOKENOMICS_LABELS = {
   network: "Network",
 };
 
-function buildTickerBlock(contractAddress, accentColor) {
+// Ticker block — uses data attribute, JS lives in template HTML
+function buildTickerBlock(contractAddress) {
   if (!contractAddress) return "";
-  return "<div class=\"card ticker-card\">" +
+  return "<div class=\"card ticker-card\" data-ca=\"" + escapeHtml(contractAddress) + "\">" +
     "<div class=\"card-title\">Live Price</div>" +
-    "<div id=\"ticker-content\"><div class=\"ticker-loading\">Loading price data...</div></div>" +
-    "<script>" +
-    "(function(){" +
-    "var ca = '" + contractAddress + "';" +
-    "fetch('https://api.dexscreener.com/latest/dex/tokens/' + ca)" +
-    ".then(function(r){return r.json()})" +
-    ".then(function(d){" +
-    "var pairs = d && d.pairs && d.pairs.length > 0 ? d.pairs : null;" +
-    "if(!pairs){document.getElementById('ticker-content').innerHTML='<div class=\"ticker-na\">No price data found</div>';return;}" +
-    "var p = pairs[0];" +
-    "var price = p.priceUsd ? '$' + parseFloat(p.priceUsd).toFixed(8) : 'N/A';" +
-    "var change = p.priceChange && p.priceChange.h24 ? p.priceChange.h24 : null;" +
-    "var changeHtml = change !== null ? '<span class=\"ticker-change ' + (change >= 0 ? 'positive' : 'negative') + '\">' + (change >= 0 ? '+' : '') + parseFloat(change).toFixed(2) + '%</span>' : '';" +
-    "var mcap = p.marketCap ? '$' + Number(p.marketCap).toLocaleString() : 'N/A';" +
-    "var vol = p.volume && p.volume.h24 ? '$' + Number(p.volume.h24).toLocaleString() : 'N/A';" +
-    "document.getElementById('ticker-content').innerHTML = '<div class=\"ticker-price\">' + price + ' ' + changeHtml + '</div><div class=\"ticker-stats\"><span>MCap: ' + mcap + '</span><span>Vol 24h: ' + vol + '</span></div>';" +
-    "}).catch(function(){document.getElementById('ticker-content').innerHTML='<div class=\"ticker-na\">Price data unavailable</div>';});" +
-    "})();" +
-    "</script>" +
+    "<div class=\"ticker-content\"><div class=\"ticker-loading\">Loading price data...</div></div>" +
     "</div>";
 }
 
+// Chart block — clean iframe only, no script needed
 function buildChartBlock(contractAddress) {
   if (!contractAddress) return "";
   return "<div class=\"card chart-card\">" +
     "<div class=\"card-title\">Price Chart</div>" +
-    "<iframe src=\"https://dexscreener.com/solana/" + contractAddress + "?embed=1&theme=dark&trades=0&info=0\" " +
+    "<iframe src=\"https://dexscreener.com/solana/" + escapeHtml(contractAddress) + "?embed=1&theme=dark&trades=0&info=0\" " +
     "style=\"width:100%;height:400px;border:none;border-radius:8px;\" " +
-    "allowfullscreen></iframe>" +
+    "loading=\"lazy\" allowfullscreen></iframe>" +
     "</div>";
 }
 
-function buildCountdownBlock(countdown, accentColor) {
+function buildCountdownBlock(countdown) {
   if (!countdown || !countdown.date) return "";
-  var label = countdown.label || "Countdown";
+  var label = escapeHtml(countdown.label || "Countdown");
   var targetDate = new Date(countdown.date).getTime();
   if (isNaN(targetDate)) return "";
-  return "<div class=\"card countdown-card\">" +
-    "<div class=\"card-title\">" + escapeHtml(label) + "</div>" +
-    "<div class=\"countdown-grid\" id=\"countdown-grid\">" +
-    "<div class=\"countdown-item\"><div class=\"countdown-num\" id=\"cd-days\">--</div><div class=\"countdown-label\">Days</div></div>" +
-    "<div class=\"countdown-item\"><div class=\"countdown-num\" id=\"cd-hours\">--</div><div class=\"countdown-label\">Hours</div></div>" +
-    "<div class=\"countdown-item\"><div class=\"countdown-num\" id=\"cd-mins\">--</div><div class=\"countdown-label\">Mins</div></div>" +
-    "<div class=\"countdown-item\"><div class=\"countdown-num\" id=\"cd-secs\">--</div><div class=\"countdown-label\">Secs</div></div>" +
+  return "<div class=\"card countdown-card\" data-target=\"" + targetDate + "\">" +
+    "<div class=\"card-title\">" + label + "</div>" +
+    "<div class=\"countdown-grid\">" +
+    "<div class=\"countdown-item\"><div class=\"countdown-num cd-days\">--</div><div class=\"countdown-label\">Days</div></div>" +
+    "<div class=\"countdown-item\"><div class=\"countdown-num cd-hours\">--</div><div class=\"countdown-label\">Hours</div></div>" +
+    "<div class=\"countdown-item\"><div class=\"countdown-num cd-mins\">--</div><div class=\"countdown-label\">Mins</div></div>" +
+    "<div class=\"countdown-item\"><div class=\"countdown-num cd-secs\">--</div><div class=\"countdown-label\">Secs</div></div>" +
     "</div>" +
-    "<script>" +
-    "(function(){" +
-    "var target = " + targetDate + ";" +
-    "function update(){" +
-    "var now = Date.now();" +
-    "var diff = target - now;" +
-    "if(diff <= 0){" +
-    "document.getElementById('countdown-grid').innerHTML='<div class=\"countdown-launched\">🚀 Launched!</div>';" +
-    "return;" +
-    "}" +
-    "var d = Math.floor(diff/86400000);" +
-    "var h = Math.floor((diff%86400000)/3600000);" +
-    "var m = Math.floor((diff%3600000)/60000);" +
-    "var s = Math.floor((diff%60000)/1000);" +
-    "document.getElementById('cd-days').textContent = d;" +
-    "document.getElementById('cd-hours').textContent = String(h).padStart(2,'0');" +
-    "document.getElementById('cd-mins').textContent = String(m).padStart(2,'0');" +
-    "document.getElementById('cd-secs').textContent = String(s).padStart(2,'0');" +
-    "}" +
-    "update();" +
-    "setInterval(update, 1000);" +
-    "})();" +
-    "</script>" +
     "</div>";
 }
 
@@ -157,7 +117,7 @@ function buildAboutBlock(about) {
         "<div class=\"team-info\">" +
         "<div class=\"team-name\">" + escapeHtml(member.name) + "</div>" +
         (member.role ? "<div class=\"team-role\">" + escapeHtml(member.role) + "</div>" : "") +
-        (member.twitter ? "<a href=\"https://twitter.com/" + escapeHtml(member.twitter.replace("@","")) + "\" target=\"_blank\" class=\"team-twitter\">@" + escapeHtml(member.twitter.replace("@","")) + "</a>" : "") +
+        (member.twitter ? "<a href=\"https://x.com/" + escapeHtml(member.twitter.replace("@", "")) + "\" target=\"_blank\" class=\"team-twitter\">@" + escapeHtml(member.twitter.replace("@", "")) + "</a>" : "") +
         "</div></div>";
     });
     html += "</div>";
@@ -167,21 +127,18 @@ function buildAboutBlock(about) {
   return html;
 }
 
-function buildRoadmapBlock(roadmap, accentColor) {
+function buildRoadmapBlock(roadmap) {
   if (!roadmap || roadmap.length === 0) return "";
 
   var html = "<div class=\"card roadmap-card\"><div class=\"card-title\">Roadmap</div><div class=\"roadmap-list\">";
 
-  roadmap.forEach(function(item, i) {
+  roadmap.forEach(function(item) {
     if (!item.title) return;
     var status = item.status || "upcoming";
-    var statusClass = "status-" + status;
-    var icon = status === "completed" ? "✓" : status === "inprogress" ? "" : "";
-    var dotClass = status === "inprogress" ? "dot-pulse" : "";
 
-    html += "<div class=\"roadmap-item " + statusClass + "\">" +
-      "<div class=\"roadmap-dot " + dotClass + "\">" +
-      (status === "completed" ? "<span class=\"dot-check\">✓</span>" : "<span class=\"dot-inner\"></span>") +
+    html += "<div class=\"roadmap-item status-" + status + "\">" +
+      "<div class=\"roadmap-dot\">" +
+      (status === "completed" ? "<span class=\"dot-check\">&#10003;</span>" : "<span class=\"dot-inner\"></span>") +
       "</div>" +
       "<div class=\"roadmap-content\">" +
       "<div class=\"roadmap-title\">" + escapeHtml(item.title) + "</div>" +
@@ -207,14 +164,12 @@ export function renderPage(page) {
     content = JSON.parse(page.content_json || "{}");
   } catch {}
 
-  const accentColor = templateId === "template_3" ? "#FF007A" : templateId === "template_4" ? "#1E90FF" : templateId === "template_2" ? "#14a37f" : "#9945FF";
-
   const socials = content.socials || {};
   const socialHtml = Object.entries(socials)
     .filter(([, url]) => url && url.trim())
     .map(([key, url]) =>
       "<a href=\"" + escapeHtml(url) + "\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"social-link social-" + key + "\">" +
-      "<span class=\"social-icon\">" + (SOCIAL_ICONS[key] || SOCIAL_ICONS.custom) + "</span>" +
+      "<span class=\"social-icon\">" + (SOCIAL_ICONS[key] || SOCIAL_ICONS.github) + "</span>" +
       "<span>" + escapeHtml(key) + "</span></a>"
     ).join("\n");
 
@@ -231,8 +186,8 @@ export function renderPage(page) {
   const contractHtml = contractAddress
     ? "<div class=\"contract-block\">" +
       "<span class=\"contract-label\">CA</span>" +
-      "<span class=\"contract-address\" id=\"ca-address\">" + escapeHtml(contractAddress) + "</span>" +
-      "<button class=\"copy-btn\" onclick=\"navigator.clipboard.writeText('" + escapeHtml(contractAddress) + "').then(()=>{this.textContent='✓';setTimeout(()=>{this.textContent='Copy'},1500)})\">Copy</button>" +
+      "<span class=\"contract-address\">" + escapeHtml(contractAddress) + "</span>" +
+      "<button class=\"copy-btn\" onclick=\"navigator.clipboard.writeText('" + escapeHtml(contractAddress) + "').then(function(){this.textContent='&#10003;';var b=this;setTimeout(function(){b.textContent='Copy'},1500)}.bind(this))\">Copy</button>" +
       "</div>"
     : "";
 
@@ -257,11 +212,11 @@ export function renderPage(page) {
     ? "<div class=\"description-block\"><p class=\"description\">" + escapeHtml(content.description) + "</p></div>"
     : "";
 
-  const tickerHtml = content.showTicker && contractAddress ? buildTickerBlock(contractAddress, accentColor) : "";
+  const tickerHtml = content.showTicker && contractAddress ? buildTickerBlock(contractAddress) : "";
   const chartHtml = content.showChart && contractAddress ? buildChartBlock(contractAddress) : "";
-  const countdownHtml = buildCountdownBlock(content.countdown, accentColor);
+  const countdownHtml = buildCountdownBlock(content.countdown);
   const aboutHtml = buildAboutBlock(content.about);
-  const roadmapHtml = buildRoadmapBlock(content.roadmap, accentColor);
+  const roadmapHtml = buildRoadmapBlock(content.roadmap);
 
   let html = tmpl.html;
 
@@ -271,7 +226,7 @@ export function renderPage(page) {
 
   html = html.replace(/\{\{AVATAR_BLOCK\}\}/g, content.avatar
     ? "<img src=\"" + escapeHtml(content.avatar) + "\" alt=\"avatar\" class=\"avatar-img\" />"
-    : "<div class=\"avatar-placeholder\">🪙</div>");
+    : "<div class=\"avatar-placeholder\">&#127752;</div>");
 
   html = html.replace(/\{\{BANNER_BLOCK\}\}/g, content.banner
     ? "<img src=\"" + escapeHtml(content.banner) + "\" alt=\"banner\" class=\"banner-img\" />"
