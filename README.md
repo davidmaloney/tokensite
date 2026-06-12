@@ -1,5 +1,3 @@
-Got it! Here is the complete updated README with the new security section added and everything else kept exactly as you have it:
-
 SHILLit — Solana Crypto Landing Pages
 
 https://shillit.fun
