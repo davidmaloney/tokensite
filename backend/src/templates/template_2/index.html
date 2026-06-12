@@ -38,5 +38,51 @@
       <a href="https://report.shillit.fun" target="_blank" rel="noreferrer" style="color:rgba(255,255,255,0.15);text-decoration:none;">Report →</a>
     </div>
   </div>
+  <script>
+    // Countdown timers
+    document.querySelectorAll('.countdown-card').forEach(function(card) {
+      var target = parseInt(card.getAttribute('data-target'));
+      if (!target) return;
+      function update() {
+        var diff = target - Date.now();
+        if (diff <= 0) {
+          card.querySelector('.countdown-grid').innerHTML = '<div class="countdown-launched">Launched!</div>';
+          return;
+        }
+        var d = Math.floor(diff / 86400000);
+        var h = Math.floor((diff % 86400000) / 3600000);
+        var m = Math.floor((diff % 3600000) / 60000);
+        var s = Math.floor((diff % 60000) / 1000);
+        var dn = card.querySelector('.cd-days'); if (dn) dn.textContent = d;
+        var hn = card.querySelector('.cd-hours'); if (hn) hn.textContent = String(h).padStart(2,'0');
+        var mn = card.querySelector('.cd-mins'); if (mn) mn.textContent = String(m).padStart(2,'0');
+        var sn = card.querySelector('.cd-secs'); if (sn) sn.textContent = String(s).padStart(2,'0');
+      }
+      update();
+      setInterval(update, 1000);
+    });
+
+    // Price ticker
+    document.querySelectorAll('.ticker-card').forEach(function(card) {
+      var ca = card.getAttribute('data-ca');
+      if (!ca) return;
+      var content = card.querySelector('.ticker-content');
+      if (!content) return;
+      fetch('https://api.dexscreener.com/latest/dex/tokens/' + ca)
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          var pairs = d && d.pairs && d.pairs.length > 0 ? d.pairs : null;
+          if (!pairs) { content.innerHTML = '<div class="ticker-na">No price data found</div>'; return; }
+          var p = pairs[0];
+          var price = p.priceUsd ? '$' + parseFloat(p.priceUsd).toFixed(8) : 'N/A';
+          var change = p.priceChange && p.priceChange.h24 !== undefined ? p.priceChange.h24 : null;
+          var changeHtml = change !== null ? '<span class="ticker-change ' + (change >= 0 ? 'positive' : 'negative') + '">' + (change >= 0 ? '+' : '') + parseFloat(change).toFixed(2) + '%</span>' : '';
+          var mcap = p.marketCap ? '$' + Number(p.marketCap).toLocaleString() : 'N/A';
+          var vol = p.volume && p.volume.h24 ? '$' + Number(p.volume.h24).toLocaleString() : 'N/A';
+          content.innerHTML = '<div class="ticker-price">' + price + ' ' + changeHtml + '</div><div class="ticker-stats"><span>MCap: ' + mcap + '</span><span>Vol 24h: ' + vol + '</span></div>';
+        })
+        .catch(function() { content.innerHTML = '<div class="ticker-na">Price data unavailable</div>'; });
+    });
+  </script>
 </body>
 </html>
