@@ -43,6 +43,15 @@ export default function ManagePage() {
   const [editBanner, setEditBanner] = useState(null);
   const [editTemplateId, setEditTemplateId] = useState("template_1");
 
+  // Extras state
+  const [editShowTicker, setEditShowTicker] = useState(false);
+  const [editShowChart, setEditShowChart] = useState(false);
+  const [editCountdownDate, setEditCountdownDate] = useState("");
+  const [editCountdownLabel, setEditCountdownLabel] = useState("");
+  const [editAboutText, setEditAboutText] = useState("");
+  const [editTeam, setEditTeam] = useState([{ name: "", role: "", twitter: "" }]);
+  const [editRoadmap, setEditRoadmap] = useState([{ title: "", description: "", status: "upcoming" }]);
+
   useEffect(() => {
     fetchPage();
   }, [pageId]);
@@ -50,7 +59,7 @@ export default function ManagePage() {
   const fetchPage = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/pages/${pageId}`);
+      const res = await axios.get("/api/pages/" + pageId);
       const p = res.data.page;
       setPage(p);
       const c = JSON.parse(p.content_json || "{}");
@@ -61,33 +70,70 @@ export default function ManagePage() {
       setEditTokenomics(c.tokenomics || {});
       setEditSocials(c.socials || {});
       setEditTemplateId(p.template_id || "template_1");
-      if (c.avatar) setEditAvatar({ preview: `${window.location.origin}${c.avatar}`, file: null });
-      if (c.banner) setEditBanner({ preview: `${window.location.origin}${c.banner}`, file: null });
+      setEditShowTicker(c.showTicker || false);
+      setEditShowChart(c.showChart || false);
+      setEditCountdownDate(c.countdown?.date ? c.countdown.date.slice(0, 16) : "");
+      setEditCountdownLabel(c.countdown?.label || "");
+      setEditAboutText(c.about?.text || "");
+      setEditTeam(c.about?.team?.length > 0 ? c.about.team : [{ name: "", role: "", twitter: "" }]);
+      setEditRoadmap(c.roadmap?.length > 0 ? c.roadmap : [{ title: "", description: "", status: "upcoming" }]);
+      if (c.avatar) setEditAvatar({ preview: window.location.origin + c.avatar, file: null });
+      if (c.banner) setEditBanner({ preview: window.location.origin + c.banner, file: null });
     } catch {
       navigate("/");
     }
     setLoading(false);
   };
 
+  const addTeamMember = () => {
+    if (editTeam.length < 4) setEditTeam([...editTeam, { name: "", role: "", twitter: "" }]);
+  };
+
+  const updateTeamMember = (i, field, val) => {
+    const updated = [...editTeam];
+    updated[i][field] = val;
+    setEditTeam(updated);
+  };
+
+  const removeTeamMember = (i) => {
+    setEditTeam(editTeam.filter((_, idx) => idx !== i));
+  };
+
+  const addMilestone = () => {
+    if (editRoadmap.length < 8) setEditRoadmap([...editRoadmap, { title: "", description: "", status: "upcoming" }]);
+  };
+
+  const updateMilestone = (i, field, val) => {
+    const updated = [...editRoadmap];
+    updated[i][field] = val;
+    setEditRoadmap(updated);
+  };
+
+  const removeMilestone = (i) => {
+    setEditRoadmap(editRoadmap.filter((_, idx) => idx !== i));
+  };
+
   const handleSave = async () => {
     setSaving(true);
     setSaveMessage("");
     try {
-      const filteredBuyLinks = Object.fromEntries(
-        Object.entries(editBuyLinks).filter(([, v]) => v && v.trim())
-      );
-      const filteredTokenomics = Object.fromEntries(
-        Object.entries(editTokenomics).filter(([, v]) => v && v.trim())
-      );
+      const filteredBuyLinks = Object.fromEntries(Object.entries(editBuyLinks).filter(([, v]) => v && v.trim()));
+      const filteredTokenomics = Object.fromEntries(Object.entries(editTokenomics).filter(([, v]) => v && v.trim()));
+      const filteredTeam = editTeam.filter((m) => m.name && m.name.trim());
+      const filteredRoadmap = editRoadmap.filter((m) => m.title && m.title.trim());
+
       const content = {};
       if (editName) content.name = editName;
       if (editDescription) content.description = editDescription;
       if (editContractAddress) content.contractAddress = editContractAddress;
       if (Object.keys(filteredBuyLinks).length > 0) content.buyLinks = filteredBuyLinks;
       if (Object.keys(filteredTokenomics).length > 0) content.tokenomics = filteredTokenomics;
-      content.socials = Object.fromEntries(
-        Object.entries(editSocials).filter(([, v]) => v && v.trim())
-      );
+      content.socials = Object.fromEntries(Object.entries(editSocials).filter(([, v]) => v && v.trim()));
+      if (editContractAddress && editShowTicker) content.showTicker = true;
+      if (editContractAddress && editShowChart) content.showChart = true;
+      if (editCountdownDate) content.countdown = { date: editCountdownDate, label: editCountdownLabel || "Countdown" };
+      if (editAboutText.trim() || filteredTeam.length > 0) content.about = { text: editAboutText, team: filteredTeam };
+      if (filteredRoadmap.length > 0) content.roadmap = filteredRoadmap;
 
       const existing = JSON.parse(page.content_json || "{}");
 
@@ -111,17 +157,16 @@ export default function ManagePage() {
         content.banner = existing.banner;
       }
 
-      await axios.put(`/api/pages/${pageId}`, {
+      await axios.put("/api/pages/" + pageId, {
         walletAddress: publicKey.toString(),
         templateId: editTemplateId,
         content,
       });
 
       setSaveMessage("Saved successfully!");
-      setShowEdit(false);
       fetchPage();
     } catch (err) {
-      setSaveMessage(err.response?.data?.error || "Failed to save.");
+      setSaveMessage(err.response?.data?.error || "Save failed.");
     }
     setSaving(false);
   };
@@ -143,7 +188,7 @@ export default function ManagePage() {
   const ownerAction = async (action) => {
     setOwnerMessage("");
     try {
-      const res = await axios.post(`/api/admin/page-action`, { pageId, action, code: ownerCode });
+      const res = await axios.post("/api/admin/page-action", { pageId, action, code: ownerCode });
       setOwnerMessage(res.data.message || "Done.");
       fetchPage();
     } catch (e) {
@@ -213,24 +258,112 @@ export default function ManagePage() {
               {TOKENOMICS_FIELDS.map(({ key, label, hint }) => (
                 <div key={key}>
                   <div style={{ fontSize: "11px", color: "#9945FF", marginBottom: "3px", fontWeight: 600 }}>{label}</div>
-                  <input
-                    value={editTokenomics[key] || ""}
-                    onChange={(e) => setEditTokenomics({ ...editTokenomics, [key]: e.target.value })}
-                    placeholder={hint}
-                  />
+                  <input value={editTokenomics[key] || ""} onChange={(e) => setEditTokenomics({ ...editTokenomics, [key]: e.target.value })} placeholder={hint} />
                 </div>
               ))}
             </div>
           </div>
 
           <SocialLinksInput value={editSocials} onChange={setEditSocials} />
-
           <ImageUpload label="Avatar" hint="Recommended 400×400px · Max 2MB" value={editAvatar} onChange={setEditAvatar} />
           <ImageUpload label="Banner" hint="Recommended 1200×300px · Max 5MB" value={editBanner} onChange={setEditBanner} />
 
           <div>
             <label>Template</label>
             <TemplateSelector value={editTemplateId} onChange={setEditTemplateId} />
+          </div>
+
+          {editContractAddress && (
+            <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
+              <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "12px", color: "#9945FF" }}>Live Data</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                  <input type="checkbox" checked={editShowTicker} onChange={(e) => setEditShowTicker(e.target.checked)} style={{ width: "auto" }} />
+                  <span style={{ fontSize: "14px" }}>Show live price ticker</span>
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                  <input type="checkbox" checked={editShowChart} onChange={(e) => setEditShowChart(e.target.checked)} style={{ width: "auto" }} />
+                  <span style={{ fontSize: "14px" }}>Show price chart</span>
+                </label>
+              </div>
+            </div>
+          )}
+
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
+            <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "12px", color: "#9945FF" }}>Countdown Timer</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div>
+                <label>Label</label>
+                <input value={editCountdownLabel} onChange={(e) => setEditCountdownLabel(e.target.value.slice(0, 30))} placeholder="Token Launch" />
+              </div>
+              <div>
+                <label>Target Date & Time</label>
+                <input type="datetime-local" value={editCountdownDate} onChange={(e) => setEditCountdownDate(e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
+            <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "12px", color: "#9945FF" }}>About & Team</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div>
+                <label>About text <span style={{ color: "#555" }}>(max 500 chars)</span></label>
+                <textarea value={editAboutText} onChange={(e) => setEditAboutText(e.target.value.slice(0, 500))}
+                  placeholder="Tell your story…" rows={3} style={{ resize: "vertical" }} />
+                <div style={{ fontSize: "11px", color: "#555", marginTop: "2px" }}>{editAboutText.length}/500</div>
+              </div>
+              <div>
+                <label>Team Members <span style={{ color: "#555" }}>(max 4)</span></label>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "8px" }}>
+                  {editTeam.map((member, i) => (
+                    <div key={i} style={{ background: "rgba(255,255,255,0.03)", borderRadius: "8px", padding: "12px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                        <div style={{ fontSize: "12px", color: "#9945FF", fontWeight: 600 }}>Member {i + 1}</div>
+                        {editTeam.length > 1 && (
+                          <button onClick={() => removeTeamMember(i)} style={{ background: "none", border: "none", color: "#ff6464", cursor: "pointer", fontSize: "12px" }}>Remove</button>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                        <input value={member.name} onChange={(e) => updateTeamMember(i, "name", e.target.value)} placeholder="Name" />
+                        <input value={member.role} onChange={(e) => updateTeamMember(i, "role", e.target.value)} placeholder="Role" />
+                        <input value={member.twitter} onChange={(e) => updateTeamMember(i, "twitter", e.target.value)} placeholder="Twitter @handle (optional)" />
+                      </div>
+                    </div>
+                  ))}
+                  {editTeam.length < 4 && (
+                    <button className="btn-secondary" style={{ fontSize: "12px" }} onClick={addTeamMember}>+ Add Team Member</button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "16px" }}>
+            <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "12px", color: "#9945FF" }}>Roadmap <span style={{ fontSize: "11px", color: "#555", fontWeight: 400 }}>(max 8)</span></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {editRoadmap.map((item, i) => (
+                <div key={i} style={{ background: "rgba(255,255,255,0.03)", borderRadius: "8px", padding: "12px", border: "1px solid rgba(255,255,255,0.08)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                    <div style={{ fontSize: "12px", color: "#9945FF", fontWeight: 600 }}>Milestone {i + 1}</div>
+                    {editRoadmap.length > 1 && (
+                      <button onClick={() => removeMilestone(i)} style={{ background: "none", border: "none", color: "#ff6464", cursor: "pointer", fontSize: "12px" }}>Remove</button>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <input value={item.title} onChange={(e) => updateMilestone(i, "title", e.target.value.slice(0, 40))} placeholder="Milestone title" />
+                    <input value={item.description} onChange={(e) => updateMilestone(i, "description", e.target.value.slice(0, 100))} placeholder="Short description" />
+                    <select value={item.status} onChange={(e) => updateMilestone(i, "status", e.target.value)}>
+                      <option value="upcoming">⚪ Upcoming</option>
+                      <option value="inprogress">🔵 In Progress</option>
+                      <option value="completed">✅ Completed</option>
+                    </select>
+                  </div>
+                </div>
+              ))}
+              {editRoadmap.length < 8 && (
+                <button className="btn-secondary" style={{ fontSize: "12px" }} onClick={addMilestone}>+ Add Milestone</button>
+              )}
+            </div>
           </div>
 
           {saveMessage && (
@@ -281,7 +414,7 @@ export default function ManagePage() {
 
       <div style={{ display: "flex", gap: "10px", marginBottom: "24px", flexWrap: "wrap" }}>
         {isActive && (
-          <a href={`https://${page.slug}.${DOMAIN}`} target="_blank" rel="noreferrer">
+          <a href={"https://" + page.slug + "." + DOMAIN} target="_blank" rel="noreferrer">
             <button className="btn-primary">View Live →</button>
           </a>
         )}
