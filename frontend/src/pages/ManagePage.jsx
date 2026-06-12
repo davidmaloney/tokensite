@@ -19,9 +19,27 @@ const TOKENOMICS_FIELDS = [
 ];
 
 const BUY_LINK_TYPES = [
-  { key: "raydium", label: "Raydium", prefix: "https://raydium.io/swap/?inputMint=sol&outputMint=", placeholder: "your-token-mint-address" },
-  { key: "jupiter", label: "Jupiter", prefix: "https://jup.ag/swap/SOL-", placeholder: "your-token-mint-address" },
-  { key: "pumpfun", label: "Pump.fun", prefix: "https://pump.fun/coin/", placeholder: "your-token-address" },
+  {
+    key: "raydium",
+    label: "Raydium",
+    prefix: "https://raydium.io/swap/?inputMint=sol&outputMint=",
+    placeholder: "CA",
+    hint: "Enter your token CA",
+  },
+  {
+    key: "jupiter",
+    label: "Jupiter",
+    prefix: "https://jup.ag/swap/SOL-",
+    placeholder: "CA",
+    hint: "Enter your token CA",
+  },
+  {
+    key: "pumpfun",
+    label: "Pump.fun",
+    prefix: "https://pump.fun/coin/",
+    placeholder: "CA",
+    hint: "Enter your token CA",
+  },
 ];
 
 export default function ManagePage() {
@@ -255,21 +273,40 @@ export default function ManagePage() {
 
           <div>
             <label>Buy Links <span style={{ color: "#555" }}>(optional)</span></label>
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "6px" }}>
-              {BUY_LINK_TYPES.map(({ key, label, prefix, placeholder }) => (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "6px" }}>
+              {BUY_LINK_TYPES.map(({ key, label, prefix, placeholder, hint }) => (
                 <div key={key}>
-                  <div style={{ fontSize: "11px", color: "#14F195", marginBottom: "3px", fontWeight: 600 }}>{label}</div>
-                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                    <span style={{ position: "absolute", left: "10px", fontSize: "10px", color: "#555", pointerEvents: "none", whiteSpace: "nowrap", overflow: "hidden", maxWidth: "60%" }}>
+                  <div style={{ fontSize: "12px", color: "#14F195", marginBottom: "4px", fontWeight: 600 }}>{label}</div>
+                  <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", overflow: "hidden" }}>
+                    <span style={{
+                      padding: "10px 10px 10px 12px",
+                      fontSize: "10px",
+                      color: "#555",
+                      whiteSpace: "nowrap",
+                      borderRight: "1px solid rgba(255,255,255,0.08)",
+                      flexShrink: 0,
+                      maxWidth: "200px",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}>
                       {prefix}
                     </span>
                     <input
                       value={getBuyLinkDisplay(key)}
                       onChange={(e) => setEditBuyLinkDisplay(key, e.target.value)}
                       placeholder={placeholder}
-                      style={{ paddingLeft: "210px", fontSize: "11px" }}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        flex: 1,
+                        padding: "10px 12px",
+                        fontSize: "13px",
+                        outline: "none",
+                        color: "#fff",
+                      }}
                     />
                   </div>
+                  <div style={{ fontSize: "11px", color: "#555", marginTop: "4px", paddingLeft: "2px" }}>{hint}</div>
                 </div>
               ))}
             </div>
