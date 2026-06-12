@@ -59,7 +59,11 @@ export default function Dashboard() {
         </div>
 
         <div style={{ fontSize: "16px", fontWeight: 700, color: "#888", maxWidth: "600px", lineHeight: 1.6, marginTop: "-16px" }}>
-          One wallet. One page. Yours in seconds.
+          One wallet. One page. The fastest setup on Solana.
+        </div>
+
+        <div style={{ fontSize: "13px", fontWeight: 600, color: "#555", marginTop: "-20px" }}>
+          Looks based on any device.
         </div>
 
         {/* Live example showcase */}
@@ -141,6 +145,7 @@ export default function Dashboard() {
               {[
                 "Connect your Solana wallet",
                 "Pay as you go, leave when you're done",
+                "No hidden costs. No complicated setup. Ever.",
               ].map((text) => (
                 <div key={text} style={{ display: "flex", alignItems: "center", gap: "14px" }}>
                   <span style={{ fontSize: "18px", color: "#9945FF", lineHeight: 1, flexShrink: 0 }}>●</span>
