@@ -18,12 +18,12 @@ For projects that do grow — the yearly plan at $39 keeps costs minimal while t
 
 How It Works
 
-	1.	Connect your Solana wallet — Phantom, Solflare or Backpack
-	2.	Choose your slug — becomes yourtoken.shillit.fun
-	3.	Add your token details — project name and description, contract address with one-click copy button, buy links for Raydium, Jupiter and Pump.fun, tokenomics including supply, tax, liquidity, launch date and network, social links for Twitter, Telegram, Discord and more, avatar and banner images
-	4.	Pick a template — 4 designs available
-	5.	Pay $4.99/month or $39/year in SOL
-	6.	Page is live instantly
+1.	Connect your Solana wallet — Phantom, Solflare or Backpack
+2.	Choose your slug — becomes yourtoken.shillit.fun
+3.	Add your token details — project name and description, contract address with one-click copy button, buy links for Raydium, Jupiter and Pump.fun, tokenomics including supply, tax, liquidity, launch date and network, social links for Twitter, Telegram, Discord and more, avatar and banner images
+4.	Pick a template — 4 designs available
+5.	Pay $4.99/month or $39/year in SOL
+6.	Page is live instantly
 
 Pricing
 
