@@ -18,6 +18,12 @@ const TOKENOMICS_FIELDS = [
   { key: "network", label: "Network", hint: "e.g. Solana" },
 ];
 
+const BUY_LINK_TYPES = [
+  { key: "raydium", label: "Raydium", prefix: "https://raydium.io/swap/?inputMint=sol&outputMint=", placeholder: "your-token-mint-address" },
+  { key: "jupiter", label: "Jupiter", prefix: "https://jup.ag/swap/SOL-", placeholder: "your-token-mint-address" },
+  { key: "pumpfun", label: "Pump.fun", prefix: "https://pump.fun/coin/", placeholder: "your-token-address" },
+];
+
 export default function ManagePage() {
   const { pageId } = useParams();
   const { publicKey } = useWallet();
@@ -43,7 +49,6 @@ export default function ManagePage() {
   const [editBanner, setEditBanner] = useState(null);
   const [editTemplateId, setEditTemplateId] = useState("template_1");
 
-  // Extras state
   const [editShowTicker, setEditShowTicker] = useState(false);
   const [editShowChart, setEditShowChart] = useState(false);
   const [editCountdownDate, setEditCountdownDate] = useState("");
@@ -83,6 +88,19 @@ export default function ManagePage() {
       navigate("/");
     }
     setLoading(false);
+  };
+
+  const getBuyLinkDisplay = (key) => {
+    const type = BUY_LINK_TYPES.find((t) => t.key === key);
+    if (!type) return editBuyLinks[key];
+    const full = editBuyLinks[key] || "";
+    return full.startsWith(type.prefix) ? full.slice(type.prefix.length) : full;
+  };
+
+  const setEditBuyLinkDisplay = (key, val) => {
+    const type = BUY_LINK_TYPES.find((t) => t.key === key);
+    if (!type) return;
+    setEditBuyLinks({ ...editBuyLinks, [key]: val ? type.prefix + val.replace(type.prefix, "") : "" });
   };
 
   const addTeamMember = () => {
@@ -237,16 +255,21 @@ export default function ManagePage() {
 
           <div>
             <label>Buy Links <span style={{ color: "#555" }}>(optional)</span></label>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "6px" }}>
-              {[
-                { key: "raydium", label: "Raydium", pl: "78px", placeholder: "https://raydium.io/swap/..." },
-                { key: "jupiter", label: "Jupiter", pl: "72px", placeholder: "https://jup.ag/swap/..." },
-                { key: "pumpfun", label: "Pump.fun", pl: "82px", placeholder: "https://pump.fun/..." },
-              ].map(({ key, label, pl, placeholder }) => (
-                <div key={key} style={{ position: "relative" }}>
-                  <span style={{ position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)", fontSize: "12px", color: "#14F195", pointerEvents: "none" }}>{label}</span>
-                  <input value={editBuyLinks[key]} onChange={(e) => setEditBuyLinks({ ...editBuyLinks, [key]: e.target.value })}
-                    placeholder={placeholder} style={{ paddingLeft: pl }} />
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "6px" }}>
+              {BUY_LINK_TYPES.map(({ key, label, prefix, placeholder }) => (
+                <div key={key}>
+                  <div style={{ fontSize: "11px", color: "#14F195", marginBottom: "3px", fontWeight: 600 }}>{label}</div>
+                  <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                    <span style={{ position: "absolute", left: "10px", fontSize: "10px", color: "#555", pointerEvents: "none", whiteSpace: "nowrap", overflow: "hidden", maxWidth: "60%" }}>
+                      {prefix}
+                    </span>
+                    <input
+                      value={getBuyLinkDisplay(key)}
+                      onChange={(e) => setEditBuyLinkDisplay(key, e.target.value)}
+                      placeholder={placeholder}
+                      style={{ paddingLeft: "210px", fontSize: "11px" }}
+                    />
+                  </div>
                 </div>
               ))}
             </div>
