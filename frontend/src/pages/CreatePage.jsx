@@ -43,7 +43,6 @@ export default function CreatePage() {
   const [templateId, setTemplateId] = useState("template_1");
   const [slugError, setSlugError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [progressText, setProgressText] = useState("");
   const [createdPage, setCreatedPage] = useState(null);
   const [showPayment, setShowPayment] = useState(false);
 
@@ -182,18 +181,12 @@ export default function CreatePage() {
     const err = validateSlug(slug);
     if (err) { setSlugError(err); return; }
     setSubmitting(true);
-    setProgressText("");
 
     try {
-      const hasImages = avatar?.file || banner?.file;
-      if (hasImages) setProgressText("Uploading images...");
-
       const [avatarUrl, bannerUrl] = await Promise.all([
         uploadImage(avatar, "avatar"),
         uploadImage(banner, "banner"),
       ]);
-
-      setProgressText("Creating your page...");
 
       const filteredBuyLinks = Object.fromEntries(Object.entries(buyLinks).filter(([, v]) => v && v.trim()));
       const filteredTokenomics = Object.fromEntries(Object.entries(tokenomics).filter(([, v]) => v && v.trim()));
@@ -222,12 +215,9 @@ export default function CreatePage() {
         content,
       });
 
-      // Open payment modal BEFORE clearing progress text so user sees the status
       setCreatedPage(res.data.page);
       setShowPayment(true);
-      setProgressText("");
     } catch (err) {
-      setProgressText("");
       alert(err.response?.data?.error || "Something went wrong. Please try again.");
     }
     setSubmitting(false);
@@ -535,11 +525,6 @@ export default function CreatePage() {
                   {submitting ? "Creating…" : "Let's go →"}
                 </button>
               </div>
-              {progressText && (
-                <div style={{ fontSize: "12px", color: "#9945FF", textAlign: "center", marginTop: "-8px" }}>
-                  {progressText}
-                </div>
-              )}
             </div>
           )}
         </div>
