@@ -17,13 +17,6 @@ const BUY_LINK_TYPES = [
     hint: "Enter your token CA",
   },
   {
-    key: "jupiter",
-    label: "Jupiter",
-    prefix: "https://jup.ag/?inputMint=So11111111111111111111111111111111111111112&outputMint=",
-    placeholder: "CA",
-    hint: "Enter your token CA",
-  },
-  {
     key: "pumpfun",
     label: "Pump.fun",
     prefix: "https://pump.fun/coin/",
@@ -42,7 +35,7 @@ export default function CreatePage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [contractAddress, setContractAddress] = useState("");
-  const [buyLinks, setBuyLinks] = useState({ raydium: "", jupiter: "", pumpfun: "" });
+  const [buyLinks, setBuyLinks] = useState({ raydium: "", pumpfun: "" });
   const [tokenomics, setTokenomics] = useState({});
   const [avatar, setAvatar] = useState(null);
   const [banner, setBanner] = useState(null);
@@ -192,7 +185,6 @@ export default function CreatePage() {
     setProgressText("");
 
     try {
-      // Upload avatar and banner in parallel
       const hasImages = avatar?.file || banner?.file;
       if (hasImages) setProgressText("Uploading images...");
 
