@@ -12,7 +12,7 @@ services:
     volumes:
       - sqlite_data:/data
     ports:
-      - "0.0.0.0:4000:4000"
+      - "127.0.0.1:4000:4000"
 
   frontend:
     build:
@@ -24,4 +24,4 @@ services:
     depends_on:
       - backend
     ports:
-      - "0.0.0.0:3000:3000"
+      - "127.0.0.1:3000:3000"
