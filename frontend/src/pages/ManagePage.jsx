@@ -27,13 +27,6 @@ const BUY_LINK_TYPES = [
     hint: "Enter your token CA",
   },
   {
-    key: "jupiter",
-    label: "Jupiter",
-    prefix: "https://jup.ag/?inputMint=So11111111111111111111111111111111111111112&outputMint=",
-    placeholder: "CA",
-    hint: "Enter your token CA",
-  },
-  {
     key: "pumpfun",
     label: "Pump.fun",
     prefix: "https://pump.fun/coin/",
@@ -60,7 +53,7 @@ export default function ManagePage() {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editContractAddress, setEditContractAddress] = useState("");
-  const [editBuyLinks, setEditBuyLinks] = useState({ raydium: "", jupiter: "", pumpfun: "" });
+  const [editBuyLinks, setEditBuyLinks] = useState({ raydium: "", pumpfun: "" });
   const [editTokenomics, setEditTokenomics] = useState({});
   const [editSocials, setEditSocials] = useState({});
   const [editAvatar, setEditAvatar] = useState(null);
@@ -89,7 +82,7 @@ export default function ManagePage() {
       setEditName(c.name || "");
       setEditDescription(c.description || "");
       setEditContractAddress(c.contractAddress || "");
-      setEditBuyLinks({ raydium: c.buyLinks?.raydium || "", jupiter: c.buyLinks?.jupiter || "", pumpfun: c.buyLinks?.pumpfun || "" });
+      setEditBuyLinks({ raydium: c.buyLinks?.raydium || "", pumpfun: c.buyLinks?.pumpfun || "" });
       setEditTokenomics(c.tokenomics || {});
       setEditSocials(c.socials || {});
       setEditTemplateId(p.template_id || "template_1");
