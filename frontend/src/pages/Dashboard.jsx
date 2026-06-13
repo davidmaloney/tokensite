@@ -146,7 +146,6 @@ export default function Dashboard() {
           border: "1px solid rgba(153,69,255,0.2)",
           boxShadow: "0 0 40px rgba(153,69,255,0.08)",
         }}>
-
           <div style={{ marginBottom: "24px" }}>
             <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "16px" }}>
               HOW IT WORKS
@@ -200,7 +199,6 @@ export default function Dashboard() {
               Page deleted on expiry
             </div>
           </div>
-
         </div>
 
         {/* Connect button */}
@@ -217,10 +215,6 @@ export default function Dashboard() {
             cursor: "pointer",
           }} />
 
-          <div style={{ fontSize: "12px", color: "#555" }}>
-            Phantom, Solflare and Backpack supported
-          </div>
-
           {/* Mobile wallet hints — hidden on desktop */}
           {mobile && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", marginTop: "4px" }}>
@@ -228,7 +222,7 @@ export default function Dashboard() {
                 Already have a wallet app?{" "}
                 <a href="https://phantom.app/ul/browse/https://shillit.fun" style={{ color: "#666", textDecoration: "none" }}>Phantom</a>
                 {" · "}
-                <a href="https://backpack.app/browse/https://shillit.fun" style={{ color: "#666", textDecoration: "none" }}>Backpack</a>
+                <a href="https://backpack.app/ul/v1/browse/https%3A%2F%2Fshillit.fun" style={{ color: "#666", textDecoration: "none" }}>Backpack</a>
                 {" · "}
                 <a href="https://solflare.com/ul/v1/browse/https%3A%2F%2Fshillit.fun" style={{ color: "#666", textDecoration: "none" }}>Solflare</a>
               </div>
@@ -240,29 +234,34 @@ export default function Dashboard() {
                 {" · "}
                 <a href="https://solflare.com" target="_blank" rel="noreferrer" style={{ color: "#666", textDecoration: "none" }}>Get Solflare</a>
               </div>
+              <div style={{ fontSize: "11px", color: "#3a3a3a", fontStyle: "italic" }}>
+                Browse to shillit.fun from inside your wallet app.
+              </div>
             </div>
           )}
 
-          <a href="https://t.me/shillitchat" target="_blank" rel="noreferrer"
-            style={{ fontSize: "12px", color: "#555", textDecoration: "none", marginTop: "4px" }}>
-            Community & Support →
-          </a>
-          <a href="https://t.me/shillitsocials" target="_blank" rel="noreferrer"
-            style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
-            Terms & Privacy →
-          </a>
-          <a href="https://github.com/davidmaloney/tokensite" target="_blank" rel="noreferrer"
-            style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
-            Developer Info →
-          </a>
-          <a href="https://report.shillit.fun" target="_blank" rel="noreferrer"
-            style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
-            Report →
-          </a>
-          <a href="mailto:support@shillit.fun"
-            style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
-            support@shillit.fun
-          </a>
+          <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", alignItems: "center", gap: "10px" }}>
+            <a href="https://t.me/shillitchat" target="_blank" rel="noreferrer"
+              style={{ fontSize: "12px", color: "#555", textDecoration: "none" }}>
+              Community & Support →
+            </a>
+            <a href="https://t.me/shillitsocials" target="_blank" rel="noreferrer"
+              style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
+              Terms & Privacy →
+            </a>
+            <a href="https://github.com/davidmaloney/tokensite" target="_blank" rel="noreferrer"
+              style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
+              Developer Info →
+            </a>
+            <a href="https://report.shillit.fun" target="_blank" rel="noreferrer"
+              style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
+              Report →
+            </a>
+            <a href="mailto:support@shillit.fun"
+              style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
+              support@shillit.fun
+            </a>
+          </div>
         </div>
 
       </div>
