@@ -222,9 +222,10 @@ export default function CreatePage() {
         content,
       });
 
-      setProgressText("");
+      // Open payment modal BEFORE clearing progress text so user sees the status
       setCreatedPage(res.data.page);
       setShowPayment(true);
+      setProgressText("");
     } catch (err) {
       setProgressText("");
       alert(err.response?.data?.error || "Something went wrong. Please try again.");
