@@ -29,7 +29,7 @@ const BUY_LINK_TYPES = [
   {
     key: "jupiter",
     label: "Jupiter",
-    prefix: "https://jup.ag/swap/So11111111111111111111111111111111111111112-",
+    prefix: "https://jup.ag/?inputMint=So11111111111111111111111111111111111111112&outputMint=",
     placeholder: "CA",
     hint: "Enter your token CA",
   },
