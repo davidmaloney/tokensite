@@ -70,7 +70,7 @@ router.get("*", async (req, res) => {
       return res.send(cached);
     }
 
-    const page = getPageBySlug(slug);
+    const page = await getPageBySlug(slug);
 
     if (!page || page.soft_deleted_at) {
       return res.status(404).send(notFoundHtml);
