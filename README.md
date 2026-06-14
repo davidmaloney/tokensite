@@ -1,3 +1,5 @@
+Curently migrating to PostgreSQL. site might be down today. 
+
 SHILLit — Solana Crypto Landing Pages
 
 https://shillit.fun
