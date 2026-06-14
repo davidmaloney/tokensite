@@ -1,4 +1,4 @@
-Currently migrating to PostgreSQL for better performance and scalability. Best to do it now before we have paying customers. Site might be down briefly or completly today. Updates at t.me/shillitchat 
+Here is the clean updated README ready to copy paste:
 
 SHILLit — Solana Crypto Landing Pages
 
@@ -20,12 +20,12 @@ For projects that do grow — the yearly plan at $39 keeps costs minimal while t
 
 How It Works
 
-1.	Connect your Solana wallet — Phantom, Solflare or Backpack
-2.	Choose your slug — becomes yourtoken.shillit.fun
-3.	Add your token details — project name and description, contract address with one-click copy button, buy links for Raydium, Jupiter and Pump.fun, tokenomics including supply, tax, liquidity, launch date and network, social links for Twitter, Telegram, Discord and more, avatar and banner images
-4.	Pick a template — 4 designs available
-5.	Pay $4.99/month or $39/year in SOL
-6.	Page is live instantly
+	1.	Connect your Solana wallet — Phantom, Solflare or Backpack
+	2.	Choose your slug — becomes yourtoken.shillit.fun
+	3.	Add your token details — project name and description, contract address with one-click copy button, buy links for Raydium and Pump.fun, tokenomics including supply, tax, liquidity, launch date and network, social links for Twitter, Telegram, Discord and more, avatar and banner images
+	4.	Pick a template — 4 designs available
+	5.	Pay $4.99/month or $39/year in SOL
+	6.	Page is live instantly
 
 Pricing
 
@@ -61,7 +61,7 @@ Frontend — React and Vite, built to static files, served via Docker
 
 Backend — Node.js and Express, multi-process via PM2 using all CPU cores
 
-Database — SQLite with WAL mode and serialized write queue for safe concurrent access
+Database — PostgreSQL with connection pooling for production-grade concurrent access and scalability
 
 Caching — In-memory page cache with 60 second TTL, auto-invalidated on any page update, activation or deletion. Handles viral traffic spikes without database pressure.
 
@@ -102,6 +102,8 @@ DOMAIN=shillit.fun
 SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=YOUR_KEY
 TREASURY_WALLET=YOUR_SOLANA_WALLET_ADDRESS
 OWNER_ACCESS_CODE=YOUR_SECRET_CODE
+POSTGRES_PASSWORD=YOUR_POSTGRES_PASSWORD
+DATABASE_URL=postgresql://tokensite:YOUR_POSTGRES_PASSWORD@postgres:5432/tokensite
 NODE_ENV=production
 MOCK_MODE=false
 
@@ -116,5 +118,4 @@ Terms and Privacy: https://t.me/shillitPolicies
 Email: support@shillit.fun
 GitHub: https://github.com/davidmaloney/tokensite
 Report a page: https://report.shillit.fun
-
 
