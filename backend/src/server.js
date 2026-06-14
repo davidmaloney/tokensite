@@ -4,7 +4,7 @@ import cors from "cors";
 import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
-import { getDb } from "./db/index.js";
+import { initDb } from "./db/index.js";
 import { getOrCreateWalletAuthSecret } from "./services/secretService.js";
 import { globalRateLimiter } from "./middleware/rateLimiter.js";
 import { subdomainResolver } from "./middleware/subdomainResolver.js";
@@ -21,15 +21,16 @@ import subdomainRouter from "./routes/subdomain.js";
 import { invalidatePageCache } from "./routes/subdomain.js";
 import { registerCacheInvalidator } from "./services/pageService.js";
 
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "/data/uploads";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-getDb(); registerCacheInvalidator(invalidatePageCache);
-getOrCreateWalletAuthSecret();
+// Initialise PostgreSQL and register cache invalidator
+await initDb();
+registerCacheInvalidator(invalidatePageCache);
+await getOrCreateWalletAuthSecret();
 logger.info("system_start", { domain: DOMAIN, mockMode: process.env.MOCK_MODE === "true" });
 
 app.set("trust proxy", 1);
