@@ -219,14 +219,6 @@ export default function Dashboard() {
           {mobile && (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", marginTop: "4px" }}>
               <div style={{ fontSize: "11px", color: "#444" }}>
-                Already have a wallet app?{" "}
-                <a href="https://phantom.app/ul/browse/https://shillit.fun" style={{ color: "#666", textDecoration: "none" }}>Phantom</a>
-                {" · "}
-                <a href="https://backpack.app/ul/v1/browse/https%3A%2F%2Fshillit.fun" style={{ color: "#666", textDecoration: "none" }}>Backpack</a>
-                {" · "}
-                <a href="https://solflare.com/ul/v1/browse/https%3A%2F%2Fshillit.fun" style={{ color: "#666", textDecoration: "none" }}>Solflare</a>
-              </div>
-              <div style={{ fontSize: "11px", color: "#444" }}>
                 New to crypto?{" "}
                 <a href="https://phantom.app" target="_blank" rel="noreferrer" style={{ color: "#666", textDecoration: "none" }}>Get Phantom</a>
                 {" · "}
@@ -234,8 +226,16 @@ export default function Dashboard() {
                 {" · "}
                 <a href="https://solflare.com" target="_blank" rel="noreferrer" style={{ color: "#666", textDecoration: "none" }}>Get Solflare</a>
               </div>
+              <div style={{ fontSize: "11px", color: "#444" }}>
+                Already have a wallet app?{" "}
+                <a href="https://phantom.app/ul/browse/https://shillit.fun" style={{ color: "#666", textDecoration: "none" }}>Phantom</a>
+                {" · "}
+                <a href="https://backpack.app/ul/v1/browse/https%3A%2F%2Fshillit.fun" style={{ color: "#666", textDecoration: "none" }}>Backpack</a>
+                {" · "}
+                <a href="https://solflare.com/ul/v1/browse/https%3A%2F%2Fshillit.fun" style={{ color: "#666", textDecoration: "none" }}>Solflare</a>
+              </div>
               <div style={{ fontSize: "11px", color: "#3a3a3a", fontStyle: "italic" }}>
-                Browse to shillit.fun from inside your wallet app.
+                On mobile, open shillit.fun from inside your wallet app.
               </div>
             </div>
           )}
@@ -249,17 +249,17 @@ export default function Dashboard() {
               style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
               Terms & Privacy →
             </a>
-            <a href="https://github.com/davidmaloney/tokensite" target="_blank" rel="noreferrer"
+            <a href="mailto:support@shillit.fun"
               style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
-              Developer Info →
+              support@shillit.fun
             </a>
             <a href="https://report.shillit.fun" target="_blank" rel="noreferrer"
               style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
               Report →
             </a>
-            <a href="mailto:support@shillit.fun"
+            <a href="https://x.com/shillitfun" target="_blank" rel="noreferrer"
               style={{ fontSize: "11px", color: "#444", textDecoration: "none" }}>
-              support@shillit.fun
+              X →
             </a>
           </div>
         </div>
