@@ -26,19 +26,19 @@ function validateContent(content) {
 router.get("/", async (req, res) => {
   const { wallet } = req.query;
   if (!wallet) return res.status(400).json({ error: "wallet required" });
-  const pages = getPagesByWallet(wallet);
+  const pages = await getPagesByWallet(wallet);
   res.json({ pages });
 });
 
-router.get("/check-slug/:slug", (req, res) => {
+router.get("/check-slug/:slug", async (req, res) => {
   const { slug } = req.params;
-  const result = validateSlug(slug);
+  const result = await validateSlug(slug);
   if (!result.valid) return res.json({ available: false, reason: result.reason });
   res.json({ available: true });
 });
 
-router.get("/:id", (req, res) => {
-  const page = getPageById(req.params.id);
+router.get("/:id", async (req, res) => {
+  const page = await getPageById(req.params.id);
   if (!page || page.soft_deleted_at) return res.status(404).json({ error: "Not found" });
   res.json({ page });
 });
@@ -49,7 +49,7 @@ router.post("/", createPageRateLimiter, async (req, res) => {
   if (!walletAddress) return res.status(400).json({ error: "walletAddress required" });
   if (!slug) return res.status(400).json({ error: "slug required" });
 
-  const validation = validateSlug(slug);
+  const validation = await validateSlug(slug);
   if (!validation.valid) return res.status(400).json({ error: validation.reason });
 
   const urlError = validateContent(content);
@@ -59,7 +59,7 @@ router.post("/", createPageRateLimiter, async (req, res) => {
     const page = await createPage({ walletAddress, slug, templateId, content });
     res.json({ page });
   } catch (err) {
-    if (err.message?.includes("UNIQUE")) {
+    if (err.message?.includes("unique") || err.message?.includes("UNIQUE")) {
       return res.status(400).json({ error: "Slug already taken." });
     }
     res.status(500).json({ error: "Failed to create page." });
