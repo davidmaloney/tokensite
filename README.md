@@ -1,5 +1,3 @@
-Here is the clean updated README ready to copy paste:
-
 SHILLit — Solana Crypto Landing Pages
 
 https://shillit.fun
