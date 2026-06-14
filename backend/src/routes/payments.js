@@ -12,13 +12,12 @@ import { verifyPayment } from "../solana/verifier.js";
 import { logger } from "../utils/logger.js";
 import { getDb } from "../db/index.js";
 import { paymentRateLimiter } from "../middleware/rateLimiter.js";
-import { isValidUrl } from "../utils/slugValidator.js";
+import { v4 as uuidv4 } from "uuid";
 
 const router = express.Router();
 
 router.use(paymentRateLimiter);
 
-// Cache blockhash for 10 seconds only — keeps it fresh for Phantom
 let blockhashCache = null;
 let blockhashCacheTs = 0;
 const BLOCKHASH_TTL = 10 * 1000;
@@ -85,23 +84,25 @@ router.post("/initiate", async (req, res) => {
   const { pageId, plan, ownerCode } = req.body;
   if (!pageId || !plan) return res.status(400).json({ error: "pageId and plan required" });
 
-  const page = getPageById(pageId);
+  const page = await getPageById(pageId);
   if (!page) return res.status(404).json({ error: "Page not found" });
 
   if (ownerCode && ownerCode === process.env.OWNER_ACCESS_CODE) {
     await activatePage(pageId, plan);
-    const db = getDb();
+    const pool = getDb();
     const now = Math.floor(Date.now() / 1000);
-    db.prepare(
-      "INSERT OR IGNORE INTO transactions (id, wallet_address, page_id, reference_id, amount_sol, amount_usd, plan, confirmed, created_at, confirmed_at) VALUES (lower(hex(randomblob(16))), ?, ?, ?, 0, 0, ?, 1, ?, ?)"
-    ).run(page.wallet_address, pageId, "OWNER-" + pageId, plan, now, now);
+    const ownerId = uuidv4();
+    await pool.query(
+      "INSERT INTO transactions (id, wallet_address, page_id, reference_id, amount_sol, amount_usd, plan, confirmed, created_at, confirmed_at) VALUES ($1, $2, $3, $4, 0, 0, $5, 1, $6, $7) ON CONFLICT DO NOTHING",
+      [ownerId, page.wallet_address, pageId, "OWNER-" + pageId, plan, now, now]
+    );
     logger.info("owner_code_activation", { pageId, plan });
     return res.json({ activated: true });
   }
 
   try {
     const planData = await getPlanWithSol(plan);
-    const tx = createPendingTransaction({
+    const tx = await createPendingTransaction({
       walletAddress: page.wallet_address,
       pageId,
       amountSol: planData.solAmount,
@@ -124,7 +125,7 @@ router.post("/initiate", async (req, res) => {
 
 router.get("/status/:referenceId", async (req, res) => {
   const { referenceId } = req.params;
-  const tx = getTransactionByReference(referenceId);
+  const tx = await getTransactionByReference(referenceId);
   if (!tx) return res.status(404).json({ error: "Transaction not found" });
 
   if (tx.confirmed) {
@@ -139,7 +140,7 @@ router.get("/status/:referenceId", async (req, res) => {
     });
 
     if (result.verified) {
-      if (result.txHash && isTransactionAlreadyConfirmed(result.txHash)) {
+      if (result.txHash && await isTransactionAlreadyConfirmed(result.txHash)) {
         return res.status(400).json({ error: "Transaction already used." });
       }
       await confirmTransaction(referenceId, result.txHash);
@@ -158,10 +159,10 @@ router.post("/confirm-tx", async (req, res) => {
   const { referenceId, txHash } = req.body;
   if (!referenceId || !txHash) return res.status(400).json({ error: "Missing fields" });
 
-  const tx = getTransactionByReference(referenceId);
+  const tx = await getTransactionByReference(referenceId);
   if (!tx) return res.status(404).json({ error: "Transaction not found" });
 
-  if (isTransactionAlreadyConfirmed(txHash)) {
+  if (await isTransactionAlreadyConfirmed(txHash)) {
     return res.status(400).json({ error: "Transaction already used." });
   }
 
