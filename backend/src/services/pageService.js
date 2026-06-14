@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
 import { getDb } from "../db/index.js";
-import { dbWriteQueue } from "../utils/asyncQueue.js";
 import { logger } from "../utils/logger.js";
 import { PLANS } from "../config/constants.js";
 import fs from "fs";
@@ -8,7 +7,6 @@ import path from "path";
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "/data/uploads";
 
-// Page cache invalidation — imported from subdomain router
 let _invalidateCache = null;
 export function registerCacheInvalidator(fn) {
   _invalidateCache = fn;
@@ -17,38 +15,45 @@ function invalidateCache(slug) {
   if (_invalidateCache) _invalidateCache(slug);
 }
 
-export function getPageById(id) {
-  const db = getDb();
-  return db.prepare("SELECT * FROM pages WHERE id = ?").get(id);
+export async function getPageById(id) {
+  const pool = getDb();
+  const result = await pool.query("SELECT * FROM pages WHERE id = $1", [id]);
+  return result.rows[0] || null;
 }
 
-export function getPageBySlug(slug) {
-  const db = getDb();
-  return db.prepare("SELECT * FROM pages WHERE slug = ?").get(slug.toLowerCase());
+export async function getPageBySlug(slug) {
+  const pool = getDb();
+  const result = await pool.query("SELECT * FROM pages WHERE slug = $1", [slug.toLowerCase()]);
+  return result.rows[0] || null;
 }
 
-export function getPagesByWallet(walletAddress) {
-  const db = getDb();
-  return db
-    .prepare("SELECT * FROM pages WHERE wallet_address = ? AND soft_deleted_at IS NULL ORDER BY created_at DESC")
-    .all(walletAddress);
+export async function getPagesByWallet(walletAddress) {
+  const pool = getDb();
+  const result = await pool.query(
+    "SELECT * FROM pages WHERE wallet_address = $1 AND soft_deleted_at IS NULL ORDER BY created_at DESC",
+    [walletAddress]
+  );
+  return result.rows;
 }
 
 export async function createPage({ walletAddress, slug, templateId, content }) {
-  return dbWriteQueue.push(() => {
-    const db = getDb();
-    const id = uuidv4();
-    const now = Math.floor(Date.now() / 1000);
+  const pool = getDb();
+  const id = uuidv4();
+  const now = Math.floor(Date.now() / 1000);
 
-    db.prepare("INSERT OR IGNORE INTO users (wallet_address, created_at) VALUES (?, ?)").run(walletAddress, now);
+  await pool.query(
+    "INSERT INTO users (wallet_address, created_at) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+    [walletAddress, now]
+  );
 
-    db.prepare(
-      "INSERT INTO pages (id, wallet_address, slug, template_id, content_json, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'inactive', ?, ?)"
-    ).run(id, walletAddress, slug.toLowerCase(), templateId || "template_1", JSON.stringify(content || {}), now, now);
+  await pool.query(
+    "INSERT INTO pages (id, wallet_address, slug, template_id, content_json, status, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, 'inactive', $6, $7)",
+    [id, walletAddress, slug.toLowerCase(), templateId || "template_1", JSON.stringify(content || {}), now, now]
+  );
 
-    logger.info("page_created", { id, slug, walletAddress });
-    return db.prepare("SELECT * FROM pages WHERE id = ?").get(id);
-  });
+  logger.info("page_created", { id, slug, walletAddress });
+  const result = await pool.query("SELECT * FROM pages WHERE id = $1", [id]);
+  return result.rows[0];
 }
 
 function deleteOldImage(oldUrl, newUrl) {
@@ -66,98 +71,105 @@ function deleteOldImage(oldUrl, newUrl) {
 }
 
 export async function updatePageContent(pageId, walletAddress, { templateId, content }) {
-  return dbWriteQueue.push(() => {
-    const db = getDb();
-    const page = db.prepare("SELECT * FROM pages WHERE id = ?").get(pageId);
-    if (!page) throw new Error("Page not found");
-    if (page.wallet_address !== walletAddress) throw new Error("Unauthorized");
+  const pool = getDb();
+  const pageResult = await pool.query("SELECT * FROM pages WHERE id = $1", [pageId]);
+  const page = pageResult.rows[0];
+  if (!page) throw new Error("Page not found");
+  if (page.wallet_address !== walletAddress) throw new Error("Unauthorized");
 
-    const existing = JSON.parse(page.content_json || "{}");
+  const existing = JSON.parse(page.content_json || "{}");
 
-    if (content.avatar && existing.avatar && content.avatar !== existing.avatar) {
-      deleteOldImage(existing.avatar, content.avatar);
-    }
+  if (content.avatar && existing.avatar && content.avatar !== existing.avatar) {
+    deleteOldImage(existing.avatar, content.avatar);
+  }
+  if (content.banner && existing.banner && content.banner !== existing.banner) {
+    deleteOldImage(existing.banner, content.banner);
+  }
 
-    if (content.banner && existing.banner && content.banner !== existing.banner) {
-      deleteOldImage(existing.banner, content.banner);
-    }
+  const now = Math.floor(Date.now() / 1000);
+  await pool.query(
+    "UPDATE pages SET template_id = $1, content_json = $2, updated_at = $3 WHERE id = $4",
+    [templateId || page.template_id, JSON.stringify(content || {}), now, pageId]
+  );
 
-    const now = Math.floor(Date.now() / 1000);
-    db.prepare(
-      "UPDATE pages SET template_id = ?, content_json = ?, updated_at = ? WHERE id = ?"
-    ).run(templateId || page.template_id, JSON.stringify(content || {}), now, pageId);
-
-    invalidateCache(page.slug);
-    logger.info("page_updated", { pageId, walletAddress });
-    return db.prepare("SELECT * FROM pages WHERE id = ?").get(pageId);
-  });
+  invalidateCache(page.slug);
+  logger.info("page_updated", { pageId, walletAddress });
+  const updated = await pool.query("SELECT * FROM pages WHERE id = $1", [pageId]);
+  return updated.rows[0];
 }
 
 export async function activatePage(pageId, planId, daysOverride) {
-  return dbWriteQueue.push(() => {
-    const db = getDb();
-    const page = db.prepare("SELECT * FROM pages WHERE id = ?").get(pageId);
-    if (!page) throw new Error("Page not found");
+  const pool = getDb();
+  const pageResult = await pool.query("SELECT * FROM pages WHERE id = $1", [pageId]);
+  const page = pageResult.rows[0];
+  if (!page) throw new Error("Page not found");
 
-    const plan = PLANS[planId];
-    const days = daysOverride !== undefined ? daysOverride : (plan ? plan.days : 30);
-    const now = Math.floor(Date.now() / 1000);
-    const currentExpiry = page.expires_at && page.expires_at > now ? page.expires_at : now;
-    const newExpiry = currentExpiry + days * 86400;
+  const plan = PLANS[planId];
+  const days = daysOverride !== undefined ? daysOverride : (plan ? plan.days : 30);
+  const now = Math.floor(Date.now() / 1000);
+  const currentExpiry = page.expires_at && page.expires_at > now ? page.expires_at : now;
+  const newExpiry = currentExpiry + days * 86400;
 
-    db.prepare(
-      "UPDATE pages SET status = 'active', expires_at = ?, soft_deleted_at = NULL, updated_at = ? WHERE id = ?"
-    ).run(newExpiry, now, pageId);
+  await pool.query(
+    "UPDATE pages SET status = 'active', expires_at = $1, soft_deleted_at = NULL, updated_at = $2 WHERE id = $3",
+    [newExpiry, now, pageId]
+  );
 
-    invalidateCache(page.slug);
-    logger.info("page_activated", { pageId, planId, newExpiry });
-    return db.prepare("SELECT * FROM pages WHERE id = ?").get(pageId);
-  });
+  invalidateCache(page.slug);
+  logger.info("page_activated", { pageId, planId, newExpiry });
+  const updated = await pool.query("SELECT * FROM pages WHERE id = $1", [pageId]);
+  return updated.rows[0];
 }
 
 export async function deactivatePage(pageId) {
-  return dbWriteQueue.push(() => {
-    const db = getDb();
-    const page = db.prepare("SELECT slug FROM pages WHERE id = ?").get(pageId);
-    const now = Math.floor(Date.now() / 1000);
-    db.prepare("UPDATE pages SET status = 'inactive', updated_at = ? WHERE id = ?").run(now, pageId);
-    if (page) invalidateCache(page.slug);
-    logger.info("page_deactivated", { pageId });
-  });
+  const pool = getDb();
+  const pageResult = await pool.query("SELECT slug FROM pages WHERE id = $1", [pageId]);
+  const page = pageResult.rows[0];
+  const now = Math.floor(Date.now() / 1000);
+  await pool.query(
+    "UPDATE pages SET status = 'inactive', updated_at = $1 WHERE id = $2",
+    [now, pageId]
+  );
+  if (page) invalidateCache(page.slug);
+  logger.info("page_deactivated", { pageId });
 }
 
 export async function softDeletePage(pageId) {
-  return dbWriteQueue.push(() => {
-    const db = getDb();
-    const page = db.prepare("SELECT slug FROM pages WHERE id = ?").get(pageId);
-    const now = Math.floor(Date.now() / 1000);
-    db.prepare("UPDATE pages SET status = 'inactive', soft_deleted_at = ?, updated_at = ? WHERE id = ?").run(now, now, pageId);
-    if (page) invalidateCache(page.slug);
-    logger.info("page_soft_deleted", { pageId });
-  });
+  const pool = getDb();
+  const pageResult = await pool.query("SELECT slug FROM pages WHERE id = $1", [pageId]);
+  const page = pageResult.rows[0];
+  const now = Math.floor(Date.now() / 1000);
+  await pool.query(
+    "UPDATE pages SET status = 'inactive', soft_deleted_at = $1, updated_at = $2 WHERE id = $3",
+    [now, now, pageId]
+  );
+  if (page) invalidateCache(page.slug);
+  logger.info("page_soft_deleted", { pageId });
 }
 
 export async function hardDeletePage(pageId) {
-  return dbWriteQueue.push(() => {
-    const db = getDb();
-    const page = db.prepare("SELECT slug, content_json FROM pages WHERE id = ?").get(pageId);
-    if (page) {
-      try {
-        const content = JSON.parse(page.content_json || "{}");
-        for (const field of ["avatar", "banner"]) {
-          if (content[field]) {
-            const filename = content[field].replace("/media/", "");
-            const filepath = path.join(UPLOAD_DIR, filename);
-            if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
-          }
+  const pool = getDb();
+  const pageResult = await pool.query("SELECT slug, content_json FROM pages WHERE id = $1", [pageId]);
+  const page = pageResult.rows[0];
+  if (page) {
+    try {
+      const content = JSON.parse(page.content_json || "{}");
+      for (const field of ["avatar", "banner"]) {
+        if (content[field]) {
+          const filename = content[field].replace("/media/", "");
+          const filepath = path.join(UPLOAD_DIR, filename);
+          if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
         }
-      } catch {}
+      }
+    } catch {}
 
-      invalidateCache(page.slug);
-      db.prepare("INSERT OR IGNORE INTO deleted_slugs (slug, reason) VALUES (?, 'hard_delete')").run(page.slug);
-      db.prepare("DELETE FROM pages WHERE id = ?").run(pageId);
-      db.prepare("DELETE FROM transactions WHERE page_id = ?").run(pageId);
-      logger.info("page_hard_deleted", { pageId, slug: page.slug });
-    }
-  });
+    invalidateCache(page.slug);
+    await pool.query(
+      "INSERT INTO deleted_slugs (slug, reason) VALUES ($1, 'hard_delete') ON CONFLICT DO NOTHING",
+      [page.slug]
+    );
+    await pool.query("DELETE FROM pages WHERE id = $1", [pageId]);
+    await pool.query("DELETE FROM transactions WHERE page_id = $1", [pageId]);
+    logger.info("page_hard_deleted", { pageId, slug: page.slug });
+  }
 }
