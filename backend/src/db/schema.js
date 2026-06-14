@@ -1,8 +1,8 @@
-export function applySchema(db) {
-  db.exec(`
+export async function applySchema(pool) {
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
       wallet_address TEXT PRIMARY KEY,
-      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+      created_at INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::INTEGER
     );
 
     CREATE TABLE IF NOT EXISTS pages (
@@ -14,8 +14,8 @@ export function applySchema(db) {
       status TEXT NOT NULL DEFAULT 'inactive',
       expires_at INTEGER,
       soft_deleted_at INTEGER,
-      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
-      updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      created_at INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::INTEGER,
+      updated_at INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::INTEGER,
       FOREIGN KEY (wallet_address) REFERENCES users(wallet_address)
     );
 
@@ -29,13 +29,13 @@ export function applySchema(db) {
       amount_usd REAL,
       plan TEXT,
       confirmed INTEGER NOT NULL DEFAULT 0,
-      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      created_at INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::INTEGER,
       confirmed_at INTEGER
     );
 
     CREATE TABLE IF NOT EXISTS deleted_slugs (
       slug TEXT PRIMARY KEY,
-      deleted_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      deleted_at INTEGER NOT NULL DEFAULT EXTRACT(EPOCH FROM NOW())::INTEGER,
       reason TEXT
     );
 
