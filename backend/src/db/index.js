@@ -1,20 +1,25 @@
-import Database from "better-sqlite3";
-import path from "path";
-import fs from "fs";
+import pg from "pg";
 import { applySchema } from "./schema.js";
+const { Pool } = pg;
 
-const DB_PATH = process.env.DB_PATH || "/data/database.sqlite";
-
-let db;
+let pool;
 
 export function getDb() {
-  if (!db) {
-    const dir = path.dirname(DB_PATH);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    db = new Database(DB_PATH);
-    db.pragma("journal_mode = WAL");
-    db.pragma("foreign_keys = ON");
-    applySchema(db);
+  if (!pool) {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    });
+    pool.on("error", (err) => {
+      console.error("Unexpected PostgreSQL pool error", err);
+    });
   }
-  return db;
+  return pool;
+}
+
+export async function initDb() {
+  const pool = getDb();
+  await applySchema(pool);
 }
