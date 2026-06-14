@@ -1,7 +1,21 @@
 volumes:
   sqlite_data:
+  postgres_data:
 
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tokensite_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: tokensite
+      POSTGRES_USER: tokensite
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+
   backend:
     build:
       context: ./backend
@@ -13,6 +27,8 @@ services:
       - sqlite_data:/data
     ports:
       - "0.0.0.0:4000:4000"
+    depends_on:
+      - postgres
 
   frontend:
     build:
