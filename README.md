@@ -2,7 +2,7 @@ SHILLit — Solana Crypto Landing Pages
 
 https://shillit.fun
 
-SHILLit is a Solana-powered platform that lets token creators launch professional crypto landing pages in seconds. Connect your wallet, choose a template, pay in SOL, and your page is live at yourtoken.shillit.fun.
+SHILLit is a Solana-powered platform that lets token creators launch professional crypto landing pages extreamly fast. Connect your wallet, choose a template, pay in SOL, and your page is live at yourtoken.shillit.fun.
 
 No accounts. No email. No passwords. Just your wallet.
 
