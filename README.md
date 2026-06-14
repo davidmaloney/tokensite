@@ -1,4 +1,4 @@
-Curently migrating to PostgreSQL. site might be down today. 
+Currently migrating to PostgreSQL for better performance and scalability. Best to do it now before we have paying customers. Site might be down briefly or completly today. Updates at t.me/shillitchat 
 
 SHILLit — Solana Crypto Landing Pages
 
