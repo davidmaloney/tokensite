@@ -23,6 +23,8 @@ services:
     container_name: tokensite_backend
     restart: always
     env_file: .env
+    environment:
+      UPLOAD_DIR: /data/uploads
     volumes:
       - uploads_data:/data/uploads
     ports:
