@@ -10,8 +10,16 @@ import { createPageRateLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
+function isValidSolanaAddress(address) {
+  if (!address || !address.trim()) return true;
+  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address.trim());
+}
+
 function validateContent(content) {
   if (!content) return null;
+  if (content.contractAddress && !isValidSolanaAddress(content.contractAddress)) {
+    return "Invalid contract address.";
+  }
   const socials = content.socials || {};
   for (const [key, url] of Object.entries(socials)) {
     if (url && !isValidUrl(url)) return "Invalid URL in social links: " + key;
