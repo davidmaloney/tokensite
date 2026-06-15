@@ -93,8 +93,8 @@ router.post("/initiate", async (req, res) => {
     const now = Math.floor(Date.now() / 1000);
     const ownerId = uuidv4();
     await pool.query(
-      "INSERT INTO transactions (id, wallet_address, page_id, reference_id, amount_sol, amount_usd, plan, confirmed, created_at, confirmed_at) VALUES ($1, $2, $3, $4, 0, 0, $5, 1, $6, $7) ON CONFLICT DO NOTHING",
-      [ownerId, page.wallet_address, pageId, "OWNER-" + pageId, plan, now, now]
+      "INSERT INTO transactions (id, wallet_address, page_id, reference_id, amount_sol, amount_usd, plan, confirmed, created_at, confirmed_at) VALUES ($1, $2, $3, $4, 0, 0, $5, 1, $6, $7)",
+      [ownerId, page.wallet_address, pageId, "OWNER-" + uuidv4(), plan, now, now]
     );
     logger.info("owner_code_activation", { pageId, plan });
     return res.json({ activated: true });
