@@ -1,5 +1,6 @@
 volumes:
   postgres_data:
+  uploads_data:
 
 services:
   postgres:
@@ -22,6 +23,8 @@ services:
     container_name: tokensite_backend
     restart: always
     env_file: .env
+    volumes:
+      - uploads_data:/data/uploads
     ports:
       - "0.0.0.0:4000:4000"
     depends_on:
