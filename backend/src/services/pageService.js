@@ -79,17 +79,32 @@ export async function updatePageContent(pageId, walletAddress, { templateId, con
 
   const existing = JSON.parse(page.content_json || "{}");
 
-  if (content.avatar && existing.avatar && content.avatar !== existing.avatar) {
+  // Merge: start with existing content, overlay with incoming content.
+  // This means if the frontend fails to send avatar/banner, we keep
+  // whatever was already saved — the URL is never lost.
+  const merged = { ...existing, ...content };
+
+  // If the frontend explicitly sent an empty string for avatar or banner,
+  // treat that as the user removing the image — respect it.
+  if (content.avatar === "") merged.avatar = undefined;
+  if (content.banner === "") merged.banner = undefined;
+
+  // Clean up undefined keys so they don't get stored as "undefined"
+  Object.keys(merged).forEach((k) => merged[k] === undefined && delete merged[k]);
+
+  // If avatar changed to a genuinely new file, delete the old file from disk.
+  if (content.avatar && content.avatar !== "" && existing.avatar && content.avatar !== existing.avatar) {
     deleteOldImage(existing.avatar, content.avatar);
   }
-  if (content.banner && existing.banner && content.banner !== existing.banner) {
+  // If banner changed to a genuinely new file, delete the old file from disk.
+  if (content.banner && content.banner !== "" && existing.banner && content.banner !== existing.banner) {
     deleteOldImage(existing.banner, content.banner);
   }
 
   const now = Math.floor(Date.now() / 1000);
   await pool.query(
     "UPDATE pages SET template_id = $1, content_json = $2, updated_at = $3 WHERE id = $4",
-    [templateId || page.template_id, JSON.stringify(content || {}), now, pageId]
+    [templateId || page.template_id, JSON.stringify(merged), now, pageId]
   );
 
   invalidateCache(page.slug);
