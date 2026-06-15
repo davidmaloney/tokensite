@@ -26,7 +26,7 @@ export async function getSolPriceUsd() {
   }
 
   if (cachedRate) return cachedRate;
-  return 150;
+  return 50;
 }
 
 export async function getUsdToSol(usd) {
