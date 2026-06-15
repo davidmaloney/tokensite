@@ -26,19 +26,48 @@ export function startCleanupJob() {
   logger.info("cleanup_job_started", { interval: CLEANUP_JOB_INTERVAL_HOURS + "h" });
 }
 
+function deleteImageFiles(content) {
+  try {
+    const parsed = JSON.parse(content || "{}");
+    for (const field of ["avatar", "banner"]) {
+      if (parsed[field]) {
+        const filename = parsed[field].replace("/media/", "");
+        const filepath = path.join(UPLOAD_DIR, filename);
+        if (fs.existsSync(filepath)) {
+          fs.unlinkSync(filepath);
+          logger.info("image_deleted", { filename });
+        }
+      }
+    }
+  } catch (err) {
+    logger.warn("image_delete_failed", { err: err.message });
+  }
+}
+
 export async function runCleanup() {
   const pool = getDb();
   const now = Math.floor(Date.now() / 1000);
 
+  // Delete unpaid pages older than 1 hour — including their images
   const unpaidCutoff = now - UNPAID_PAGE_CLEANUP_HOURS * 3600;
-  const unpaidResult = await pool.query(
-    "DELETE FROM pages WHERE status = 'inactive' AND expires_at IS NULL AND created_at < $1 AND id NOT IN (SELECT page_id FROM transactions WHERE confirmed = 1)",
+  const unpaidPages = await pool.query(
+    "SELECT id, slug, content_json FROM pages WHERE status = 'inactive' AND expires_at IS NULL AND created_at < $1 AND id NOT IN (SELECT page_id FROM transactions WHERE confirmed = 1)",
     [unpaidCutoff]
   );
-  if (unpaidResult.rowCount > 0) {
-    logger.info("unpaid_pages_deleted", { count: unpaidResult.rowCount });
+
+  for (const page of unpaidPages.rows) {
+    // Delete images first
+    deleteImageFiles(page.content_json);
+    // Delete page record — slug is freed, not blacklisted
+    await pool.query("DELETE FROM pages WHERE id = $1", [page.id]);
+    logger.info("unpaid_page_deleted", { pageId: page.id, slug: page.slug });
   }
 
+  if (unpaidPages.rowCount > 0) {
+    logger.info("unpaid_pages_deleted", { count: unpaidPages.rowCount });
+  }
+
+  // Soft delete expired pages
   const softDeleteCutoff = now - SOFT_DELETE_AFTER_EXPIRY_DAYS * 86400;
   const softDeleteResult = await pool.query(
     "UPDATE pages SET status = 'inactive', soft_deleted_at = $1, updated_at = $2 WHERE soft_deleted_at IS NULL AND expires_at IS NOT NULL AND expires_at < $3",
@@ -48,6 +77,7 @@ export async function runCleanup() {
     logger.info("pages_soft_deleted", { count: softDeleteResult.rowCount });
   }
 
+  // Hard delete soft-deleted pages — including their images
   const hardDeleteCutoff = now - HARD_DELETE_AFTER_SOFT_DELETE_DAYS * 86400;
   const toDeleteResult = await pool.query(
     "SELECT id, slug, content_json FROM pages WHERE soft_deleted_at IS NOT NULL AND soft_deleted_at < $1",
@@ -55,17 +85,12 @@ export async function runCleanup() {
   );
 
   for (const page of toDeleteResult.rows) {
-    try {
-      const content = JSON.parse(page.content_json || "{}");
-      for (const field of ["avatar", "banner"]) {
-        if (content[field]) {
-          const filename = content[field].replace("/media/", "");
-          const filepath = path.join(UPLOAD_DIR, filename);
-          if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
-        }
-      }
-    } catch {}
+    // Delete images first
+    deleteImageFiles(page.content_json);
 
+    // Slug goes to deleted_slugs only for admin cleanup — not for natural expiry
+    // This path is only reached via soft delete which happens in cleanup job
+    // not via the expiry job, so we add to deleted_slugs here
     await pool.query(
       "INSERT INTO deleted_slugs (slug, reason) VALUES ($1, 'auto_cleanup') ON CONFLICT DO NOTHING",
       [page.slug]
@@ -86,11 +111,13 @@ async function processEnvDeleteSlugs(pool, now) {
 
   for (const slug of deleteList) {
     const pageResult = await pool.query(
-      "SELECT id FROM pages WHERE slug = $1",
+      "SELECT id, content_json FROM pages WHERE slug = $1",
       [slug]
     );
     const page = pageResult.rows[0];
     if (page) {
+      // Delete images first
+      deleteImageFiles(page.content_json);
       await pool.query(
         "INSERT INTO deleted_slugs (slug, reason) VALUES ($1, 'admin_env_delete') ON CONFLICT DO NOTHING",
         [slug]
@@ -99,10 +126,10 @@ async function processEnvDeleteSlugs(pool, now) {
       await pool.query("DELETE FROM pages WHERE id = $1", [page.id]);
       logger.info("page_admin_deleted", { slug });
     } else {
-      await pool.query(
-        "INSERT INTO deleted_slugs (slug, reason) VALUES ($1, 'admin_env_block') ON CONFLICT DO NOTHING",
-        [slug]
-      );
+      // Slug blocked but no page exists — only block while in .env
+      // Do NOT permanently blacklist — if removed from .env it should be available again
+      // So we do NOT insert into deleted_slugs here
+      logger.info("slug_blocked_by_env", { slug });
     }
   }
 }
