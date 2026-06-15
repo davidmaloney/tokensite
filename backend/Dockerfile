@@ -5,6 +5,5 @@ RUN npm install -g pm2
 COPY package.json ./
 RUN npm install
 COPY . .
-RUN mkdir -p /data
 EXPOSE 4000
 CMD ["pm2-runtime", "src/server.js", "-i", "max"]
