@@ -6,7 +6,7 @@ SHILLit is a Solana-powered platform that lets token creators launch professiona
 
 No accounts. No email. No passwords. Just your wallet.
 
-Built for Crypto’s Pace
+Built for Crypto's Pace
 
 Most token launches need a landing page for days or weeks — not years. The hype window is short. The launch phase is intense. After that, projects either grow into something bigger or move on.
 
@@ -18,12 +18,12 @@ For projects that do grow — the yearly plan at $39 keeps costs minimal while t
 
 How It Works
 
-1.	Connect your Solana wallet — Phantom, Solflare or Backpack
-2.	Choose your slug — becomes yourtoken.shillit.fun
-3.	Add your token details — project name and description, contract address with one-click copy button, buy links for Raydium and Pump.fun, tokenomics including supply, tax, liquidity, launch date and network, social links for Twitter, Telegram, Discord and more, avatar and banner images
-4.	Pick a template — 4 designs available
-5.	Pay $4.99/month or $39/year in SOL
-6.	Page is live instantly
+1. Connect your Solana wallet — Phantom, Solflare or Backpack
+2. Choose your slug — becomes yourtoken.shillit.fun
+3. Add your token details — project name and description, contract address with one-click copy button, buy links for Raydium and Pump.fun, tokenomics including supply, tax, liquidity, launch date and network, social links for Twitter, Telegram, Discord and more, avatar and banner images
+4. Pick a template — 4 designs available
+5. Pay $4.99/month or $39/year in SOL
+6. Page is live instantly
 
 Pricing
 
@@ -77,7 +77,7 @@ Network and Infrastructure
 Cloudflare in front of all traffic — WAF, DDoS protection, Bot Fight Mode and TLS 1.2 minimum all active. UFW firewall on the VPS with only ports 22, 80 and 443 open. All other ports including backend service ports are blocked at the OS level. Always HTTPS enforced — all HTTP traffic automatically redirected to HTTPS.
 
 Application Security
-Rate limiting on all payment and admin endpoints. URL validation on all user-submitted links — only legitimate URLs accepted. Reserved slug system with an extensive blocklist preventing impersonation of known brands, exchanges, wallets, influencers and platform pages. On-chain transaction verification before any page activation. Transaction replay protection — each transaction hash can only be used once. Unpaid pages automatically deleted after one hour.
+Rate limiting on all payment and admin endpoints. URL validation on all user-submitted links — only legitimate URLs accepted. Contract address validation — all submitted contract addresses are verified as valid Solana base58 addresses before being accepted, preventing malicious input. Reserved slug system with an extensive blocklist preventing impersonation of known brands, exchanges, wallets, influencers and platform pages. On-chain transaction verification before any page activation. Transaction replay protection — each transaction hash can only be used once. Unpaid pages automatically deleted after one hour.
 
 Data and Privacy
 No personal data stored — wallet addresses only. No emails, no names, no tracking. All page data permanently and irreversibly deleted on expiry. Environment variables stored only on the server, never in source control.
@@ -107,7 +107,7 @@ MOCK_MODE=false
 
 Deploy commands:
 git pull
-docker compose up -d –build
+docker compose up -d --build
 
 Community and Support
 
@@ -116,4 +116,3 @@ Terms and Privacy: https://t.me/shillitPolicies
 Email: support@shillit.fun
 GitHub: https://github.com/davidmaloney/tokensite
 Report a page: https://report.shillit.fun
-
