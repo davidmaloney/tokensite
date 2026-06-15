@@ -158,8 +158,8 @@ export default function ManagePage() {
       if (Object.keys(filteredBuyLinks).length > 0) content.buyLinks = filteredBuyLinks;
       if (Object.keys(filteredTokenomics).length > 0) content.tokenomics = filteredTokenomics;
       content.socials = Object.fromEntries(Object.entries(editSocials).filter(([, v]) => v && v.trim()));
-      if (editContractAddress && editShowTicker) content.showTicker = true;
-      if (editContractAddress && editShowChart) content.showChart = true;
+      if (editContractAddress) content.showTicker = editShowTicker;
+      if (editContractAddress) content.showChart = editShowChart;
       if (editCountdownDate) content.countdown = { date: editCountdownDate, label: editCountdownLabel || "Countdown" };
       if (editAboutText.trim() || filteredTeam.length > 0) content.about = { text: editAboutText, team: filteredTeam };
       if (filteredRoadmap.length > 0) content.roadmap = filteredRoadmap;
