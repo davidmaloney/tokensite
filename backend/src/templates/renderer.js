@@ -69,12 +69,12 @@ function buildTickerBlock(contractAddress) {
     "</div>";
 }
 
-// Chart block — clean iframe only, no script needed
+// Chart block — uses DexScreener search embed, works for all chains
 function buildChartBlock(contractAddress) {
   if (!contractAddress) return "";
   return "<div class=\"card chart-card\">" +
     "<div class=\"card-title\">Price Chart</div>" +
-    "<iframe src=\"https://dexscreener.com/solana/" + escapeHtml(contractAddress) + "?embed=1&theme=dark&trades=0&info=0\" " +
+    "<iframe src=\"https://dexscreener.com/search?q=" + escapeHtml(contractAddress) + "&embed=1&theme=dark&trades=0&info=0\" " +
     "style=\"width:100%;height:400px;border:none;border-radius:8px;\" " +
     "loading=\"lazy\" allowfullscreen></iframe>" +
     "</div>";
