@@ -43,12 +43,18 @@ const BUY_ICONS = {
   raydium: '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><circle cx="12" cy="12" r="10"/></svg>',
   jupiter: '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>',
   pumpfun: '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
+  uniswap: '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><circle cx="12" cy="12" r="10"/></svg>',
+  pancakeswap: '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><circle cx="12" cy="12" r="10"/></svg>',
+  sushiswap: '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><circle cx="12" cy="12" r="10"/></svg>',
 };
 
 const BUY_LABELS = {
   raydium: "Buy on Raydium",
   jupiter: "Buy on Jupiter",
   pumpfun: "Buy on Pump.fun",
+  uniswap: "Buy on Uniswap",
+  pancakeswap: "Buy on PancakeSwap",
+  sushiswap: "Buy on SushiSwap",
 };
 
 const TOKENOMICS_LABELS = {
@@ -69,12 +75,27 @@ function buildTickerBlock(contractAddress) {
     "</div>";
 }
 
-// Chart block — uses DexScreener search embed, works for all chains
+// Chart block — detects chain from address format
 function buildChartBlock(contractAddress) {
   if (!contractAddress) return "";
+
+  let chartUrl;
+  const addr = contractAddress.trim();
+
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr)) {
+    // Solana — direct chart
+    chartUrl = "https://dexscreener.com/solana/" + escapeHtml(addr) + "?embed=1&theme=dark&trades=0&info=0";
+  } else if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(addr)) {
+    // Tron — direct chart
+    chartUrl = "https://dexscreener.com/tron/" + escapeHtml(addr) + "?embed=1&theme=dark&trades=0&info=0";
+  } else {
+    // EVM and everything else — search embed
+    chartUrl = "https://dexscreener.com/search?q=" + escapeHtml(addr) + "&embed=1&theme=dark";
+  }
+
   return "<div class=\"card chart-card\">" +
     "<div class=\"card-title\">Price Chart</div>" +
-    "<iframe src=\"https://dexscreener.com/search?q=" + escapeHtml(contractAddress) + "&embed=1&theme=dark&trades=0&info=0\" " +
+    "<iframe src=\"" + chartUrl + "\" " +
     "style=\"width:100%;height:400px;border:none;border-radius:8px;\" " +
     "loading=\"lazy\" allowfullscreen></iframe>" +
     "</div>";
