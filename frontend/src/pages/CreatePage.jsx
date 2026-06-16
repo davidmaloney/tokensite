@@ -14,14 +14,35 @@ const BUY_LINK_TYPES = [
     label: "Raydium",
     prefix: "https://raydium.io/swap/?inputMint=sol&outputMint=",
     placeholder: "CA",
-    hint: "Enter your token CA",
+    hint: "Solana — Enter your token CA",
   },
   {
     key: "pumpfun",
     label: "Pump.fun",
     prefix: "https://pump.fun/coin/",
     placeholder: "CA",
-    hint: "Enter your token CA",
+    hint: "Solana — Enter your token CA",
+  },
+  {
+    key: "uniswap",
+    label: "Uniswap",
+    prefix: "https://app.uniswap.org/swap?outputCurrency=",
+    placeholder: "0x...",
+    hint: "Ethereum / Base / Arbitrum / Polygon — Enter your token address",
+  },
+  {
+    key: "pancakeswap",
+    label: "PancakeSwap",
+    prefix: "https://pancakeswap.finance/swap?outputCurrency=",
+    placeholder: "0x...",
+    hint: "BSC — Enter your token address",
+  },
+  {
+    key: "sushiswap",
+    label: "SushiSwap",
+    prefix: "https://www.sushi.com/swap?token1=",
+    placeholder: "0x...",
+    hint: "Multi-chain — Enter your token address",
   },
 ];
 
@@ -35,7 +56,7 @@ export default function CreatePage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [contractAddress, setContractAddress] = useState("");
-  const [buyLinks, setBuyLinks] = useState({ raydium: "", pumpfun: "" });
+  const [buyLinks, setBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
   const [tokenomics, setTokenomics] = useState({});
   const [avatar, setAvatar] = useState(null);
   const [banner, setBanner] = useState(null);
@@ -289,9 +310,9 @@ export default function CreatePage() {
               <div>
                 <label>Contract Address <span style={{ color: "#555" }}>(optional)</span></label>
                 <input value={contractAddress} onChange={(e) => setContractAddress(e.target.value)}
-                  placeholder="e.g. So11111111111111111111111111111111111111112"
+                  placeholder="e.g. 0x... or Solana CA"
                   style={{ fontFamily: "monospace", fontSize: "12px" }} />
-                <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>Shows on your page with a copy button</div>
+                <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>Supports Solana, Ethereum, BSC, Base, Tron and more</div>
               </div>
               <div>
                 <label>Buy Links <span style={{ color: "#555" }}>(optional)</span></label>
