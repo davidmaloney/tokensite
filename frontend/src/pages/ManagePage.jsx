@@ -24,14 +24,35 @@ const BUY_LINK_TYPES = [
     label: "Raydium",
     prefix: "https://raydium.io/swap/?inputMint=sol&outputMint=",
     placeholder: "CA",
-    hint: "Enter your token CA",
+    hint: "Solana — Enter your token CA",
   },
   {
     key: "pumpfun",
     label: "Pump.fun",
     prefix: "https://pump.fun/coin/",
     placeholder: "CA",
-    hint: "Enter your token CA",
+    hint: "Solana — Enter your token CA",
+  },
+  {
+    key: "uniswap",
+    label: "Uniswap",
+    prefix: "https://app.uniswap.org/swap?outputCurrency=",
+    placeholder: "0x...",
+    hint: "Ethereum / Base / Arbitrum / Polygon — Enter your token address",
+  },
+  {
+    key: "pancakeswap",
+    label: "PancakeSwap",
+    prefix: "https://pancakeswap.finance/swap?outputCurrency=",
+    placeholder: "0x...",
+    hint: "BSC — Enter your token address",
+  },
+  {
+    key: "sushiswap",
+    label: "SushiSwap",
+    prefix: "https://www.sushi.com/swap?token1=",
+    placeholder: "0x...",
+    hint: "Multi-chain — Enter your token address",
   },
 ];
 
@@ -53,7 +74,7 @@ export default function ManagePage() {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editContractAddress, setEditContractAddress] = useState("");
-  const [editBuyLinks, setEditBuyLinks] = useState({ raydium: "", pumpfun: "" });
+  const [editBuyLinks, setEditBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
   const [editTokenomics, setEditTokenomics] = useState({});
   const [editSocials, setEditSocials] = useState({});
   const [editAvatar, setEditAvatar] = useState(null);
@@ -82,7 +103,13 @@ export default function ManagePage() {
       setEditName(c.name || "");
       setEditDescription(c.description || "");
       setEditContractAddress(c.contractAddress || "");
-      setEditBuyLinks({ raydium: c.buyLinks?.raydium || "", pumpfun: c.buyLinks?.pumpfun || "" });
+      setEditBuyLinks({
+        raydium: c.buyLinks?.raydium || "",
+        pumpfun: c.buyLinks?.pumpfun || "",
+        uniswap: c.buyLinks?.uniswap || "",
+        pancakeswap: c.buyLinks?.pancakeswap || "",
+        sushiswap: c.buyLinks?.sushiswap || "",
+      });
       setEditTokenomics(c.tokenomics || {});
       setEditSocials(c.socials || {});
       setEditTemplateId(p.template_id || "template_1");
@@ -260,8 +287,9 @@ export default function ManagePage() {
           <div>
             <label>Contract Address <span style={{ color: "#555" }}>(optional)</span></label>
             <input value={editContractAddress} onChange={(e) => setEditContractAddress(e.target.value)}
-              placeholder="e.g. So11111111111111111111111111111111111111112"
+              placeholder="e.g. 0x... or Solana CA"
               style={{ fontFamily: "monospace", fontSize: "12px" }} />
+            <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>Supports Solana, Ethereum, BSC, Base, Tron and more</div>
           </div>
 
           <div>
