@@ -87,6 +87,7 @@ router.post("/initiate", async (req, res) => {
   const page = await getPageById(pageId);
   if (!page) return res.status(404).json({ error: "Page not found" });
 
+  // Owner code — full access, any plan
   if (ownerCode && ownerCode === process.env.OWNER_ACCESS_CODE) {
     await activatePage(pageId, plan);
     const pool = getDb();
@@ -97,6 +98,20 @@ router.post("/initiate", async (req, res) => {
       [ownerId, page.wallet_address, pageId, "OWNER-" + uuidv4(), plan, now, now]
     );
     logger.info("owner_code_activation", { pageId, plan });
+    return res.json({ activated: true });
+  }
+
+  // Promo code — always 1 month free, regardless of selected plan
+  if (ownerCode && process.env.PROMO_CODE && ownerCode === process.env.PROMO_CODE) {
+    await activatePage(pageId, "1month");
+    const pool = getDb();
+    const now = Math.floor(Date.now() / 1000);
+    const promoId = uuidv4();
+    await pool.query(
+      "INSERT INTO transactions (id, wallet_address, page_id, reference_id, amount_sol, amount_usd, plan, confirmed, created_at, confirmed_at) VALUES ($1, $2, $3, $4, 0, 0, $5, 1, $6, $7)",
+      [promoId, page.wallet_address, pageId, "PROMO-" + uuidv4(), "1month", now, now]
+    );
+    logger.info("promo_code_activation", { pageId });
     return res.json({ activated: true });
   }
 
