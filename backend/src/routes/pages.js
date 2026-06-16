@@ -10,14 +10,23 @@ import { createPageRateLimiter } from "../middleware/rateLimiter.js";
 
 const router = express.Router();
 
-function isValidSolanaAddress(address) {
+function isValidContractAddress(address) {
   if (!address || !address.trim()) return true;
-  return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address.trim());
+  const a = address.trim();
+  // Solana — base58, 32-44 chars
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return true;
+  // EVM (Ethereum, Base, BSC, Polygon, Arbitrum, Optimism, Avalanche, Fantom etc) — 0x + 40 hex
+  if (/^0x[0-9a-fA-F]{40}$/.test(a)) return true;
+  // Sui and Aptos — 0x + 64 hex
+  if (/^0x[0-9a-fA-F]{64}$/.test(a)) return true;
+  // Tron — T + 33 base58 chars
+  if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a)) return true;
+  return false;
 }
 
 function validateContent(content) {
   if (!content) return null;
-  if (content.contractAddress && !isValidSolanaAddress(content.contractAddress)) {
+  if (content.contractAddress && !isValidContractAddress(content.contractAddress)) {
     return "Invalid contract address.";
   }
   const socials = content.socials || {};
