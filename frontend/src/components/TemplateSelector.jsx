@@ -5,6 +5,10 @@ const TEMPLATES = [
   { id: "template_2", name: "Clean Launch", description: "Minimal white, clean DeFi look", color: "#14F195" },
   { id: "template_3", name: "Neon Degen", description: "Pure black, hot pink & cyan glow", color: "#FF007A" },
   { id: "template_4", name: "Midnight Blue", description: "Deep navy, electric blue accents", color: "#1E90FF" },
+  { id: "template_5", name: "Deep Space", description: "Dark blue gradients, gold accents, premium feel", color: "#c8a84b" },
+  { id: "template_6", name: "Obsidian", description: "Warm near-black, sharp electric blue, minimal", color: "#0ea5e9" },
+  { id: "template_7", name: "Forge", description: "Deep dark warmth, bold orange & amber energy", color: "#fb923c" },
+  { id: "template_8", name: "Arctic", description: "Cold dark blue, ice white & cyan, fast & clean", color: "#7dd3fc" },
 ];
 
 export default function TemplateSelector({ value, onChange }) {
