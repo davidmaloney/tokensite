@@ -55,8 +55,9 @@ body {
 
 .header-row {
   display: flex; align-items: flex-end; gap: 20px;
-  margin-top: -36px; margin-bottom: 28px;
+  margin-top: 16px; margin-bottom: 28px;
 }
+
 .avatar-container { flex-shrink: 0; }
 .avatar-img { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 5px solid #0d0d0d; display: block; box-shadow: 0 0 30px rgba(153,69,255,0.4); }
 .avatar-placeholder { width: 140px; height: 140px; border-radius: 50%; background: #1e1e1e; border: 5px solid #0d0d0d; display: flex; align-items: center; justify-content: center; font-size: 52px; }
