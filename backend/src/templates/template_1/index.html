@@ -24,9 +24,14 @@
         <div class="avatar-container">
           {{AVATAR_BLOCK}}
         </div>
-        <div class="name-area">
-          {{NAME_BLOCK}}
-          <div class="slug-tag">{{SLUG}}.shillit.fun</div>
+        <div class="header-main">
+          <div class="name-area">
+            {{NAME_BLOCK}}
+            <div class="slug-tag">{{SLUG}}.shillit.fun</div>
+          </div>
+          <div class="header-socials">
+            {{SOCIAL_BLOCK}}
+          </div>
         </div>
       </div>
       {{DESC_BLOCK}}
@@ -38,7 +43,6 @@
         {{COUNTDOWN_BLOCK}}
         {{ABOUT_BLOCK}}
         {{ROADMAP_BLOCK}}
-        {{SOCIAL_BLOCK}}
       </div>
       {{CHART_BLOCK}}
     </div>
@@ -62,19 +66,21 @@
       if (avatarImg) {
         var img = document.createElement('img');
         img.src = avatarImg.src;
-        img.style.cssText = 'width:160px;height:160px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,255,255,0.25);box-shadow:0 0 60px rgba(0,0,0,0.5);';
+        img.style.cssText = 'width:220px;height:220px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,255,255,0.25);box-shadow:0 0 80px rgba(0,0,0,0.5);';
         avatarWrap.appendChild(img);
       } else if (avatarPlaceholder) {
         var ph = document.createElement('div');
         ph.textContent = avatarPlaceholder.textContent;
-        ph.style.cssText = 'width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.1);border:4px solid rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:64px;';
+        ph.style.cssText = 'width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,0.1);border:4px solid rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:80px;';
         avatarWrap.appendChild(ph);
       }
 
       if (tokenName) {
         introName.textContent = tokenName.textContent;
-        var computedColor = window.getComputedStyle(document.querySelector('.slug-tag')).color;
-        introName.style.color = computedColor || '#fff';
+        var slugTag = document.querySelector('.slug-tag');
+        if (slugTag) {
+          introName.style.color = window.getComputedStyle(slugTag).color;
+        }
       }
 
       setTimeout(function() {
