@@ -40,12 +40,12 @@ const SOCIAL_ICONS = {
 };
 
 const BUY_ICONS = {
-  raydium: '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><circle cx="12" cy="12" r="10"/></svg>',
-  jupiter: '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>',
-  pumpfun: '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>',
-  uniswap: '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><circle cx="12" cy="12" r="10"/></svg>',
-  pancakeswap: '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><circle cx="12" cy="12" r="10"/></svg>',
-  sushiswap: '<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><circle cx="12" cy="12" r="10"/></svg>',
+  raydium: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3l7 4-7 4-7-4 7-4zm0 6.5l7 4-7 4-7-4 7-4z"/></svg>',
+  jupiter: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>',
+  pumpfun: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>',
+  uniswap: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M9.563 2.048a.88.88 0 00-.528.04C7.24 2.744 5.98 4.854 5.98 7.1c0 .592.08 1.168.232 1.72C4.76 9.716 4 11.26 4 13c0 3.864 3.584 7 8 7s8-3.136 8-7c0-1.74-.76-3.284-2.212-4.18.152-.552.232-1.128.232-1.72 0-2.246-1.26-4.356-3.055-5.012a.88.88 0 00-.528-.04c-.336.08-.584.304-.704.616C13.5 4.812 12.796 5.4 12 5.4s-1.5-.588-1.733-1.736c-.12-.312-.368-.536-.704-.616zm2.437 5.152c2.652 0 4.8 2.016 4.8 4.5S14.652 16.2 12 16.2s-4.8-2.016-4.8-4.5 2.148-4.5 4.8-4.5z"/></svg>',
+  pancakeswap: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 5h2v2h-2V7zm0 4h2v6h-2v-6z"/></svg>',
+  sushiswap: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 12c-2.67 0-5.02-1.33-6.44-3.36C7.12 13.26 9.45 12 12 12s4.88 1.26 6.44 3.64C16.02 17.67 14.67 18 12 18z"/></svg>',
 };
 
 const BUY_LABELS = {
@@ -66,7 +66,6 @@ const TOKENOMICS_LABELS = {
   network: "Network",
 };
 
-// Ticker block — uses data attribute, JS lives in template HTML
 function buildTickerBlock(contractAddress) {
   if (!contractAddress) return "";
   return "<div class=\"card ticker-card\" data-ca=\"" + escapeHtml(contractAddress) + "\">" +
@@ -75,24 +74,17 @@ function buildTickerBlock(contractAddress) {
     "</div>";
 }
 
-// Chart block — detects chain from address format
 function buildChartBlock(contractAddress) {
   if (!contractAddress) return "";
-
   let chartUrl;
   const addr = contractAddress.trim();
-
   if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr)) {
-    // Solana — direct chart
     chartUrl = "https://dexscreener.com/solana/" + escapeHtml(addr) + "?embed=1&theme=dark&trades=0&info=0";
   } else if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(addr)) {
-    // Tron — direct chart
     chartUrl = "https://dexscreener.com/tron/" + escapeHtml(addr) + "?embed=1&theme=dark&trades=0&info=0";
   } else {
-    // EVM and everything else — search embed
     chartUrl = "https://dexscreener.com/search?q=" + escapeHtml(addr) + "&embed=1&theme=dark";
   }
-
   return "<div class=\"card chart-card\">" +
     "<div class=\"card-title\">Price Chart</div>" +
     "<iframe src=\"" + chartUrl + "\" " +
@@ -122,13 +114,10 @@ function buildAboutBlock(about) {
   var hasText = about.text && about.text.trim();
   var hasTeam = about.team && about.team.length > 0;
   if (!hasText && !hasTeam) return "";
-
   var html = "<div class=\"card about-card\"><div class=\"card-title\">About</div>";
-
   if (hasText) {
     html += "<p class=\"about-text\">" + escapeHtml(about.text) + "</p>";
   }
-
   if (hasTeam) {
     html += "<div class=\"team-grid\">";
     about.team.forEach(function(member) {
@@ -143,20 +132,16 @@ function buildAboutBlock(about) {
     });
     html += "</div>";
   }
-
   html += "</div>";
   return html;
 }
 
 function buildRoadmapBlock(roadmap) {
   if (!roadmap || roadmap.length === 0) return "";
-
   var html = "<div class=\"card roadmap-card\"><div class=\"card-title\">Roadmap</div><div class=\"roadmap-list\">";
-
   roadmap.forEach(function(item) {
     if (!item.title) return;
     var status = item.status || "upcoming";
-
     html += "<div class=\"roadmap-item status-" + status + "\">" +
       "<div class=\"roadmap-dot\">" +
       (status === "completed" ? "<span class=\"dot-check\">&#10003;</span>" : "<span class=\"dot-inner\"></span>") +
@@ -167,7 +152,6 @@ function buildRoadmapBlock(roadmap) {
       "<div class=\"roadmap-status-label\">" + (status === "completed" ? "Completed" : status === "inprogress" ? "In Progress" : "Upcoming") + "</div>" +
       "</div></div>";
   });
-
   html += "</div></div>";
   return html;
 }
@@ -184,6 +168,21 @@ export function renderPage(page) {
   try {
     content = JSON.parse(page.content_json || "{}");
   } catch {}
+
+  const pageUrl = "https://" + page.slug + ".shillit.fun";
+  const ogTitle = escapeHtml(content.name || page.slug);
+  const ogDescription = escapeHtml(content.description ? content.description.slice(0, 160) : "Token page on shillit.fun");
+  const ogImage = content.avatar ? "https://" + page.slug + ".shillit.fun" + content.avatar : "https://shillit.fun/og-default.png";
+
+  const ogTags = "<meta property=\"og:title\" content=\"" + ogTitle + "\" />" +
+    "<meta property=\"og:description\" content=\"" + ogDescription + "\" />" +
+    "<meta property=\"og:image\" content=\"" + ogImage + "\" />" +
+    "<meta property=\"og:url\" content=\"" + pageUrl + "\" />" +
+    "<meta property=\"og:type\" content=\"website\" />" +
+    "<meta name=\"twitter:card\" content=\"summary_large_image\" />" +
+    "<meta name=\"twitter:title\" content=\"" + ogTitle + "\" />" +
+    "<meta name=\"twitter:description\" content=\"" + ogDescription + "\" />" +
+    "<meta name=\"twitter:image\" content=\"" + ogImage + "\" />";
 
   const socials = content.socials || {};
   const socialHtml = Object.entries(socials)
@@ -242,6 +241,7 @@ export function renderPage(page) {
   let html = tmpl.html;
 
   html = html.replace(/\{\{CSS\}\}/g, "<style>" + tmpl.css + "</style>");
+  html = html.replace(/\{\{OG_TAGS\}\}/g, ogTags);
   html = html.replace(/\{\{TOKEN_NAME\}\}/g, content.name ? escapeHtml(content.name) : "");
   html = html.replace(/\{\{SLUG\}\}/g, escapeHtml(page.slug));
 
