@@ -4,9 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{TOKEN_NAME}}</title>
+  {{OG_TAGS}}
   {{CSS}}
 </head>
-<body>
+<body style="opacity:0;transition:opacity 0.5s ease;">
 
   <div id="intro-overlay">
     <div id="intro-card">
@@ -52,6 +53,9 @@
   </div>
 
   <script>
+    // Body fade in
+    document.body.style.opacity = '0';
+
     // Intro overlay
     (function() {
       var overlay = document.getElementById('intro-overlay');
@@ -83,15 +87,47 @@
         }
       }
 
+      // Fade in body first
+      setTimeout(function() {
+        document.body.style.opacity = '1';
+      }, 50);
+
+      // Show intro card
       setTimeout(function() {
         card.style.opacity = '1';
         card.style.transform = 'scale(1)';
-      }, 80);
+      }, 150);
 
+      // Fade out intro
       setTimeout(function() {
         overlay.style.opacity = '0';
         setTimeout(function() { overlay.style.display = 'none'; }, 1000);
       }, 1800);
+    })();
+
+    // Scroll fade-in for cards
+    (function() {
+      var cards = document.querySelectorAll('.card, .tokenomics-block, .description-block, .contract-block, .buy-links, .header-row');
+      cards.forEach(function(el) {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(24px)';
+        el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      });
+
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      // Delay so intro plays first
+      setTimeout(function() {
+        cards.forEach(function(el) { observer.observe(el); });
+      }, 2000);
     })();
 
     // Countdown timers
