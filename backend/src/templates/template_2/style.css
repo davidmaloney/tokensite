@@ -7,6 +7,16 @@ body {
   min-height: 100vh;
 }
 
+body::before {
+  content: '';
+  position: fixed; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #14a37f, #0d7a5f, #14a37f);
+  background-size: 200% 100%;
+  animation: accentSlide 4s linear infinite;
+  z-index: 100;
+}
+@keyframes accentSlide { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
+
 #intro-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
@@ -54,11 +64,7 @@ body {
 
 .content-container { padding: 0 28px 56px; flex: 1; width: 100%; }
 
-.header-row {
-  display: flex; align-items: flex-end; gap: 20px;
-  margin-top: 16px; margin-bottom: 28px;
-}
-
+.header-row { display: flex; align-items: flex-end; gap: 20px; margin-top: 16px; margin-bottom: 28px; }
 .avatar-container { flex-shrink: 0; }
 .avatar-img { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 5px solid #fff; display: block; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
 .avatar-placeholder { width: 140px; height: 140px; border-radius: 50%; background: #f0f0f0; border: 5px solid #fff; display: flex; align-items: center; justify-content: center; font-size: 52px; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
@@ -198,7 +204,7 @@ body {
   .page-wrapper { max-width: 100%; box-shadow: none; }
   .banner-container { height: 160px; margin-top: 0; border-radius: 0; }
   .avatar-img, .avatar-placeholder { width: 90px; height: 90px; }
-  .header-row { margin-top: -24px; gap: 14px; flex-wrap: wrap; }
+  .header-row { margin-top: 8px; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
   .header-main { width: 100%; }
   .token-name { font-size: 22px; }
   .header-socials { gap: 6px; }
