@@ -7,30 +7,11 @@
   {{CSS}}
 </head>
 <body>
-  <div id="intro-overlay" style="
-    position:fixed;top:0;left:0;width:100%;height:100%;
-    display:flex;align-items:center;justify-content:center;
-    z-index:9999;pointer-events:none;
-    transition:opacity 0.6s ease;
-  ">
-    <div id="intro-card" style="
-      background:rgba(255,255,255,0.08);
-      backdrop-filter:blur(24px);
-      -webkit-backdrop-filter:blur(24px);
-      border:1px solid rgba(255,255,255,0.15);
-      border-radius:24px;
-      padding:40px;
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      gap:16px;
-      box-shadow:0 8px 60px rgba(0,0,0,0.5);
-      opacity:0;
-      transform:scale(0.92);
-      transition:opacity 0.4s ease, transform 0.4s ease;
-    ">
-      <div id="intro-avatar"></div>
-      <div id="intro-name" style="font-size:22px;font-weight:900;color:#fff;text-align:center;max-width:260px;"></div>
+
+  <div id="intro-overlay">
+    <div id="intro-card">
+      <div id="intro-avatar-wrap"></div>
+      <div id="intro-name"></div>
     </div>
   </div>
 
@@ -67,11 +48,11 @@
   </div>
 
   <script>
-    // Intro animation
+    // Intro overlay
     (function() {
       var overlay = document.getElementById('intro-overlay');
       var card = document.getElementById('intro-card');
-      var introAvatar = document.getElementById('intro-avatar');
+      var avatarWrap = document.getElementById('intro-avatar-wrap');
       var introName = document.getElementById('intro-name');
 
       var avatarImg = document.querySelector('.avatar-img');
@@ -81,28 +62,29 @@
       if (avatarImg) {
         var img = document.createElement('img');
         img.src = avatarImg.src;
-        img.style.cssText = 'width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.3);';
-        introAvatar.appendChild(img);
+        img.style.cssText = 'width:160px;height:160px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,255,255,0.25);box-shadow:0 0 60px rgba(0,0,0,0.5);';
+        avatarWrap.appendChild(img);
       } else if (avatarPlaceholder) {
-        var ph = avatarPlaceholder.cloneNode(true);
-        ph.style.cssText = 'width:120px;height:120px;border-radius:50%;font-size:48px;display:flex;align-items:center;justify-content:center;';
-        introAvatar.appendChild(ph);
+        var ph = document.createElement('div');
+        ph.textContent = avatarPlaceholder.textContent;
+        ph.style.cssText = 'width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.1);border:4px solid rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;font-size:64px;';
+        avatarWrap.appendChild(ph);
       }
 
       if (tokenName) {
         introName.textContent = tokenName.textContent;
+        var computedColor = window.getComputedStyle(document.querySelector('.slug-tag')).color;
+        introName.style.color = computedColor || '#fff';
       }
 
       setTimeout(function() {
         card.style.opacity = '1';
         card.style.transform = 'scale(1)';
-      }, 100);
+      }, 80);
 
       setTimeout(function() {
         overlay.style.opacity = '0';
-        setTimeout(function() {
-          overlay.style.display = 'none';
-        }, 600);
+        setTimeout(function() { overlay.style.display = 'none'; }, 1000);
       }, 1800);
     })();
 
