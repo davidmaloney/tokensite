@@ -7,6 +7,16 @@ body {
   min-height: 100vh;
 }
 
+body::before {
+  content: '';
+  position: fixed; top: 0; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, #9945FF, #14F195, #9945FF);
+  background-size: 200% 100%;
+  animation: accentSlide 4s linear infinite;
+  z-index: 100;
+}
+@keyframes accentSlide { 0% { background-position: 0% 0; } 100% { background-position: 200% 0; } }
+
 #intro-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   display: flex; align-items: center; justify-content: center;
@@ -57,15 +67,11 @@ body {
   display: flex; align-items: flex-end; gap: 20px;
   margin-top: 16px; margin-bottom: 28px;
 }
-
 .avatar-container { flex-shrink: 0; }
 .avatar-img { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 5px solid #0d0d0d; display: block; box-shadow: 0 0 30px rgba(153,69,255,0.4); }
 .avatar-placeholder { width: 140px; height: 140px; border-radius: 50%; background: #1e1e1e; border: 5px solid #0d0d0d; display: flex; align-items: center; justify-content: center; font-size: 52px; }
 
-.header-main {
-  flex: 1; min-width: 0; padding-bottom: 10px;
-  display: flex; flex-direction: column; gap: 12px;
-}
+.header-main { flex: 1; min-width: 0; padding-bottom: 10px; display: flex; flex-direction: column; gap: 12px; }
 .name-area { min-width: 0; }
 .token-name {
   font-size: 34px; font-weight: 900; line-height: 1.1; word-break: break-word; letter-spacing: -0.5px;
@@ -207,7 +213,7 @@ body {
   .page-wrapper { max-width: 100%; }
   .banner-container { height: 160px; margin-top: 0; border-radius: 0; }
   .avatar-img, .avatar-placeholder { width: 90px; height: 90px; }
-  .header-row { margin-top: -24px; gap: 14px; flex-wrap: wrap; }
+  .header-row { margin-top: 8px; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
   .header-main { width: 100%; }
   .token-name { font-size: 22px; }
   .header-socials { gap: 6px; }
