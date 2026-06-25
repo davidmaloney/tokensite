@@ -64,6 +64,10 @@ export default function Dashboard() {
           SHILLit
         </div>
 
+        <div style={{ fontSize: "13px", fontWeight: 600, color: "#666", marginTop: "-24px" }}>
+          Looks based on any device.
+        </div>
+
         <div style={{ fontSize: "20px", color: "#ccc", maxWidth: "600px", lineHeight: 1.5, fontWeight: 600 }}>
           Instant crypto landing pages for your token
         </div>
@@ -72,13 +76,9 @@ export default function Dashboard() {
           One wallet. One page. The fastest setup on Solana.
         </div>
 
-        <div style={{ fontSize: "13px", fontWeight: 600, color: "#555", marginTop: "-20px" }}>
-          Looks based on any device.
-        </div>
-
         {/* Live example showcase */}
         <div style={{ maxWidth: "600px", width: "100%", textAlign: "left" }}>
-          <div style={{ fontSize: "11px", fontWeight: 700, color: "#9945FF", letterSpacing: "1.5px", marginBottom: "14px" }}>
+          <div style={{ fontSize: "15px", fontWeight: 800, color: "#9945FF", letterSpacing: "2px", marginBottom: "14px" }}>
             SEE IT IN ACTION
           </div>
           <div style={{
@@ -108,7 +108,7 @@ export default function Dashboard() {
                 fomoyodl.shillit.fun
               </div>
               <a href="https://fomoyodl.shillit.fun" target="_blank" rel="noreferrer"
-                style={{ fontSize: "10px", color: "#9945FF", textDecoration: "none", flexShrink: 0 }}>
+                style={{ fontSize: "20px", fontWeight: 700, color: "#9945FF", textDecoration: "none", flexShrink: 0, lineHeight: 1, padding: "0 2px" }}>
                 ↗
               </a>
             </div>
@@ -161,6 +161,31 @@ export default function Dashboard() {
                   <span style={{ fontSize: "15px", fontWeight: 500, color: "#ccc", lineHeight: 1.4 }}>{text}</span>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div style={{
+            marginTop: "20px",
+            background: "rgba(20,241,149,0.05)",
+            border: "1px solid rgba(20,241,149,0.25)",
+            borderRadius: "12px",
+            padding: "16px 18px",
+          }}>
+            <div style={{ fontSize: "11px", fontWeight: 700, color: "#14F195", letterSpacing: "1.5px", marginBottom: "10px" }}>
+              WHAT $4.99 LOOKS LIKE IN SOL
+            </div>
+            <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: "130px" }}>
+                <div style={{ fontSize: "11px", color: "#888", marginBottom: "4px" }}>At today's SOL price</div>
+                <div style={{ fontSize: "20px", fontWeight: 800, color: "#fff" }}>≈ 0.072 SOL</div>
+              </div>
+              <div style={{ flex: 1, minWidth: "130px" }}>
+                <div style={{ fontSize: "11px", color: "#888", marginBottom: "4px" }}>If SOL hit its all-time high</div>
+                <div style={{ fontSize: "20px", fontWeight: 800, color: "#14F195" }}>≈ 0.017 SOL</div>
+              </div>
+            </div>
+            <div style={{ fontSize: "10px", color: "#666", marginTop: "10px", fontStyle: "italic" }}>
+              Example only — you always pay the live SOL equivalent at checkout.
             </div>
           </div>
 
@@ -226,6 +251,9 @@ export default function Dashboard() {
                 {" · "}
                 <a href="https://solflare.com" target="_blank" rel="noreferrer" style={{ color: "#666", textDecoration: "none" }}>Get Solflare</a>
               </div>
+              <div style={{ fontSize: "11px", color: "#3a3a3a", fontStyle: "italic" }}>
+                On mobile, open shillit.fun from inside your wallet browser.
+              </div>
               <div style={{ fontSize: "11px", color: "#444" }}>
                 Already have a wallet app?{" "}
                 <a href="https://phantom.app/ul/browse/https://shillit.fun" style={{ color: "#666", textDecoration: "none" }}>Phantom</a>
@@ -233,9 +261,6 @@ export default function Dashboard() {
                 <a href="https://backpack.app/ul/v1/browse/https%3A%2F%2Fshillit.fun" style={{ color: "#666", textDecoration: "none" }}>Backpack</a>
                 {" · "}
                 <a href="https://solflare.com/ul/v1/browse/https%3A%2F%2Fshillit.fun" style={{ color: "#666", textDecoration: "none" }}>Solflare</a>
-              </div>
-              <div style={{ fontSize: "11px", color: "#3a3a3a", fontStyle: "italic" }}>
-                On mobile, open shillit.fun from inside your wallet app.
               </div>
             </div>
           )}
