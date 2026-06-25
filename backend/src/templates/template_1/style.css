@@ -90,10 +90,11 @@ body {
 .header-socials .social-link:hover { background: rgba(153,69,255,0.18); transform: translateY(-1px); animation: none; border-color: rgba(153,69,255,0.5); }
 .header-socials .social-icon { display: flex; align-items: center; }
 
-.description-block { position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(153,69,255,0.1) 0%, rgba(255,255,255,0.03) 38%); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid #9945FF; border-radius: 16px; padding: 22px 26px; margin-bottom: 20px; box-shadow: 0 4px 18px rgba(0,0,0,0.3); }
-.description { font-size: 18px; line-height: 1.8; color: #aaa; white-space: pre-wrap; word-break: break-word; }
+.description-block { position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(153,69,255,0.1) 0%, rgba(255,255,255,0.03) 38%); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid #9945FF; border-radius: 16px; padding: 22px 26px 34px; margin-bottom: 20px; box-shadow: 0 4px 18px rgba(0,0,0,0.3); }
+.description { font-size: 18px; line-height: 1.8; color: #e8e8e8; white-space: pre-wrap; word-break: break-word; }
 .description-block::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent); }
-.description::first-line { color: #fff; font-weight: 600; }
+.description-block::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 60%; background: radial-gradient(ellipse at 50% 120%, rgba(255,255,255,0.05), transparent 70%); pointer-events: none; }
+.description::first-line { font-weight: 700; }
 
 .contract-block {
   display: flex; align-items: center; gap: 10px;
@@ -156,9 +157,9 @@ body {
 .chart-card { grid-column: 1 / -1; }
 
 .countdown-card {}
-.countdown-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.countdown-item { text-align: center; background: rgba(153,69,255,0.08); border-radius: 12px; padding: 16px 4px; border: 1px solid rgba(153,69,255,0.15); }
-.countdown-num { font-size: 36px; font-weight: 900; color: #9945FF; line-height: 1; }
+.countdown-grid { display: grid; margin-top: 2px; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.countdown-item { text-align: center; background: rgba(153,69,255,0.08); border-radius: 12px; padding: 12px 4px; border: 1px solid rgba(153,69,255,0.15); }
+.countdown-num { font-size: 30px; font-weight: 900; color: #9945FF; line-height: 1; }
 .countdown-label { font-size: 13px; color: #666; margin-top: 6px; text-transform: uppercase; letter-spacing: 1px; }
 .countdown-launched { font-size: 20px; font-weight: 800; color: #14F195; text-align: center; padding: 16px; }
 
@@ -219,10 +220,10 @@ body {
   #intro-avatar-wrap img, #intro-avatar-wrap div { width: 140px !important; height: 140px !important; }
   #intro-name { font-size: 30px; }
 
-  /* socials: sit beside avatar, overflow wraps cleanly below, left-aligned */
-  .header-row { flex-wrap: wrap; }
-  .header-main { width: 100%; }
-  .header-socials { width: 100%; justify-content: flex-start; margin-top: 4px; }
-  /* buy buttons smaller on mobile (desktop unchanged) */
+  .header-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .avatar-img, .avatar-placeholder { width: 110px; height: 110px; }
+  .header-main { width: 100%; padding-bottom: 0; gap: 10px; }
+  .header-socials { width: 100%; justify-content: flex-start; gap: 8px; }
+  .header-socials .social-link { font-size: 13px; padding: 6px 12px; }
   .buy-btn { font-size: 14px; padding: 11px 18px; }
 }
