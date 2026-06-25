@@ -44,9 +44,9 @@ USD pricing is converted server-side using the live CoinGecko rate so users alwa
 
 Templates
 
-Four templates included:
+Eight templates included:
 
-Dark Crypto — black background, purple and green neon
+Some exsamples are - Dark Crypto — black background, purple and green neon
 Clean Launch — white minimal DeFi style
 Neon Degen — pure black with hot pink and electric cyan
 Midnight Blue — deep navy with electric blue accents
