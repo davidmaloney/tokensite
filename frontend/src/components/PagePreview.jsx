@@ -111,7 +111,7 @@ export default function PagePreview({ data, templateId }) {
       borderRadius: "12px", overflow: "hidden",
       border: isDark ? "1px solid #222" : "1px solid #ddd",
       fontFamily: "Inter, system-ui, sans-serif",
-      maxWidth: "480px", width: "100%", minHeight: "400px",
+      maxWidth: "900px", width: "100%", minHeight: "400px",
     }}>
 
       {data.banner?.preview ? (
@@ -136,7 +136,7 @@ export default function PagePreview({ data, templateId }) {
 
         {data.description && (
           <div style={{ background: cardBg, border: cardBorder, borderRadius: "10px", padding: "12px 14px", marginBottom: "12px" }}>
-            <p style={{ fontSize: "15px", lineHeight: 1.7, color: isDark ? "#aaa" : "#555" }}>{data.description}</p>
+            <p style={{ fontSize: "15px", lineHeight: 1.7, color: isDark ? "#ddd" : "#333" }}>{data.description}</p>
           </div>
         )}
 
@@ -159,7 +159,7 @@ export default function PagePreview({ data, templateId }) {
           </div>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(200px,1fr))", gap: "10px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(260px,1fr))", gap: "14px" }}>
 
           {tokenomicsEntries.length > 0 && (
             <div style={{ background: cardBg, border: cardBorder, borderRadius: "10px", padding: "12px 14px" }}>
