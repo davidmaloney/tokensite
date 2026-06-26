@@ -160,6 +160,7 @@ body {
 .team-member { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 16px 12px; background: rgba(0,0,0,0.02); border-radius: 14px; border: 1px solid rgba(0,0,0,0.06); transition: border-color 0.2s; }
 .team-member:hover { border-color: rgba(20,163,127,0.3); }
 .team-avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #14a37f, #0d7a5f); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #fff; }
+.team-photo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; display: block; }
 .team-name { font-size: 16px; font-weight: 700; color: #111; }
 .team-role { font-size: 14px; color: #888; }
 .team-twitter { font-size: 14px; color: #14a37f; text-decoration: none; }
