@@ -53,7 +53,7 @@ export default function ManagePage() {
   const fetchPage = async () => {
     setLoading(true);
     try {
-      const res = await axios.get("/api/pages/id/" + pageId);
+      const res = await axios.get("/api/pages/" + pageId);
       const p = res.data.page;
       setPage(p);
       const c = JSON.parse(p.content_json || "{}");
