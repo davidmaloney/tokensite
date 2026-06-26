@@ -98,13 +98,8 @@ export async function runCleanup() {
     // Delete images first
     deleteImageFiles(page.content_json);
 
-    // Slug goes to deleted_slugs only for admin cleanup — not for natural expiry
-    // This path is only reached via soft delete which happens in cleanup job
-    // not via the expiry job, so we add to deleted_slugs here
-    await pool.query(
-      "INSERT INTO deleted_slugs (slug, reason) VALUES ($1, 'auto_cleanup') ON CONFLICT DO NOTHING",
-      [page.slug]
-    );
+    // Natural expiry/cleanup frees the slug for reuse — it is NOT blacklisted.
+    // (Only admin/env manual deletes blacklist a slug.) This matches expiryJob.
     await pool.query("DELETE FROM transactions WHERE page_id = $1", [page.id]);
     await pool.query("DELETE FROM pages WHERE id = $1", [page.id]);
     logger.info("page_hard_deleted", { pageId: page.id, slug: page.slug });
