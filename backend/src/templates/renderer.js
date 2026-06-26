@@ -122,8 +122,11 @@ function buildAboutBlock(about) {
     html += "<div class=\"team-grid\">";
     about.team.forEach(function(member) {
       if (!member.name) return;
+      var avatarInner = member.photo
+        ? "<img src=\"" + escapeHtml(member.photo) + "\" alt=\"" + escapeHtml(member.name) + "\" class=\"team-photo\" />"
+        : escapeHtml(member.name.charAt(0).toUpperCase());
       html += "<div class=\"team-member\">" +
-        "<div class=\"team-avatar\">" + escapeHtml(member.name.charAt(0).toUpperCase()) + "</div>" +
+        "<div class=\"team-avatar\">" + avatarInner + "</div>" +
         "<div class=\"team-info\">" +
         "<div class=\"team-name\">" + escapeHtml(member.name) + "</div>" +
         (member.role ? "<div class=\"team-role\">" + escapeHtml(member.role) + "</div>" : "") +
