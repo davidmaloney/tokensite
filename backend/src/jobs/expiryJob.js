@@ -38,6 +38,16 @@ export function startExpiryJob() {
                 }
               }
             }
+            for (const member of (content.about?.team || [])) {
+              if (member && member.photo) {
+                const filename = member.photo.replace("/media/", "");
+                const filepath = path.join(UPLOAD_DIR, filename);
+                if (fs.existsSync(filepath)) {
+                  fs.unlinkSync(filepath);
+                  logger.info("expired_image_deleted", { filename });
+                }
+              }
+            }
           } catch (imgErr) {
             logger.warn("expired_image_delete_failed", { slug: page.slug, err: imgErr.message });
           }
