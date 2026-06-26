@@ -39,6 +39,16 @@ function deleteImageFiles(content) {
         }
       }
     }
+    for (const member of (parsed.about?.team || [])) {
+      if (member && member.photo) {
+        const filename = member.photo.replace("/media/", "");
+        const filepath = path.join(UPLOAD_DIR, filename);
+        if (fs.existsSync(filepath)) {
+          fs.unlinkSync(filepath);
+          logger.info("image_deleted", { filename });
+        }
+      }
+    }
   } catch (err) {
     logger.warn("image_delete_failed", { err: err.message });
   }
