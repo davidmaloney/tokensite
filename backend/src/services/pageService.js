@@ -101,6 +101,19 @@ export async function updatePageContent(pageId, walletAddress, { templateId, con
     deleteOldImage(existing.banner, content.banner);
   }
 
+  // Team member photos: delete any old photo file that is no longer used.
+  // Collect the photo URLs that exist after this update, then remove any
+  // old team photo that isn't in that set.
+  try {
+    const oldPhotos = (existing.about?.team || []).map((m) => m && m.photo).filter(Boolean);
+    const newPhotos = new Set((merged.about?.team || []).map((m) => m && m.photo).filter(Boolean));
+    for (const oldPhoto of oldPhotos) {
+      if (!newPhotos.has(oldPhoto)) deleteOldImage(oldPhoto, null);
+    }
+  } catch (err) {
+    logger.warn("team_photo_cleanup_failed", { err: err.message });
+  }
+
   const now = Math.floor(Date.now() / 1000);
   await pool.query(
     "UPDATE pages SET template_id = $1, content_json = $2, updated_at = $3 WHERE id = $4",
@@ -172,6 +185,14 @@ export async function hardDeletePage(pageId) {
       for (const field of ["avatar", "banner"]) {
         if (content[field]) {
           const filename = content[field].replace("/media/", "");
+          const filepath = path.join(UPLOAD_DIR, filename);
+          if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
+        }
+      }
+      // Also delete any team member photos.
+      for (const member of (content.about?.team || [])) {
+        if (member && member.photo) {
+          const filename = member.photo.replace("/media/", "");
           const filepath = path.join(UPLOAD_DIR, filename);
           if (fs.existsSync(filepath)) fs.unlinkSync(filepath);
         }
