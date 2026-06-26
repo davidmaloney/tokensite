@@ -157,6 +157,7 @@ body {
 .team-member { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 16px 12px; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px solid rgba(255,255,255,0.05); transition: border-color 0.2s; }
 .team-member:hover { border-color: rgba(251,146,60,0.3); }
 .team-avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #fb923c, #fbbf24); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #000; }
+.team-photo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; display: block; }
 .team-name { font-size: 16px; font-weight: 700; color: #e0d8cc; }
 .team-role { font-size: 14px; color: #5a5040; }
 .team-twitter { font-size: 14px; color: #fb923c; text-decoration: none; }
