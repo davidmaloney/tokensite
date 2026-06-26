@@ -193,12 +193,19 @@ export default function PagePreview({ data, templateId }) {
               {data.aboutText && <p style={{ fontSize: "14px", color: isDark ? "#aaa" : "#666", lineHeight: 1.6, marginBottom: filteredTeam.length > 0 ? "10px" : "0" }}>{data.aboutText.slice(0, 80)}{data.aboutText.length > 80 ? "…" : ""}</p>}
               {filteredTeam.length > 0 && (
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                  {filteredTeam.map((m, i) => (
+                  {filteredTeam.map((m, i) => {
+                    const photoSrc = m.photo?.preview || (typeof m.photo === "string" ? m.photo : null);
+                    return (
                     <div key={i} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                      <div style={{ width: "26px", height: "26px", borderRadius: "50%", background: accentColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 800, color: "#000" }}>{m.name.charAt(0).toUpperCase()}</div>
+                      {photoSrc ? (
+                        <img src={photoSrc} alt={m.name} style={{ width: "26px", height: "26px", borderRadius: "50%", objectFit: "cover", display: "block" }} />
+                      ) : (
+                        <div style={{ width: "26px", height: "26px", borderRadius: "50%", background: accentColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 800, color: "#000" }}>{m.name.charAt(0).toUpperCase()}</div>
+                      )}
                       <span style={{ fontSize: "14px", color: isDark ? "#ccc" : "#333" }}>{m.name}</span>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
