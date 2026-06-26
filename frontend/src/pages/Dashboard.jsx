@@ -176,7 +176,7 @@ export default function Dashboard() {
             </div>
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <div style={{ flex: 1, minWidth: "130px" }}>
-                <div style={{ fontSize: "11px", color: "#888", marginBottom: "4px" }}>At today's SOL price</div>
+                <div style={{ fontSize: "11px", color: "#888", marginBottom: "4px" }}>At today's SOL price <span style={{ color: "#666" }}>(June 2026)</span></div>
                 <div style={{ fontSize: "20px", fontWeight: 800, color: "#fff" }}>≈ 0.072 SOL</div>
               </div>
               <div style={{ flex: 1, minWidth: "130px" }}>
@@ -184,7 +184,7 @@ export default function Dashboard() {
                 <div style={{ fontSize: "20px", fontWeight: 800, color: "#14F195" }}>≈ 0.017 SOL</div>
               </div>
             </div>
-            <div style={{ fontSize: "10px", color: "#666", marginTop: "10px", fontStyle: "italic" }}>
+            <div style={{ fontSize: "10px", color: "#fff", marginTop: "10px", fontStyle: "italic" }}>
               Example only — you always pay the live SOL equivalent at checkout.
             </div>
           </div>
