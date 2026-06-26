@@ -300,7 +300,7 @@ export default function CreatePage() {
 
       <div style={{
         display: "grid",
-        gridTemplateColumns: step === 6 ? "1fr 1fr" : "1fr",
+        gridTemplateColumns: "1fr",
         gap: "24px", alignItems: "start",
       }}>
         <div className="glass" style={{ borderRadius: "12px", padding: "24px" }}>
