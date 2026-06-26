@@ -72,7 +72,7 @@ export default function CreatePage() {
   const [countdownDate, setCountdownDate] = useState("");
   const [countdownLabel, setCountdownLabel] = useState("");
   const [aboutText, setAboutText] = useState("");
-  const [team, setTeam] = useState([{ name: "", role: "", twitter: "" }]);
+  const [team, setTeam] = useState([{ name: "", role: "", twitter: "", photo: null }]);
   const [roadmap, setRoadmap] = useState([{ title: "", description: "", status: "upcoming" }]);
 
   if (!connected) {
@@ -171,7 +171,7 @@ export default function CreatePage() {
   };
 
   const addTeamMember = () => {
-    if (team.length < 4) setTeam([...team, { name: "", role: "", twitter: "" }]);
+    if (team.length < 4) setTeam([...team, { name: "", role: "", twitter: "", photo: null }]);
   };
 
   const updateTeamMember = (i, field, val) => {
@@ -211,7 +211,23 @@ export default function CreatePage() {
 
       const filteredBuyLinks = Object.fromEntries(Object.entries(buyLinks).filter(([, v]) => v && v.trim()));
       const filteredTokenomics = Object.fromEntries(Object.entries(tokenomics).filter(([, v]) => v && v.trim()));
-      const filteredTeam = team.filter((m) => m.name && m.name.trim());
+
+      // Upload each team member's photo (if any), then build the clean team array.
+      const teamWithPhotos = await Promise.all(
+        team
+          .filter((m) => m.name && m.name.trim())
+          .map(async (m) => {
+            const member = { name: m.name, role: m.role, twitter: m.twitter };
+            if (m.photo?.file) {
+              const photoUrl = await uploadImage(m.photo, "avatar");
+              if (photoUrl) member.photo = photoUrl;
+            } else if (typeof m.photo === "string" && m.photo) {
+              member.photo = m.photo;
+            }
+            return member;
+          })
+      );
+      const filteredTeam = teamWithPhotos;
       const filteredRoadmap = roadmap.filter((m) => m.title && m.title.trim());
 
       const content = {};
@@ -471,6 +487,7 @@ export default function CreatePage() {
                             <input value={member.name} onChange={(e) => updateTeamMember(i, "name", e.target.value)} placeholder="Name" />
                             <input value={member.role} onChange={(e) => updateTeamMember(i, "role", e.target.value)} placeholder="Role (e.g. Developer)" />
                             <input value={member.twitter} onChange={(e) => updateTeamMember(i, "twitter", e.target.value)} placeholder="Twitter @handle (optional)" />
+                            <ImageUpload label="Photo" hint="Optional · square works best · Max 2MB" value={member.photo} onChange={(val) => updateTeamMember(i, "photo", val)} />
                           </div>
                         </div>
                       ))}
