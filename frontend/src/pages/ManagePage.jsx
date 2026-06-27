@@ -173,7 +173,8 @@ export default function ManagePage() {
         editTeam
           .filter((m) => m.name && m.name.trim())
           .map(async (m) => {
-            const member = { name: m.name, role: m.role, twitter: m.twitter };
+            const member = { name: m.name, role: m.role };
+            if (m.twitter && m.twitter.trim()) member.twitter = m.twitter.trim();
             if (m.photo?.file) {
               const form = new FormData();
               form.append("image", m.photo.file);
@@ -391,7 +392,7 @@ export default function ManagePage() {
                       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                         <input value={member.name} onChange={(e) => updateTeamMember(i, "name", e.target.value)} placeholder="Name" />
                         <input value={member.role} onChange={(e) => updateTeamMember(i, "role", e.target.value)} placeholder="Role" />
-                        <input value={member.twitter} onChange={(e) => updateTeamMember(i, "twitter", e.target.value.replace(/^https?:\/\/(www\.)?(x|twitter)\.com\//i, "").replace(/^@+/, "").replace(/[^a-zA-Z0-9_].*$/, ""))} placeholder="X / Twitter handle (optional)" maxLength={15} />
+                        <input value={member.twitter} onChange={(e) => updateTeamMember(i, "twitter", e.target.value.replace(/^https?:\/\/(www\.)?(x|twitter)\.com\//i, "").replace(/^(x|twitter)\.com\//i, "").replace(/^@+/, "").replace(/[^a-zA-Z0-9_]/g, ""))} placeholder="X / Twitter handle (optional)" maxLength={15} />
                         <ImageUpload label="Photo" hint="Optional · square works best · Max 2MB" value={member.photo} onChange={(val) => updateTeamMember(i, "photo", val)} />
                       </div>
                     </div>
