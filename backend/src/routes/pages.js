@@ -37,6 +37,16 @@ function validateContent(content) {
   for (const [key, url] of Object.entries(buyLinks)) {
     if (url && !isValidUrl(url)) return "Invalid URL in buy links: " + key;
   }
+  // Team member X/Twitter handles: must be a simple handle (letters, numbers, underscore, max 15).
+  const team = (content.about && content.about.team) || [];
+  for (const member of team) {
+    if (member && member.twitter) {
+      const handle = String(member.twitter).replace(/^@+/, "");
+      if (!/^[a-zA-Z0-9_]{1,15}$/.test(handle)) {
+        return "Invalid team X/Twitter handle: " + member.twitter;
+      }
+    }
+  }
   return null;
 }
 
