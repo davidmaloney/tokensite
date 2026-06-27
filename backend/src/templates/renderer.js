@@ -130,7 +130,7 @@ function buildAboutBlock(about) {
         "<div class=\"team-info\">" +
         "<div class=\"team-name\">" + escapeHtml(member.name) + "</div>" +
         (member.role ? "<div class=\"team-role\">" + escapeHtml(member.role) + "</div>" : "") +
-        (member.twitter ? "<a href=\"https://x.com/" + escapeHtml(member.twitter.replace("@", "")) + "\" target=\"_blank\" class=\"team-twitter\">@" + escapeHtml(member.twitter.replace("@", "")) + "</a>" : "") +
+        (member.twitter ? "<a href=\"https://x.com/" + escapeHtml(member.twitter.replace(/^@+/, "").replace(/^https?:\/\/(www\.)?x\.com\//i, "").replace(/^https?:\/\/(www\.)?twitter\.com\//i, "").replace(/[^a-zA-Z0-9_].*$/, "")) + "\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"team-twitter\" aria-label=\"X profile\">" + SOCIAL_ICONS.twitter + "</a>" : "") +
         "</div></div>";
     });
     html += "</div>";
