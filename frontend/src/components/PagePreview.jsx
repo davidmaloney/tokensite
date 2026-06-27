@@ -203,6 +203,9 @@ export default function PagePreview({ data, templateId }) {
                         <div style={{ width: "26px", height: "26px", borderRadius: "50%", background: accentColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 800, color: "#000" }}>{m.name.charAt(0).toUpperCase()}</div>
                       )}
                       <span style={{ fontSize: "14px", color: isDark ? "#ccc" : "#333" }}>{m.name}</span>
+                      {m.twitter && m.twitter.trim() && (
+                        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "22px", height: "22px", borderRadius: "50%", color: accentColor, background: accentRgba(accentColor, 0.10), border: "1px solid " + accentRgba(accentColor, 0.30), fontSize: "12px", flexShrink: 0 }}>𝕏</span>
+                      )}
                     </div>
                     );
                   })}
