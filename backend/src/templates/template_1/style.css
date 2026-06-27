@@ -2,6 +2,12 @@
 
 body {
   background: #0d0d0d;
+  background-image:
+    radial-gradient(circle at 15% 12%, rgba(153,69,255,0.06) 0%, transparent 42%),
+    radial-gradient(circle at 85% 88%, rgba(153,69,255,0.05) 0%, transparent 45%),
+    radial-gradient(rgba(255,255,255,0.022) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 28px 28px;
+  background-attachment: fixed;
   color: #f0f0f0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
@@ -172,8 +178,8 @@ body {
 .team-photo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; display: block; }
 .team-name { font-size: 16px; font-weight: 700; color: #fff; }
 .team-role { font-size: 14px; color: #666; }
-.team-twitter { font-size: 14px; color: #9945FF; text-decoration: none; }
-.team-twitter:hover { text-decoration: underline; }
+.team-twitter { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; color: #9945FF; background: rgba(153,69,255,0.10); border: 1px solid rgba(153,69,255,0.30); text-decoration: none; transition: all 0.2s; margin-top: 2px; }
+.team-twitter:hover { background: rgba(153,69,255,0.20); border-color: rgba(153,69,255,0.55); transform: translateY(-1px); }
 
 .roadmap-card {}
 .roadmap-list { display: flex; flex-direction: column; }
