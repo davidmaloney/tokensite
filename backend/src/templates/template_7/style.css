@@ -160,8 +160,8 @@ body {
 .team-photo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; display: block; }
 .team-name { font-size: 16px; font-weight: 700; color: #e0d8cc; }
 .team-role { font-size: 14px; color: #5a5040; }
-.team-twitter { font-size: 14px; color: #fb923c; text-decoration: none; }
-.team-twitter:hover { text-decoration: underline; }
+.team-twitter { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 50%; color: #fb923c; background: rgba(251,146,60,0.10); border: 1px solid rgba(251,146,60,0.30); text-decoration: none; transition: all 0.2s; margin-top: 2px; }
+.team-twitter:hover { background: rgba(251,146,60,0.20); border-color: rgba(251,146,60,0.55); transform: translateY(-1px); }
 
 .roadmap-card {}
 .roadmap-list { display: flex; flex-direction: column; }
