@@ -391,7 +391,7 @@ export default function ManagePage() {
                       <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                         <input value={member.name} onChange={(e) => updateTeamMember(i, "name", e.target.value)} placeholder="Name" />
                         <input value={member.role} onChange={(e) => updateTeamMember(i, "role", e.target.value)} placeholder="Role" />
-                        <input value={member.twitter} onChange={(e) => updateTeamMember(i, "twitter", e.target.value)} placeholder="Twitter @handle (optional)" />
+                        <input value={member.twitter} onChange={(e) => updateTeamMember(i, "twitter", e.target.value.replace(/^https?:\/\/(www\.)?(x|twitter)\.com\//i, "").replace(/^@+/, "").replace(/[^a-zA-Z0-9_].*$/, ""))} placeholder="X / Twitter handle (optional)" maxLength={15} />
                         <ImageUpload label="Photo" hint="Optional · square works best · Max 2MB" value={member.photo} onChange={(val) => updateTeamMember(i, "photo", val)} />
                       </div>
                     </div>
