@@ -112,8 +112,9 @@ docker compose up -d --build
 
 Community and Support
 
-Telegram Chat: https://t.me/shillitchat
 Terms and Privacy: https://t.me/shillitPolicies
+Telegram Chat: Token Launch & support: https://t.me/shillitchat
+x: https://x.com/shillitfun
 Email: support@shillit.fun
 GitHub: https://github.com/davidmaloney/tokensite
 Report a page: https://report.shillit.fun
