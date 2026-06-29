@@ -154,8 +154,12 @@ export default function ManagePage() {
         form.append("type", "avatar");
         const r = await axios.post("/api/media/upload", form, { headers: { "Content-Type": "multipart/form-data" } });
         content.avatar = r.data.url;
-      } else if (existing.avatar) {
+      } else if (editAvatar?.preview) {
+        // Existing image kept (no new file chosen) — preserve it.
         content.avatar = existing.avatar;
+      } else {
+        // Field was cleared by the user — send empty string so the backend removes it.
+        content.avatar = "";
       }
 
       if (editBanner?.file) {
@@ -164,8 +168,12 @@ export default function ManagePage() {
         form.append("type", "banner");
         const r = await axios.post("/api/media/upload", form, { headers: { "Content-Type": "multipart/form-data" } });
         content.banner = r.data.url;
-      } else if (existing.banner) {
+      } else if (editBanner?.preview) {
+        // Existing image kept (no new file chosen) — preserve it.
         content.banner = existing.banner;
+      } else {
+        // Field was cleared by the user — send empty string so the backend removes it.
+        content.banner = "";
       }
 
       // Build team, uploading any new member photos and preserving existing ones.
@@ -328,7 +336,7 @@ export default function ManagePage() {
           <div className="glass" style={{ borderRadius: "12px", padding: "24px", display: "flex", flexDirection: "column", gap: "20px" }}>
             <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Media</h2>
             <ImageUpload label="Avatar" hint="Recommended 400×400px · Max 2MB" value={editAvatar} onChange={setEditAvatar} />
-            <ImageUpload label="Banner" hint="Recommended 1200×300px · Max 5MB" value={editBanner} onChange={setEditBanner} />
+            <ImageUpload label="Banner" hint="Recommended 1200×480px · Max 5MB" value={editBanner} onChange={setEditBanner} />
           </div>
 
           <div className="glass" style={{ borderRadius: "12px", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
