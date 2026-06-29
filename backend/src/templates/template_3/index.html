@@ -9,7 +9,7 @@
 </head>
 <body style="opacity:0;transition:opacity 0.5s ease;">
 
-  <canvas id="bg-wave" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
+  <canvas id="bg-field" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
 
   <div id="intro-overlay">
     <div id="intro-card">
@@ -55,106 +55,96 @@
   </div>
 
   <script>
-    // ===== Neon wave-grid: rippling perspective plane with flaring nodes (Neon Degen) =====
+    // ===== Generative flow-field: particles riding a morphing current (2026, chaos/nature) =====
     (function() {
-      var canvas = document.getElementById('bg-wave');
+      var canvas = document.getElementById('bg-field');
       if (!canvas || !canvas.getContext) return;
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       var ctx = canvas.getContext('2d');
-      var w, h, dpr, raf, running = true, t = 0;
-      var COLS = 22, ROWS = 12;
+      var w, h, dpr, raf, running = true, t = 0, parts;
+      var PINK = '255,0,122', CYAN = '0,245,255', VIOLET = '150,70,255';
+      var PAL = [PINK, CYAN, VIOLET];
 
       function size() {
         dpr = Math.min(window.devicePixelRatio || 1, 2);
         w = window.innerWidth; h = window.innerHeight;
         canvas.width = w * dpr; canvas.height = h * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.fillStyle = '#050505';
+        ctx.fillRect(0, 0, w, h);
       }
 
-      function project(gx, gz) {
-        var horizon = h * 0.30;
-        var d = Math.pow(gz, 1.9);
-        var y = horizon + d * (h - horizon);
-        var spread = 0.12 + d * 1.25;
-        var x = w * 0.5 + (gx - 0.5) * w * spread;
-        return { x: x, y: y, d: d };
+      function angleAt(x, y, tt) {
+        var n = Math.sin(x * 0.0021 + tt * 0.5)
+              + Math.cos(y * 0.0026 - tt * 0.4)
+              + Math.sin((x + y) * 0.0015 + tt * 0.3)
+              + Math.cos((x - y) * 0.0019 - tt * 0.35);
+        return n * Math.PI;
       }
 
-      function wave(gx, gz, tt) {
-        return Math.sin(gz * 7 - tt * 2.2) * 0.5 + Math.sin(gx * 5 + tt * 1.3) * 0.5;
+      function build() {
+        var count = Math.min(420, Math.max(180, Math.round((w * h) / 5200)));
+        parts = [];
+        for (var i = 0; i < count; i++) {
+          parts.push({
+            x: Math.random() * w, y: Math.random() * h,
+            col: PAL[(Math.random() * PAL.length) | 0],
+            sp: 0.5 + Math.random() * 1.3,
+            life: Math.random() * 240,
+            max: 140 + Math.random() * 220,
+            wdt: Math.random() * 1.3 + 0.4
+          });
+        }
       }
 
       function draw() {
         if (!running) return;
-        t += 0.012;
-        ctx.clearRect(0, 0, w, h);
+        t += 0.0042;
 
-        var g = ctx.createLinearGradient(0, h*0.25, 0, h);
-        g.addColorStop(0, 'rgba(255,0,122,0.05)');
-        g.addColorStop(0.6, 'rgba(0,245,255,0.04)');
-        g.addColorStop(1, 'rgba(0,245,255,0)');
-        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = 'rgba(5,5,5,0.10)';
+        ctx.fillRect(0, 0, w, h);
 
-        var i, j, p, wv;
+        ctx.globalCompositeOperation = 'lighter';
+        for (var i = 0; i < parts.length; i++) {
+          var p = parts[i];
+          var a = angleAt(p.x, p.y, t);
+          var nx = p.x + Math.cos(a) * p.sp * 1.7;
+          var ny = p.y + Math.sin(a) * p.sp * 1.7;
 
-        var pts = [];
-        for (j = 0; j <= ROWS; j++) {
-          pts[j] = [];
-          for (i = 0; i <= COLS; i++) {
-            var gx = i / COLS, gz = j / ROWS;
-            p = project(gx, gz);
-            wv = wave(gx, gz, t);
-            p.y += wv * 14 * (0.2 + p.d);
-            p.w = wv;
-            pts[j][i] = p;
-          }
-        }
-
-        for (j = 0; j <= ROWS; j++) {
-          var a = 0.05 + 0.20 * (j / ROWS);
-          ctx.strokeStyle = 'rgba(0,245,255,' + a + ')';
-          ctx.lineWidth = 0.6 + (j / ROWS) * 1.2;
+          ctx.strokeStyle = 'rgba(' + p.col + ',0.34)';
+          ctx.lineWidth = p.wdt;
           ctx.beginPath();
-          for (i = 0; i <= COLS; i++) {
-            p = pts[j][i];
-            if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
-          }
+          ctx.moveTo(p.x, p.y);
+          ctx.lineTo(nx, ny);
           ctx.stroke();
-        }
-        for (i = 0; i <= COLS; i++) {
-          ctx.strokeStyle = 'rgba(255,0,122,0.10)';
-          ctx.lineWidth = 0.8;
-          ctx.beginPath();
-          for (j = 0; j <= ROWS; j++) {
-            p = pts[j][i];
-            if (j === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+
+          p.x = nx; p.y = ny; p.life++;
+          if (p.life > p.max || p.x < -10 || p.x > w + 10 || p.y < -10 || p.y > h + 10) {
+            p.x = Math.random() * w; p.y = Math.random() * h;
+            p.life = 0; p.col = PAL[(Math.random() * PAL.length) | 0];
           }
-          ctx.stroke();
         }
 
-        for (j = 2; j <= ROWS; j++) {
-          for (i = 0; i <= COLS; i++) {
-            p = pts[j][i];
-            if (p.w > 0.72) {
-              var fl = (p.w - 0.72) / 0.28;
-              var col = (i % 2) ? '0,245,255' : '255,0,122';
-              ctx.beginPath();
-              ctx.arc(p.x, p.y, (1 + fl * 2.4) * (0.4 + p.d), 0, Math.PI * 2);
-              ctx.fillStyle = 'rgba(' + col + ',' + (0.4 + fl * 0.5) + ')';
-              ctx.shadowColor = 'rgba(' + col + ',0.9)';
-              ctx.shadowBlur = 8 + fl * 14;
-              ctx.fill();
-              ctx.shadowBlur = 0;
-            }
-          }
+        var pools = [
+          { x: w*(0.32+0.10*Math.sin(t*0.6)), y: h*(0.34+0.08*Math.cos(t*0.5)), c: PINK },
+          { x: w*(0.72+0.09*Math.cos(t*0.5)), y: h*(0.68+0.08*Math.sin(t*0.55)), c: CYAN }
+        ];
+        for (var k = 0; k < pools.length; k++) {
+          var pl = pools[k], R = Math.max(w, h) * 0.4;
+          var g = ctx.createRadialGradient(pl.x, pl.y, 0, pl.x, pl.y, R);
+          g.addColorStop(0, 'rgba(' + pl.c + ',0.05)');
+          g.addColorStop(1, 'rgba(' + pl.c + ',0)');
+          ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
         }
+        ctx.globalCompositeOperation = 'source-over';
 
         raf = requestAnimationFrame(draw);
       }
 
-      size(); draw();
+      size(); build(); draw();
       var rt;
-      window.addEventListener('resize', function() { clearTimeout(rt); rt = setTimeout(size, 200); });
+      window.addEventListener('resize', function() { clearTimeout(rt); rt = setTimeout(function(){ size(); build(); }, 200); });
       document.addEventListener('visibilitychange', function() {
         if (document.hidden) { running = false; if (raf) cancelAnimationFrame(raf); }
         else if (!running) { running = true; draw(); }
