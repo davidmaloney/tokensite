@@ -21,7 +21,7 @@ export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 export const BANNER_MAX_BYTES = 5 * 1024 * 1024;
 export const AVATAR_OUTPUT_SIZE = 400;
 export const BANNER_OUTPUT_WIDTH = 1200;
-export const BANNER_OUTPUT_HEIGHT = 300;
+export const BANNER_OUTPUT_HEIGHT = 480;
 
 export const RESERVED_SLUGS = new Set([
   "api","admin","dashboard","app","mail","email","ftp","ssh","sftp","cdn",
