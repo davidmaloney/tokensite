@@ -3,15 +3,30 @@
 body {
   background: #0a0a0c;
   background-image:
-    radial-gradient(circle at 12% 8%, rgba(153,69,255,0.16) 0%, transparent 38%),
-    radial-gradient(circle at 88% 92%, rgba(20,241,149,0.10) 0%, transparent 42%),
-    radial-gradient(circle at 50% 50%, rgba(153,69,255,0.05) 0%, transparent 60%),
     radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 26px 26px;
+  background-size: 26px 26px;
   background-attachment: fixed;
   color: #f0f0f0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
+  position: relative;
+}
+/* Animated drifting glow layer (pure CSS, sits behind content). */
+body::before {
+  content: '';
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(153,69,255,0.18) 0%, transparent 40%),
+    radial-gradient(circle at 88% 92%, rgba(20,241,149,0.12) 0%, transparent 42%),
+    radial-gradient(circle at 50% 50%, rgba(153,69,255,0.06) 0%, transparent 60%);
+  background-repeat: no-repeat;
+  animation: glowDrift 18s ease-in-out infinite alternate;
+}
+@keyframes glowDrift {
+  0%   { background-position: 0% 0%, 100% 100%, 50% 50%; filter: hue-rotate(0deg); }
+  50%  { background-position: 18% 12%, 82% 88%, 55% 45%; }
+  100% { background-position: 6% 20%, 94% 78%, 48% 58%; filter: hue-rotate(12deg); }
 }
 
 #intro-overlay {
@@ -136,7 +151,6 @@ body {
 
 .card {
   background: linear-gradient(160deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.015) 100%);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 20px 22px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.35); transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
@@ -145,7 +159,6 @@ body {
 
 .tokenomics-block {
   background: linear-gradient(160deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.015) 100%);
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 20px 22px; box-shadow: 0 4px 24px rgba(0,0,0,0.35);
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
