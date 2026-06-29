@@ -2,31 +2,37 @@
 
 body {
   background: #0a0a0c;
-  background-image:
-    radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px);
-  background-size: 26px 26px;
-  background-attachment: fixed;
   color: #f0f0f0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   min-height: 100vh;
   position: relative;
 }
-/* Animated drifting glow layer (pure CSS, sits behind content). */
-body::before {
+/* Floating crypto dots — pure CSS, two drifting layers behind everything. */
+body::before, body::after {
   content: '';
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  position: fixed; top: -200px; left: -200px;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: transparent;
   z-index: -1; pointer-events: none;
-  background:
-    radial-gradient(circle at 12% 8%, rgba(153,69,255,0.18) 0%, transparent 40%),
-    radial-gradient(circle at 88% 92%, rgba(20,241,149,0.12) 0%, transparent 42%),
-    radial-gradient(circle at 50% 50%, rgba(153,69,255,0.06) 0%, transparent 60%);
-  background-repeat: no-repeat;
-  animation: glowDrift 18s ease-in-out infinite alternate;
 }
-@keyframes glowDrift {
-  0%   { background-position: 0% 0%, 100% 100%, 50% 50%; filter: hue-rotate(0deg); }
-  50%  { background-position: 18% 12%, 82% 88%, 55% 45%; }
-  100% { background-position: 6% 20%, 94% 78%, 48% 58%; filter: hue-rotate(12deg); }
+body::before {
+  box-shadow: 1393px 1080px rgba(153,69,255,0.5), 1015px 1156px rgba(153,69,255,0.5), 240px 90px rgba(153,69,255,0.5), 1284px 269px rgba(153,69,255,0.5), 1410px 1431px rgba(153,69,255,0.5), 832px 1175px rgba(153,69,255,0.5), 1556px 522px rgba(153,69,255,0.5), 449px 1290px rgba(153,69,255,0.5), 1483px 1338px rgba(153,69,255,0.5), 305px 1101px rgba(153,69,255,0.5), 760px 195px rgba(153,69,255,0.5), 1058px 1517px rgba(153,69,255,0.5), 92px 1561px rgba(153,69,255,0.5), 1305px 743px rgba(153,69,255,0.5), 614px 1409px rgba(153,69,255,0.5), 1192px 980px rgba(153,69,255,0.5), 405px 549px rgba(153,69,255,0.5), 1542px 1247px rgba(153,69,255,0.5), 873px 318px rgba(153,69,255,0.5), 162px 829px rgba(153,69,255,0.5), 1428px 1592px rgba(153,69,255,0.5), 691px 1024px rgba(153,69,255,0.5), 1100px 437px rgba(153,69,255,0.5), 339px 1366px rgba(153,69,255,0.5), 1247px 153px rgba(153,69,255,0.5), 528px 1488px rgba(153,69,255,0.5), 1583px 671px rgba(153,69,255,0.5), 816px 1209px rgba(153,69,255,0.5), 248px 394px rgba(153,69,255,0.5), 1369px 1135px rgba(153,69,255,0.5), 957px 580px rgba(153,69,255,0.5), 470px 1453px rgba(153,69,255,0.5), 1156px 282px rgba(153,69,255,0.5), 685px 1318px rgba(153,69,255,0.5), 1494px 891px rgba(153,69,255,0.5), 123px 1042px rgba(153,69,255,0.5), 1038px 465px rgba(153,69,255,0.5), 567px 1379px rgba(153,69,255,0.5), 1321px 208px rgba(153,69,255,0.5), 794px 1164px rgba(153,69,255,0.5), 356px 727px rgba(153,69,255,0.5), 1265px 1500px rgba(153,69,255,0.5), 902px 339px rgba(153,69,255,0.5), 431px 1226px rgba(153,69,255,0.5), 1540px 814px rgba(153,69,255,0.5), 178px 1411px rgba(153,69,255,0.5), 1083px 596px rgba(153,69,255,0.5), 642px 1289px rgba(153,69,255,0.5), 1357px 451px rgba(153,69,255,0.5), 269px 1133px rgba(153,69,255,0.5), 1199px 178px rgba(153,69,255,0.5), 728px 1466px rgba(153,69,255,0.5), 1466px 953px rgba(153,69,255,0.5), 94px 612px rgba(153,69,255,0.5), 1012px 1351px rgba(153,69,255,0.5), 583px 247px rgba(153,69,255,0.5), 1290px 1188px rgba(153,69,255,0.5), 815px 508px rgba(153,69,255,0.5), 388px 1434px rgba(153,69,255,0.5), 1523px 366px rgba(153,69,255,0.5);
+  animation: floatDots1 60s linear infinite;
+}
+body::after {
+  box-shadow: 760px 195px rgba(153,69,255,0.5), 1058px 1517px rgba(153,69,255,0.5), 92px 561px rgba(153,69,255,0.5), 1305px 743px rgba(153,69,255,0.5), 614px 1409px rgba(153,69,255,0.5), 1192px 480px rgba(153,69,255,0.5), 405px 549px rgba(153,69,255,0.5), 1542px 1247px rgba(153,69,255,0.5), 873px 318px rgba(153,69,255,0.5), 162px 829px rgba(153,69,255,0.5), 1428px 592px rgba(153,69,255,0.5), 691px 1024px rgba(153,69,255,0.5), 1100px 437px rgba(153,69,255,0.5), 339px 1366px rgba(153,69,255,0.5), 1247px 153px rgba(153,69,255,0.5), 528px 488px rgba(153,69,255,0.5), 1583px 671px rgba(153,69,255,0.5), 816px 1209px rgba(153,69,255,0.5), 248px 394px rgba(153,69,255,0.5), 1369px 1135px rgba(153,69,255,0.5), 957px 580px rgba(153,69,255,0.5), 470px 453px rgba(153,69,255,0.5), 1156px 282px rgba(153,69,255,0.5), 685px 1318px rgba(153,69,255,0.5), 1494px 891px rgba(153,69,255,0.5), 123px 1042px rgba(153,69,255,0.5), 1038px 465px rgba(153,69,255,0.5), 567px 1379px rgba(153,69,255,0.5), 1321px 208px rgba(153,69,255,0.5), 794px 1164px rgba(153,69,255,0.5), 356px 727px rgba(153,69,255,0.5), 1265px 1500px rgba(153,69,255,0.5), 902px 339px rgba(153,69,255,0.5), 431px 1226px rgba(153,69,255,0.5), 1540px 814px rgba(153,69,255,0.5), 178px 1411px rgba(153,69,255,0.5), 1083px 596px rgba(153,69,255,0.5), 642px 1289px rgba(153,69,255,0.5), 1357px 451px rgba(153,69,255,0.5), 269px 1133px rgba(153,69,255,0.5);
+  width: 2px; height: 2px;
+  animation: floatDots2 90s linear infinite;
+}
+@keyframes floatDots1 {
+  0%   { transform: translate(0, 0); }
+  50%  { transform: translate(120px, 80px); }
+  100% { transform: translate(0, 0); }
+}
+@keyframes floatDots2 {
+  0%   { transform: translate(0, 0); }
+  50%  { transform: translate(-100px, -120px); }
+  100% { transform: translate(0, 0); }
 }
 
 #intro-overlay {
