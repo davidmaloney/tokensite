@@ -9,6 +9,8 @@
 </head>
 <body style="opacity:0;transition:opacity 0.5s ease;">
 
+  <canvas id="bg-grid" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
+
   <div id="intro-overlay">
     <div id="intro-card">
       <div id="intro-avatar-wrap"></div>
@@ -53,6 +55,80 @@
   </div>
 
   <script>
+    // ===== Neon perspective grid (synthwave / outrun) =====
+    (function() {
+      var canvas = document.getElementById('bg-grid');
+      if (!canvas || !canvas.getContext) return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var ctx = canvas.getContext('2d');
+      var w, h, dpr, raf, running = true, t = 0;
+
+      function size() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        w = window.innerWidth; h = window.innerHeight;
+        canvas.width = w * dpr; canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function draw() {
+        if (!running) return;
+        t += 0.016;
+        ctx.clearRect(0, 0, w, h);
+
+        var horizon = h * 0.46;
+
+        // ambient glow blobs (pink top-left, cyan bottom-right)
+        var g1 = ctx.createRadialGradient(w*0.2, h*0.15, 0, w*0.2, h*0.15, Math.max(w,h)*0.5);
+        g1.addColorStop(0, 'rgba(255,0,122,0.10)'); g1.addColorStop(1, 'rgba(255,0,122,0)');
+        ctx.fillStyle = g1; ctx.fillRect(0,0,w,h);
+        var g2 = ctx.createRadialGradient(w*0.8, h*0.9, 0, w*0.8, h*0.9, Math.max(w,h)*0.5);
+        g2.addColorStop(0, 'rgba(0,245,255,0.08)'); g2.addColorStop(1, 'rgba(0,245,255,0)');
+        ctx.fillStyle = g2; ctx.fillRect(0,0,w,h);
+
+        // glowing horizon line
+        ctx.strokeStyle = 'rgba(255,0,122,0.5)';
+        ctx.shadowColor = 'rgba(255,0,122,0.8)'; ctx.shadowBlur = 18;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, horizon); ctx.lineTo(w, horizon); ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        var cx = w / 2;
+
+        // vertical converging lines
+        ctx.strokeStyle = 'rgba(0,245,255,0.18)';
+        ctx.lineWidth = 1;
+        var cols = 24;
+        for (var i = -cols; i <= cols; i++) {
+          var fx = cx + (i / cols) * w * 1.4;
+          ctx.beginPath();
+          ctx.moveTo(cx + (i / cols) * 60, horizon);
+          ctx.lineTo(fx, h);
+          ctx.stroke();
+        }
+
+        // horizontal scrolling lines (perspective, accelerating toward viewer)
+        var rows = 18;
+        for (var r = 0; r < rows; r++) {
+          var p = ((r + (t % 1)) / rows);
+          var yy = horizon + Math.pow(p, 2.2) * (h - horizon);
+          var a = 0.05 + 0.22 * p;
+          ctx.strokeStyle = 'rgba(0,245,255,' + a + ')';
+          ctx.lineWidth = 1 + p * 1.2;
+          ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(w, yy); ctx.stroke();
+        }
+
+        raf = requestAnimationFrame(draw);
+      }
+
+      size(); draw();
+      var rt;
+      window.addEventListener('resize', function() { clearTimeout(rt); rt = setTimeout(size, 200); });
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden) { running = false; if (raf) cancelAnimationFrame(raf); }
+        else if (!running) { running = true; draw(); }
+      });
+    })();
+
     // Body fade in
     document.body.style.opacity = '0';
 
@@ -87,18 +163,8 @@
         }
       }
 
-      // Fade in body first
-      setTimeout(function() {
-        document.body.style.opacity = '1';
-      }, 50);
-
-      // Show intro card
-      setTimeout(function() {
-        card.style.opacity = '1';
-        card.style.transform = 'scale(1)';
-      }, 150);
-
-      // Fade out intro
+      setTimeout(function() { document.body.style.opacity = '1'; }, 50);
+      setTimeout(function() { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }, 150);
       setTimeout(function() {
         overlay.style.opacity = '0';
         setTimeout(function() { overlay.style.display = 'none'; }, 1000);
@@ -124,7 +190,6 @@
         });
       }, { threshold: 0.1 });
 
-      // Delay so intro plays first
       setTimeout(function() {
         cards.forEach(function(el) { observer.observe(el); });
       }, 2000);
