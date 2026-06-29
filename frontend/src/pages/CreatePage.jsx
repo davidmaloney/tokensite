@@ -393,7 +393,7 @@ export default function CreatePage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
               <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Media</h2>
               <ImageUpload label="Avatar" hint="Recommended 400×400px · Max 2MB" value={avatar} onChange={setAvatar} />
-              <ImageUpload label="Banner" hint="Recommended 1200×300px · Max 5MB" value={banner} onChange={setBanner} />
+              <ImageUpload label="Banner" hint="Recommended 1200×480px · Max 5MB" value={banner} onChange={setBanner} />
               <div style={{ display: "flex", gap: "10px" }}>
                 <button className="btn-secondary" onClick={() => setStep(1)}>← Back</button>
                 <button className="btn-primary" onClick={() => setStep(3)}>Next →</button>
