@@ -85,9 +85,16 @@ export async function updatePageContent(pageId, walletAddress, { templateId, con
   const merged = { ...existing, ...content };
 
   // If the frontend explicitly sent an empty string for avatar or banner,
-  // treat that as the user removing the image — respect it.
-  if (content.avatar === "") merged.avatar = undefined;
-  if (content.banner === "") merged.banner = undefined;
+  // treat that as the user removing the image — respect it, and delete the
+  // old file from disk so it doesn't linger as an orphan.
+  if (content.avatar === "") {
+    if (existing.avatar) deleteOldImage(existing.avatar, null);
+    merged.avatar = undefined;
+  }
+  if (content.banner === "") {
+    if (existing.banner) deleteOldImage(existing.banner, null);
+    merged.banner = undefined;
+  }
 
   // Clean up undefined keys so they don't get stored as "undefined"
   Object.keys(merged).forEach((k) => merged[k] === undefined && delete merged[k]);
