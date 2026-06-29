@@ -11,6 +11,14 @@ export default function ImageUpload({ label, value, onChange, hint }) {
     reader.readAsDataURL(file);
   };
 
+  const handleRemove = (e) => {
+    e.stopPropagation();
+    // Clear the field. Passing null signals "no image" to the parent, which
+    // sends an empty string on save so the backend removes it.
+    onChange(null);
+    if (inputRef.current) inputRef.current.value = "";
+  };
+
   return (
     <div>
       <label>
@@ -27,21 +35,48 @@ export default function ImageUpload({ label, value, onChange, hint }) {
           cursor: "pointer",
           background: "rgba(255,255,255,0.03)",
           transition: "border-color 0.2s",
+          position: "relative",
         }}
         onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#9945FF")}
         onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)")}
       >
         {value?.preview ? (
-          <img
-            src={value.preview}
-            alt="preview"
-            style={{
-              maxHeight: "120px",
-              maxWidth: "100%",
-              borderRadius: "8px",
-              objectFit: "contain",
-            }}
-          />
+          <>
+            <img
+              src={value.preview}
+              alt="preview"
+              style={{
+                maxHeight: "120px",
+                maxWidth: "100%",
+                borderRadius: "8px",
+                objectFit: "contain",
+              }}
+            />
+            <button
+              type="button"
+              onClick={handleRemove}
+              aria-label={"Remove " + label}
+              style={{
+                position: "absolute",
+                top: "8px",
+                right: "8px",
+                width: "26px",
+                height: "26px",
+                borderRadius: "50%",
+                border: "none",
+                background: "rgba(0,0,0,0.65)",
+                color: "#fff",
+                fontSize: "15px",
+                lineHeight: "1",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              ×
+            </button>
+          </>
         ) : (
           <div style={{ color: "#555", fontSize: "14px" }}>
             Click to upload
