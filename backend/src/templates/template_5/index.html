@@ -9,6 +9,8 @@
 </head>
 <body style="opacity:0;transition:opacity 0.5s ease;">
 
+  <canvas id="bg-gold" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;opacity:0.55;"></canvas>
+
   <div id="intro-overlay">
     <div id="intro-card">
       <div id="intro-avatar-wrap"></div>
@@ -53,6 +55,88 @@
   </div>
 
   <script>
+    // ===== Liquid Gold: churning molten-metal field (Deep Space) =====
+    // Pixel-based domain-warped field rendered on a small buffer, scaled up.
+    (function() {
+      var canvas = document.getElementById('bg-gold');
+      if (!canvas || !canvas.getContext) return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var ctx = canvas.getContext('2d');
+      var buf = document.createElement('canvas');
+      var bctx = buf.getContext('2d');
+      var w, h, bw, bh, img, raf, running = true, t = 0;
+
+      var RAMP = [];
+      (function makeRamp(){
+        var stops = [
+          [4,1,15],
+          [40,26,8],
+          [120,90,30],
+          [200,168,75],
+          [240,210,120],
+          [255,245,210]
+        ];
+        for (var i = 0; i < 256; i++) {
+          var f = i / 255 * (stops.length - 1);
+          var a = Math.floor(f), m = f - a;
+          var c0 = stops[a], c1 = stops[Math.min(a+1, stops.length-1)];
+          RAMP.push([
+            Math.round(c0[0]+(c1[0]-c0[0])*m),
+            Math.round(c0[1]+(c1[1]-c0[1])*m),
+            Math.round(c0[2]+(c1[2]-c0[2])*m)
+          ]);
+        }
+      })();
+
+      function size() {
+        w = window.innerWidth; h = window.innerHeight;
+        canvas.width = w; canvas.height = h;
+        var scale = 0.18;
+        bw = Math.max(80, Math.round(w * scale));
+        bh = Math.max(50, Math.round(h * scale));
+        buf.width = bw; buf.height = bh;
+        img = bctx.createImageData(bw, bh);
+        ctx.imageSmoothingEnabled = true;
+      }
+
+      function field(x, y, tt) {
+        var wx = Math.sin(x * 1.7 + tt * 0.7) + Math.cos(y * 1.3 - tt * 0.5);
+        var wy = Math.cos(x * 1.1 - tt * 0.6) + Math.sin(y * 1.9 + tt * 0.4);
+        var v = Math.sin(x * 2.3 + wx * 1.6 + tt * 0.8)
+              + Math.sin(y * 2.1 + wy * 1.6 - tt * 0.6)
+              + Math.sin((x + y) * 1.5 + (wx + wy) + tt * 0.5);
+        return v / 3;
+      }
+
+      function draw() {
+        if (!running) return;
+        t += 0.012;
+        var d = img.data, i = 0;
+        for (var py = 0; py < bh; py++) {
+          var ny = py / bh * 2.2;
+          for (var px = 0; px < bw; px++) {
+            var nx = px / bw * 3.2;
+            var v = field(nx, ny, t);
+            var idx = Math.max(0, Math.min(255, Math.floor((v * 0.5 + 0.5) * 255)));
+            var c = RAMP[idx];
+            d[i] = c[0]; d[i+1] = c[1]; d[i+2] = c[2]; d[i+3] = 255;
+            i += 4;
+          }
+        }
+        bctx.putImageData(img, 0, 0);
+        ctx.drawImage(buf, 0, 0, bw, bh, 0, 0, w, h);
+        raf = requestAnimationFrame(draw);
+      }
+
+      size(); draw();
+      var rt;
+      window.addEventListener('resize', function() { clearTimeout(rt); rt = setTimeout(size, 200); });
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden) { running = false; if (raf) cancelAnimationFrame(raf); }
+        else if (!running) { running = true; draw(); }
+      });
+    })();
+
     // Body fade in
     document.body.style.opacity = '0';
 
@@ -87,18 +171,8 @@
         }
       }
 
-      // Fade in body first
-      setTimeout(function() {
-        document.body.style.opacity = '1';
-      }, 50);
-
-      // Show intro card
-      setTimeout(function() {
-        card.style.opacity = '1';
-        card.style.transform = 'scale(1)';
-      }, 150);
-
-      // Fade out intro
+      setTimeout(function() { document.body.style.opacity = '1'; }, 50);
+      setTimeout(function() { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }, 150);
       setTimeout(function() {
         overlay.style.opacity = '0';
         setTimeout(function() { overlay.style.display = 'none'; }, 1000);
@@ -124,7 +198,6 @@
         });
       }, { threshold: 0.1 });
 
-      // Delay so intro plays first
       setTimeout(function() {
         cards.forEach(function(el) { observer.observe(el); });
       }, 2000);
