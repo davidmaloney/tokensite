@@ -115,10 +115,10 @@ export default function PagePreview({ data, templateId }) {
     }}>
 
       {data.banner?.preview ? (
-        <img src={data.banner.preview} alt="banner" style={{ width: "100%", height: "120px", objectFit: "cover", display: "block" }} />
+        <img src={data.banner.preview} alt="banner" style={{ width: "100%", aspectRatio: "5 / 2", objectFit: "cover", display: "block" }} />
       ) : (
         <div style={{
-          width: "100%", height: "90px",
+          width: "100%", aspectRatio: "5 / 2",
           background: theme.bannerGrad,
         }} />
       )}
