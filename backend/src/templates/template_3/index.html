@@ -9,7 +9,7 @@
 </head>
 <body style="opacity:0;transition:opacity 0.5s ease;">
 
-  <canvas id="bg-grid" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
+  <canvas id="bg-wave" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
 
   <div id="intro-overlay">
     <div id="intro-card">
@@ -55,13 +55,14 @@
   </div>
 
   <script>
-    // ===== Neon perspective grid (synthwave / outrun) =====
+    // ===== Neon wave-grid: rippling perspective plane with flaring nodes (Neon Degen) =====
     (function() {
-      var canvas = document.getElementById('bg-grid');
+      var canvas = document.getElementById('bg-wave');
       if (!canvas || !canvas.getContext) return;
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       var ctx = canvas.getContext('2d');
       var w, h, dpr, raf, running = true, t = 0;
+      var COLS = 22, ROWS = 12;
 
       function size() {
         dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -70,51 +71,82 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
 
+      function project(gx, gz) {
+        var horizon = h * 0.30;
+        var d = Math.pow(gz, 1.9);
+        var y = horizon + d * (h - horizon);
+        var spread = 0.12 + d * 1.25;
+        var x = w * 0.5 + (gx - 0.5) * w * spread;
+        return { x: x, y: y, d: d };
+      }
+
+      function wave(gx, gz, tt) {
+        return Math.sin(gz * 7 - tt * 2.2) * 0.5 + Math.sin(gx * 5 + tt * 1.3) * 0.5;
+      }
+
       function draw() {
         if (!running) return;
-        t += 0.016;
+        t += 0.012;
         ctx.clearRect(0, 0, w, h);
 
-        var horizon = h * 0.46;
+        var g = ctx.createLinearGradient(0, h*0.25, 0, h);
+        g.addColorStop(0, 'rgba(255,0,122,0.05)');
+        g.addColorStop(0.6, 'rgba(0,245,255,0.04)');
+        g.addColorStop(1, 'rgba(0,245,255,0)');
+        ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
 
-        // ambient glow blobs (pink top-left, cyan bottom-right)
-        var g1 = ctx.createRadialGradient(w*0.2, h*0.15, 0, w*0.2, h*0.15, Math.max(w,h)*0.5);
-        g1.addColorStop(0, 'rgba(255,0,122,0.10)'); g1.addColorStop(1, 'rgba(255,0,122,0)');
-        ctx.fillStyle = g1; ctx.fillRect(0,0,w,h);
-        var g2 = ctx.createRadialGradient(w*0.8, h*0.9, 0, w*0.8, h*0.9, Math.max(w,h)*0.5);
-        g2.addColorStop(0, 'rgba(0,245,255,0.08)'); g2.addColorStop(1, 'rgba(0,245,255,0)');
-        ctx.fillStyle = g2; ctx.fillRect(0,0,w,h);
+        var i, j, p, wv;
 
-        // glowing horizon line
-        ctx.strokeStyle = 'rgba(255,0,122,0.5)';
-        ctx.shadowColor = 'rgba(255,0,122,0.8)'; ctx.shadowBlur = 18;
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(0, horizon); ctx.lineTo(w, horizon); ctx.stroke();
-        ctx.shadowBlur = 0;
+        var pts = [];
+        for (j = 0; j <= ROWS; j++) {
+          pts[j] = [];
+          for (i = 0; i <= COLS; i++) {
+            var gx = i / COLS, gz = j / ROWS;
+            p = project(gx, gz);
+            wv = wave(gx, gz, t);
+            p.y += wv * 14 * (0.2 + p.d);
+            p.w = wv;
+            pts[j][i] = p;
+          }
+        }
 
-        var cx = w / 2;
-
-        // vertical converging lines
-        ctx.strokeStyle = 'rgba(0,245,255,0.18)';
-        ctx.lineWidth = 1;
-        var cols = 24;
-        for (var i = -cols; i <= cols; i++) {
-          var fx = cx + (i / cols) * w * 1.4;
+        for (j = 0; j <= ROWS; j++) {
+          var a = 0.05 + 0.20 * (j / ROWS);
+          ctx.strokeStyle = 'rgba(0,245,255,' + a + ')';
+          ctx.lineWidth = 0.6 + (j / ROWS) * 1.2;
           ctx.beginPath();
-          ctx.moveTo(cx + (i / cols) * 60, horizon);
-          ctx.lineTo(fx, h);
+          for (i = 0; i <= COLS; i++) {
+            p = pts[j][i];
+            if (i === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+          }
+          ctx.stroke();
+        }
+        for (i = 0; i <= COLS; i++) {
+          ctx.strokeStyle = 'rgba(255,0,122,0.10)';
+          ctx.lineWidth = 0.8;
+          ctx.beginPath();
+          for (j = 0; j <= ROWS; j++) {
+            p = pts[j][i];
+            if (j === 0) ctx.moveTo(p.x, p.y); else ctx.lineTo(p.x, p.y);
+          }
           ctx.stroke();
         }
 
-        // horizontal scrolling lines (perspective, accelerating toward viewer)
-        var rows = 18;
-        for (var r = 0; r < rows; r++) {
-          var p = ((r + (t % 1)) / rows);
-          var yy = horizon + Math.pow(p, 2.2) * (h - horizon);
-          var a = 0.05 + 0.22 * p;
-          ctx.strokeStyle = 'rgba(0,245,255,' + a + ')';
-          ctx.lineWidth = 1 + p * 1.2;
-          ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(w, yy); ctx.stroke();
+        for (j = 2; j <= ROWS; j++) {
+          for (i = 0; i <= COLS; i++) {
+            p = pts[j][i];
+            if (p.w > 0.72) {
+              var fl = (p.w - 0.72) / 0.28;
+              var col = (i % 2) ? '0,245,255' : '255,0,122';
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, (1 + fl * 2.4) * (0.4 + p.d), 0, Math.PI * 2);
+              ctx.fillStyle = 'rgba(' + col + ',' + (0.4 + fl * 0.5) + ')';
+              ctx.shadowColor = 'rgba(' + col + ',0.9)';
+              ctx.shadowBlur = 8 + fl * 14;
+              ctx.fill();
+              ctx.shadowBlur = 0;
+            }
+          }
         }
 
         raf = requestAnimationFrame(draw);
