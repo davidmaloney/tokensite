@@ -55,7 +55,7 @@
   </div>
 
   <script>
-    // ===== WebGL fbm domain-warp — subtle, clean, deep molten gold =====
+    // ===== WebGL fbm domain-warp — faint subtle gold, fast chaotic motion =====
     (function() {
       var canvas = document.getElementById('bg-gl');
       if (!canvas) return;
@@ -68,73 +68,50 @@
         'precision highp float;',
         'uniform vec2 r;',
         'uniform float t;',
-        'vec2 hash(vec2 p){p=vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3)));return fract(sin(p)*43758.5453)*2.0-1.0;}',
-        'float n(vec2 p){vec2 i=floor(p),f=fract(p);vec2 u=f*f*f*(f*(f*6.0-15.0)+10.0);',
-        ' return mix(mix(dot(hash(i+vec2(0.,0.)),f-vec2(0.,0.)),dot(hash(i+vec2(1.,0.)),f-vec2(1.,0.)),u.x),',
-        ' mix(dot(hash(i+vec2(0.,1.)),f-vec2(0.,1.)),dot(hash(i+vec2(1.,1.)),f-vec2(1.,1.)),u.x),u.y);}',
-        'float fbm(vec2 p){float v=0.,a=0.5;for(int i=0;i<6;i++){v+=a*n(p);p=p*2.0+vec2(1.7,9.2);a*=0.5;}return v*0.5+0.5;}',
+        'float h(vec2 x){return fract(sin(dot(x,vec2(127.1,311.7)))*43758.5453);}',
+        'float n(vec2 x){vec2 i=floor(x),f=fract(x);float a=h(i),b=h(i+vec2(1.,0.)),c=h(i+vec2(0.,1.)),d=h(i+vec2(1.,1.));vec2 u=f*f*(3.-2.*f);return mix(a,b,u.x)+(c-a)*u.y*(1.-u.x)+(d-b)*u.x*u.y;}',
+        'float fbm(vec2 x){float v=0.,a=0.5;for(int i=0;i<6;i++){v+=a*n(x);x=x*2.02+vec2(3.1,1.7);a*=0.5;}return v;}',
         'void main(){',
         '  vec2 uv=gl_FragCoord.xy/r.xy;',
-        '  vec2 p=uv;p.x*=r.x/r.y;p*=1.6;',
-        '  float tt=t*0.04;',
-        '  vec2 q=vec2(fbm(p+vec2(0.0,tt)),fbm(p+vec2(5.2,1.3-tt)));',
-        '  vec2 s=vec2(fbm(p+3.0*q+vec2(1.7,-tt*1.2)),fbm(p+3.0*q+vec2(8.3,2.8)));',
-        '  float f=fbm(p+3.0*s);',
-        '  vec3 base=vec3(0.015,0.006,0.05);',
-        '  vec3 gold=vec3(0.62,0.48,0.18);',
-        '  vec3 hi=vec3(1.0,0.86,0.55);',
-        '  float g=smoothstep(0.62,0.92,f);',
-        '  vec3 col=base;',
-        '  col=mix(col,gold,g);',
-        '  col+=hi*pow(smoothstep(0.84,1.0,f),2.0)*0.6;',
-        '  float vig=smoothstep(1.15,0.2,length(uv-vec2(0.5)));',
-        '  col*=mix(0.55,1.0,vig);',
+        '  vec2 p=uv;p.x*=r.x/r.y;p*=2.4;',
+        '  float tt=t*0.16;',
+        '  vec2 q=vec2(fbm(p+vec2(0.,tt)),fbm(p+vec2(5.2,1.3-tt)));',
+        '  vec2 s=vec2(fbm(p+4.0*q+vec2(1.7,9.2+tt)),fbm(p+4.0*q+vec2(8.3,2.8-tt)));',
+        '  float f=fbm(p+4.0*s);',
+        '  vec3 base=vec3(0.012,0.005,0.04);',
+        '  vec3 gold=vec3(0.30,0.23,0.09);',
+        '  vec3 hi=vec3(0.65,0.55,0.32);',
+        '  float g=smoothstep(0.66,0.92,f);',
+        '  vec3 col=mix(base,gold,g);',
+        '  col+=hi*pow(smoothstep(0.86,1.0,f),2.5)*0.3;',
         '  gl_FragColor=vec4(col,1.0);',
         '}'
       ].join('\n');
 
-      function fallback(){ canvas.style.background = 'radial-gradient(circle at 50% 30%, #1a1305, #04010f 70%)'; }
-      function sh(type, src){ var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){ return null; } return s; }
-      var vs = sh(gl.VERTEX_SHADER, vsrc), fs = sh(gl.FRAGMENT_SHADER, fsrc);
-      if (!vs || !fs) { fallback(); return; }
-      var prog = gl.createProgram();
-      gl.attachShader(prog, vs);
-      gl.attachShader(prog, fs);
-      gl.linkProgram(prog);
-      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { fallback(); return; }
+      function fallback(){ canvas.style.background='radial-gradient(circle at 50% 30%, #140f04, #04010f 70%)'; }
+      function sh(type, src){ var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)) return null; return s; }
+      var vs=sh(gl.VERTEX_SHADER,vsrc), fs=sh(gl.FRAGMENT_SHADER,fsrc);
+      if(!vs||!fs){ fallback(); return; }
+      var prog=gl.createProgram();
+      gl.attachShader(prog,vs); gl.attachShader(prog,fs); gl.linkProgram(prog);
+      if(!gl.getProgramParameter(prog,gl.LINK_STATUS)){ fallback(); return; }
       gl.useProgram(prog);
 
-      var buf = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
-      var loc = gl.getAttribLocation(prog, 'p');
+      var buf=gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+      gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+      var loc=gl.getAttribLocation(prog,'p');
       gl.enableVertexAttribArray(loc);
-      gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+      gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
 
-      var uR = gl.getUniformLocation(prog, 'r');
-      var uT = gl.getUniformLocation(prog, 't');
-      var raf, running = true, start = Date.now();
-
-      function size() {
-        var dpr = Math.min(window.devicePixelRatio || 1, 2);
-        canvas.width = Math.floor(window.innerWidth * dpr);
-        canvas.height = Math.floor(window.innerHeight * dpr);
-        gl.viewport(0, 0, canvas.width, canvas.height);
-      }
-      function draw() {
-        if (!running) return;
-        gl.uniform2f(uR, canvas.width, canvas.height);
-        gl.uniform1f(uT, (Date.now() - start) / 1000);
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-        raf = requestAnimationFrame(draw);
-      }
+      var uR=gl.getUniformLocation(prog,'r'), uT=gl.getUniformLocation(prog,'t');
+      var raf, running=true, start=Date.now();
+      function size(){ var dpr=Math.min(window.devicePixelRatio||1,2); canvas.width=Math.floor(window.innerWidth*dpr); canvas.height=Math.floor(window.innerHeight*dpr); gl.viewport(0,0,canvas.width,canvas.height); }
+      function draw(){ if(!running) return; gl.uniform2f(uR,canvas.width,canvas.height); gl.uniform1f(uT,(Date.now()-start)/1000); gl.drawArrays(gl.TRIANGLE_STRIP,0,4); raf=requestAnimationFrame(draw); }
       size(); draw();
       var rt;
-      window.addEventListener('resize', function(){ clearTimeout(rt); rt=setTimeout(size,200); });
-      document.addEventListener('visibilitychange', function(){
-        if (document.hidden) { running=false; if(raf) cancelAnimationFrame(raf); }
-        else if (!running) { running=true; draw(); }
-      });
+      window.addEventListener('resize',function(){ clearTimeout(rt); rt=setTimeout(size,200); });
+      document.addEventListener('visibilitychange',function(){ if(document.hidden){running=false;if(raf)cancelAnimationFrame(raf);} else if(!running){running=true;draw();} });
     })();
 
     // Body fade in
