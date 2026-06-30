@@ -81,9 +81,9 @@
         '  vec3 base=vec3(0.012,0.005,0.04);',
         '  vec3 gold=vec3(0.30,0.23,0.09);',
         '  vec3 hi=vec3(0.65,0.55,0.32);',
-        '  float g=smoothstep(0.66,0.92,f);',
+        '  float g=smoothstep(0.50,0.86,f);',
         '  vec3 col=mix(base,gold,g);',
-        '  col+=hi*pow(smoothstep(0.86,1.0,f),2.5)*0.3;',
+        '  col+=hi*pow(smoothstep(0.78,1.0,f),2.3)*0.3;',
         '  gl_FragColor=vec4(col,1.0);',
         '}'
       ].join('\n');
