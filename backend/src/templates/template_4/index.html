@@ -55,15 +55,15 @@
   </div>
 
   <script>
-    // ===== Electric Storm: branching plasma bolts that strike, flash, reform (chaos, upward) =====
+    // ===== Electric Storm v2: top-down bolts that GROW to a target, branch sparks, softer =====
     (function() {
       var canvas = document.getElementById('bg-storm');
       if (!canvas || !canvas.getContext) return;
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       var ctx = canvas.getContext('2d');
-      var w, h, dpr, raf, running = true, t = 0;
+      var w, h, dpr, raf, running = true;
       var bolts = [], sparks = [], spawnTimer = 0;
-      var CORE = '210,225,255';
+      var CORE = '200,215,255';
       var GLOW = '90,120,255';
       var DEEP = '60,80,230';
 
@@ -76,96 +76,124 @@
         ctx.fillRect(0, 0, w, h);
       }
 
-      function makeBolt(x, y) {
-        var segs = [];
-        var steps = 14 + (Math.random() * 12 | 0);
-        var cx = x, cy = y;
-        var branches = [];
-        for (var i = 0; i < steps; i++) {
-          var nx = cx + (Math.random() - 0.5) * 60;
-          var ny = cy - (h / steps) * (0.5 + Math.random() * 0.9);
-          segs.push([cx, cy, nx, ny]);
-          if (Math.random() < 0.22) {
-            var bsteps = 4 + (Math.random() * 5 | 0);
-            var bx = nx, by = ny, bsegs = [];
-            for (var j = 0; j < bsteps; j++) {
-              var bnx = bx + (Math.random() - 0.5) * 70;
-              var bny = by - (h / steps) * (0.3 + Math.random() * 0.7);
-              bsegs.push([bx, by, bnx, bny]);
-              bx = bnx; by = bny;
-            }
-            branches.push(bsegs);
-          }
-          cx = nx; cy = ny;
-          if (cy < -40) break;
+      function makeBolt() {
+        var startX = Math.random() * w;
+        var steps = 16 + (Math.random() * 12 | 0);
+        var pts = [[startX, -10]];
+        var targetX = startX + (Math.random() - 0.5) * w * 0.4;
+        var cx = startX, cy = -10;
+        var endY = h * (0.55 + Math.random() * 0.4);
+        for (var i = 1; i <= steps; i++) {
+          var prog = i / steps;
+          var aimX = startX + (targetX - startX) * prog;
+          cx = aimX + (Math.random() - 0.5) * 70;
+          cy = (endY) * prog;
+          pts.push([cx, cy]);
         }
-        return { segs: segs, branches: branches, life: 0, max: 16 + (Math.random() * 16 | 0), hue: Math.random() };
+        var branches = [];
+        for (var b = 0; b < pts.length; b++) {
+          if (Math.random() < 0.20 && b > 1) {
+            var bsteps = 3 + (Math.random() * 4 | 0);
+            var bx = pts[b][0], by = pts[b][1], bpts = [[bx, by]];
+            for (var j = 0; j < bsteps; j++) {
+              bx += (Math.random() - 0.5) * 60;
+              by += (h / steps) * (0.3 + Math.random() * 0.6);
+              bpts.push([bx, by]);
+            }
+            branches.push({ at: b, pts: bpts, sparked: false });
+          }
+        }
+        return {
+          pts: pts, branches: branches,
+          grow: 0,
+          growMax: pts.length,
+          growSpeed: 0.6 + Math.random() * 0.5,
+          hold: 0, holdMax: 8 + (Math.random() * 10 | 0),
+          fade: 1, phase: 'grow'
+        };
       }
 
       function spawnBolt() {
-        var x = Math.random() * w;
-        var y = h + 10;
-        bolts.push(makeBolt(x, y));
-        for (var s = 0; s < 12; s++) {
-          sparks.push({ x: x + (Math.random()-0.5)*30, y: y - Math.random()*40,
-            vx: (Math.random()-0.5)*1.2, vy: -(0.5+Math.random()*2.2),
-            life: 0, max: 30 + Math.random()*40, r: Math.random()*1.6+0.5 });
-        }
-        if (bolts.length > 6) bolts.shift();
+        bolts.push(makeBolt());
+        if (bolts.length > 4) bolts.shift();
       }
 
-      function strokePath(segs, alpha, width, col) {
+      function strokePts(pts, upto, alpha, width, col) {
+        if (upto < 2) return;
         ctx.strokeStyle = 'rgba(' + col + ',' + alpha + ')';
         ctx.lineWidth = width;
         ctx.beginPath();
-        for (var i = 0; i < segs.length; i++) {
-          ctx.moveTo(segs[i][0], segs[i][1]);
-          ctx.lineTo(segs[i][2], segs[i][3]);
-        }
+        ctx.moveTo(pts[0][0], pts[0][1]);
+        for (var i = 1; i < upto && i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
         ctx.stroke();
+      }
+
+      function addSpark(x, y) {
+        sparks.push({ x: x, y: y, vx: (Math.random()-0.5)*1.0, vy: (Math.random()-0.5)*1.0 + 0.3,
+          life: 0, max: 26 + Math.random()*34, r: Math.random()*1.3+0.4 });
       }
 
       function draw() {
         if (!running) return;
-        t += 0.016;
 
         ctx.globalCompositeOperation = 'source-over';
-        ctx.fillStyle = 'rgba(6,11,24,0.22)';
+        ctx.fillStyle = 'rgba(6,11,24,0.20)';
         ctx.fillRect(0, 0, w, h);
 
         ctx.globalCompositeOperation = 'lighter';
 
-        var hz = ctx.createLinearGradient(0, h, 0, h * 0.4);
-        hz.addColorStop(0, 'rgba(' + DEEP + ',0.10)');
+        var hz = ctx.createLinearGradient(0, 0, 0, h * 0.55);
+        hz.addColorStop(0, 'rgba(' + DEEP + ',0.09)');
         hz.addColorStop(1, 'rgba(' + DEEP + ',0)');
         ctx.fillStyle = hz; ctx.fillRect(0, 0, w, h);
 
         spawnTimer--;
         if (spawnTimer <= 0) {
           spawnBolt();
-          spawnTimer = 8 + (Math.random() * 26 | 0);
+          spawnTimer = 22 + (Math.random() * 40 | 0);
         }
 
-        for (var b = bolts.length - 1; b >= 0; b--) {
-          var bo = bolts[b];
-          bo.life++;
-          var k = bo.life / bo.max;
-          if (k >= 1) { bolts.splice(b, 1); continue; }
-          var flick = (0.5 + 0.5 * Math.sin(bo.life * 1.7)) * (1 - k);
-          var a = 0.25 + 0.55 * flick;
-          strokePath(bo.segs, a * 0.5, 5, GLOW);
-          for (var br = 0; br < bo.branches.length; br++) strokePath(bo.branches[br], a * 0.35, 3, GLOW);
-          strokePath(bo.segs, a, 1.4, CORE);
-          for (var br2 = 0; br2 < bo.branches.length; br2++) strokePath(bo.branches[br2], a * 0.7, 1, CORE);
+        for (var bi = bolts.length - 1; bi >= 0; bi--) {
+          var bo = bolts[bi];
+
+          if (bo.phase === 'grow') {
+            bo.grow += bo.growSpeed;
+            if (bo.grow >= bo.growMax) { bo.grow = bo.growMax; bo.phase = 'hold'; }
+          } else if (bo.phase === 'hold') {
+            bo.hold++;
+            if (bo.hold >= bo.holdMax) bo.phase = 'fade';
+          } else {
+            bo.fade -= 0.06;
+            if (bo.fade <= 0) { bolts.splice(bi, 1); continue; }
+          }
+
+          var revealed = Math.floor(bo.grow);
+          var flick = bo.phase === 'fade' ? bo.fade : (0.7 + 0.3 * Math.sin(bo.grow * 1.3));
+          var a = (0.18 + 0.34 * flick);
+
+          strokePts(bo.pts, revealed, a * 0.4, 4, GLOW);
+          strokePts(bo.pts, revealed, a * 0.8, 1.2, CORE);
+
+          for (var br = 0; br < bo.branches.length; br++) {
+            var bb = bo.branches[br];
+            if (revealed >= bb.at) {
+              strokePts(bb.pts, bb.pts.length, a * 0.5, 0.9, CORE);
+              if (!bb.sparked && bo.phase === 'grow') {
+                bb.sparked = true;
+                var tip = bb.pts[bb.pts.length - 1];
+                for (var sp = 0; sp < 4; sp++) addSpark(tip[0], tip[1]);
+              }
+            }
+          }
         }
 
         for (var s = sparks.length - 1; s >= 0; s--) {
-          var sp = sparks[s];
-          sp.x += sp.vx; sp.y += sp.vy; sp.vy += 0.01; sp.life++;
-          if (sp.life > sp.max) { sparks.splice(s, 1); continue; }
-          var sa = (1 - sp.life / sp.max) * 0.8;
+          var spk = sparks[s];
+          spk.x += spk.vx; spk.y += spk.vy; spk.vy += 0.02; spk.life++;
+          if (spk.life > spk.max) { sparks.splice(s, 1); continue; }
+          var sa = (1 - spk.life / spk.max) * 0.7;
           ctx.beginPath();
-          ctx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2);
+          ctx.arc(spk.x, spk.y, spk.r, 0, Math.PI * 2);
           ctx.fillStyle = 'rgba(' + CORE + ',' + sa + ')';
           ctx.fill();
         }
