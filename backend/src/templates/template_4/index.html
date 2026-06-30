@@ -9,7 +9,7 @@
 </head>
 <body style="opacity:0;transition:opacity 0.5s ease;">
 
-  <canvas id="bg-aurora" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
+  <canvas id="bg-storm" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
 
   <div id="intro-overlay">
     <div id="intro-card">
@@ -55,30 +55,17 @@
   </div>
 
   <script>
-    // ===== Aurora current: sweeping flow-field bands, color-shifting (Midnight Blue) =====
+    // ===== Electric Storm: branching plasma bolts that strike, flash, reform (chaos, upward) =====
     (function() {
-      var canvas = document.getElementById('bg-aurora');
+      var canvas = document.getElementById('bg-storm');
       if (!canvas || !canvas.getContext) return;
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       var ctx = canvas.getContext('2d');
-      var w, h, dpr, raf, running = true, t = 0, parts;
-
-      var STOPS = [
-        [30,144,255],
-        [0,191,255],
-        [80,200,255],
-        [150,220,255],
-        [20,90,200]
-      ];
-
-      function lerp(a,b,m){ return a+(b-a)*m; }
-      function colAt(ph){
-        ph = (ph % 1 + 1) % 1;
-        var f = ph * STOPS.length;
-        var i = Math.floor(f), m = f - i;
-        var c0 = STOPS[i % STOPS.length], c1 = STOPS[(i+1) % STOPS.length];
-        return Math.round(lerp(c0[0],c1[0],m))+','+Math.round(lerp(c0[1],c1[1],m))+','+Math.round(lerp(c0[2],c1[2],m));
-      }
+      var w, h, dpr, raf, running = true, t = 0;
+      var bolts = [], sparks = [], spawnTimer = 0;
+      var CORE = '210,225,255';
+      var GLOW = '90,120,255';
+      var DEEP = '60,80,230';
 
       function size() {
         dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -89,66 +76,107 @@
         ctx.fillRect(0, 0, w, h);
       }
 
-      function angleAt(x, y, tt) {
-        var u = Math.sin(y * 0.004 + tt * 0.8)
-              + Math.sin(x * 0.0012 + y * 0.002 - tt * 0.5) * 0.7
-              + Math.sin(x * 0.0025 + tt * 0.3) * 0.5;
-        return u * 0.6;
+      function makeBolt(x, y) {
+        var segs = [];
+        var steps = 14 + (Math.random() * 12 | 0);
+        var cx = x, cy = y;
+        var branches = [];
+        for (var i = 0; i < steps; i++) {
+          var nx = cx + (Math.random() - 0.5) * 60;
+          var ny = cy - (h / steps) * (0.5 + Math.random() * 0.9);
+          segs.push([cx, cy, nx, ny]);
+          if (Math.random() < 0.22) {
+            var bsteps = 4 + (Math.random() * 5 | 0);
+            var bx = nx, by = ny, bsegs = [];
+            for (var j = 0; j < bsteps; j++) {
+              var bnx = bx + (Math.random() - 0.5) * 70;
+              var bny = by - (h / steps) * (0.3 + Math.random() * 0.7);
+              bsegs.push([bx, by, bnx, bny]);
+              bx = bnx; by = bny;
+            }
+            branches.push(bsegs);
+          }
+          cx = nx; cy = ny;
+          if (cy < -40) break;
+        }
+        return { segs: segs, branches: branches, life: 0, max: 16 + (Math.random() * 16 | 0), hue: Math.random() };
       }
 
-      function build() {
-        var count = Math.min(440, Math.max(200, Math.round((w * h) / 5000)));
-        parts = [];
-        for (var i = 0; i < count; i++) {
-          parts.push({
-            x: Math.random() * w, y: Math.random() * h,
-            ph: Math.random(),
-            vph: (Math.random() * 0.0008) + 0.0003,
-            sp: 0.6 + Math.random() * 1.6,
-            life: Math.random() * 240,
-            max: 160 + Math.random() * 240,
-            wdt: Math.random() * 1.3 + 0.4
-          });
+      function spawnBolt() {
+        var x = Math.random() * w;
+        var y = h + 10;
+        bolts.push(makeBolt(x, y));
+        for (var s = 0; s < 12; s++) {
+          sparks.push({ x: x + (Math.random()-0.5)*30, y: y - Math.random()*40,
+            vx: (Math.random()-0.5)*1.2, vy: -(0.5+Math.random()*2.2),
+            life: 0, max: 30 + Math.random()*40, r: Math.random()*1.6+0.5 });
         }
+        if (bolts.length > 6) bolts.shift();
+      }
+
+      function strokePath(segs, alpha, width, col) {
+        ctx.strokeStyle = 'rgba(' + col + ',' + alpha + ')';
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        for (var i = 0; i < segs.length; i++) {
+          ctx.moveTo(segs[i][0], segs[i][1]);
+          ctx.lineTo(segs[i][2], segs[i][3]);
+        }
+        ctx.stroke();
       }
 
       function draw() {
         if (!running) return;
-        t += 0.0045;
+        t += 0.016;
 
         ctx.globalCompositeOperation = 'source-over';
-        ctx.fillStyle = 'rgba(6,11,24,0.10)';
+        ctx.fillStyle = 'rgba(6,11,24,0.22)';
         ctx.fillRect(0, 0, w, h);
 
         ctx.globalCompositeOperation = 'lighter';
-        for (var i = 0; i < parts.length; i++) {
-          var p = parts[i];
-          var a = angleAt(p.x, p.y, t);
-          var nx = p.x + Math.cos(a) * p.sp * 1.9;
-          var ny = p.y + Math.sin(a) * p.sp * 1.9;
 
-          p.ph += p.vph;
-          ctx.strokeStyle = 'rgba(' + colAt(p.ph) + ',0.32)';
-          ctx.lineWidth = p.wdt;
+        var hz = ctx.createLinearGradient(0, h, 0, h * 0.4);
+        hz.addColorStop(0, 'rgba(' + DEEP + ',0.10)');
+        hz.addColorStop(1, 'rgba(' + DEEP + ',0)');
+        ctx.fillStyle = hz; ctx.fillRect(0, 0, w, h);
+
+        spawnTimer--;
+        if (spawnTimer <= 0) {
+          spawnBolt();
+          spawnTimer = 8 + (Math.random() * 26 | 0);
+        }
+
+        for (var b = bolts.length - 1; b >= 0; b--) {
+          var bo = bolts[b];
+          bo.life++;
+          var k = bo.life / bo.max;
+          if (k >= 1) { bolts.splice(b, 1); continue; }
+          var flick = (0.5 + 0.5 * Math.sin(bo.life * 1.7)) * (1 - k);
+          var a = 0.25 + 0.55 * flick;
+          strokePath(bo.segs, a * 0.5, 5, GLOW);
+          for (var br = 0; br < bo.branches.length; br++) strokePath(bo.branches[br], a * 0.35, 3, GLOW);
+          strokePath(bo.segs, a, 1.4, CORE);
+          for (var br2 = 0; br2 < bo.branches.length; br2++) strokePath(bo.branches[br2], a * 0.7, 1, CORE);
+        }
+
+        for (var s = sparks.length - 1; s >= 0; s--) {
+          var sp = sparks[s];
+          sp.x += sp.vx; sp.y += sp.vy; sp.vy += 0.01; sp.life++;
+          if (sp.life > sp.max) { sparks.splice(s, 1); continue; }
+          var sa = (1 - sp.life / sp.max) * 0.8;
           ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(nx, ny);
-          ctx.stroke();
-
-          p.x = nx; p.y = ny; p.life++;
-          if (p.life > p.max || p.x < -10 || p.x > w + 10 || p.y < -10 || p.y > h + 10) {
-            p.x = Math.random() * w; p.y = Math.random() * h;
-            p.life = 0;
-          }
+          ctx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(' + CORE + ',' + sa + ')';
+          ctx.fill();
         }
         ctx.globalCompositeOperation = 'source-over';
 
         raf = requestAnimationFrame(draw);
       }
 
-      size(); build(); draw();
+      size(); draw();
       var rt;
-      window.addEventListener('resize', function() { clearTimeout(rt); rt = setTimeout(function(){ size(); build(); }, 200); });
+      window.addEventListener('resize', function() { clearTimeout(rt); rt = setTimeout(size, 200); });
       document.addEventListener('visibilitychange', function() {
         if (document.hidden) { running = false; if (raf) cancelAnimationFrame(raf); }
         else if (!running) { running = true; draw(); }
