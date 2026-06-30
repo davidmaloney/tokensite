@@ -87,18 +87,21 @@
         '  vec3 col=base;',
         '  col=mix(col,gold,g);',
         '  col+=hi*pow(smoothstep(0.84,1.0,f),2.0)*0.6;',
-        '  float vig=smoothstep(1.15,0.2,length(uv-0.5));',
+        '  float vig=smoothstep(1.15,0.2,length(uv-vec2(0.5)));',
         '  col*=mix(0.55,1.0,vig);',
         '  gl_FragColor=vec4(col,1.0);',
         '}'
       ].join('\n');
 
-      function sh(type, src){ var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); return s; }
+      function fallback(){ canvas.style.background = 'radial-gradient(circle at 50% 30%, #1a1305, #04010f 70%)'; }
+      function sh(type, src){ var s=gl.createShader(type); gl.shaderSource(s,src); gl.compileShader(s); if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){ return null; } return s; }
+      var vs = sh(gl.VERTEX_SHADER, vsrc), fs = sh(gl.FRAGMENT_SHADER, fsrc);
+      if (!vs || !fs) { fallback(); return; }
       var prog = gl.createProgram();
-      gl.attachShader(prog, sh(gl.VERTEX_SHADER, vsrc));
-      gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, fsrc));
+      gl.attachShader(prog, vs);
+      gl.attachShader(prog, fs);
       gl.linkProgram(prog);
-      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { fallback(); return; }
       gl.useProgram(prog);
 
       var buf = gl.createBuffer();
