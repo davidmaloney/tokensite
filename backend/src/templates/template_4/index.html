@@ -199,24 +199,24 @@
           var flick = bo.phase === 'fade' ? bo.fade : (0.8 + 0.2 * Math.sin(bo.grow * 1.5));
           var a = flick;
 
-          strokePath(bo.pts, revealed, 0.06 * a, 7, GLOW);
-          strokePath(bo.pts, revealed, 0.12 * a, 3, GLOW);
-          strokePath(bo.pts, revealed, 0.30 * a, 1.0, WHITE);
+          strokePath(bo.pts, revealed, 0.04 * a, 7, GLOW);
+          strokePath(bo.pts, revealed, 0.07 * a, 3, GLOW);
+          strokePath(bo.pts, revealed, 0.18 * a, 1.0, WHITE);
           for (var fk = bo.forks.length - 1; fk >= 0; fk--) {
             var fo = bo.forks[fk];
             fo.life++;
             var fa = (1 - fo.life / fo.max) * a;
             if (fo.life > fo.max) { bo.forks.splice(fk, 1); }
             else {
-              strokePath(fo.pts, fo.pts.length, 0.07 * fa, 2, GLOW);
-              strokePath(fo.pts, fo.pts.length, 0.22 * fa, 0.7, WHITE);
+              strokePath(fo.pts, fo.pts.length, 0.04 * fa, 2, GLOW);
+              strokePath(fo.pts, fo.pts.length, 0.14 * fa, 0.7, WHITE);
             }
           }
           for (var br = 0; br < bo.branches.length; br++) {
             var bb = bo.branches[br];
             if (revealed >= bb.at) {
-              strokePath(bb.pts, bb.pts.length, 0.09 * a, 2.5, GLOW);
-              strokePath(bb.pts, bb.pts.length, 0.22 * a, 0.8, WHITE);
+              strokePath(bb.pts, bb.pts.length, 0.05 * a, 2.5, GLOW);
+              strokePath(bb.pts, bb.pts.length, 0.14 * a, 0.8, WHITE);
               if (!bb.sparked && bo.phase === 'grow') {
                 bb.sparked = true;
                 var tip = bb.pts[bb.pts.length - 1];
