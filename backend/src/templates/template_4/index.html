@@ -79,7 +79,7 @@
 
       function makeBolt() {
         var startX = Math.random() * w;
-        var endY = h * (0.5 + Math.random() * 0.42);
+        var endY = (w < 700) ? h * (0.32 + Math.random() * 0.26) : h * (0.5 + Math.random() * 0.42);
         var drift = (Math.random() - 0.5) * w * 0.25;
         var seg = 10 + Math.random() * 6;
         var steps = Math.max(20, Math.floor(endY / seg));
@@ -176,7 +176,7 @@
         ctx.fillStyle = hz; ctx.fillRect(0, 0, w, h);
 
         spawnTimer--;
-        if (spawnTimer <= 0) { spawnBolt(); var mob = w < 700; spawnTimer = (mob ? 55 : 22) + (Math.random() * (mob ? 70 : 40) | 0); }
+        if (spawnTimer <= 0) { spawnBolt(); var mob = w < 700; spawnTimer = (mob ? 70 : 30) + (Math.random() * (mob ? 80 : 50) | 0); }
 
         for (var bi = bolts.length - 1; bi >= 0; bi--) {
           var bo = bolts[bi];
@@ -201,7 +201,7 @@
 
           strokePath(bo.pts, revealed, 0.06 * a, 7, GLOW);
           strokePath(bo.pts, revealed, 0.12 * a, 3, GLOW);
-          strokePath(bo.pts, revealed, 0.48 * a, 1.0, WHITE);
+          strokePath(bo.pts, revealed, 0.30 * a, 1.0, WHITE);
           for (var fk = bo.forks.length - 1; fk >= 0; fk--) {
             var fo = bo.forks[fk];
             fo.life++;
@@ -209,14 +209,14 @@
             if (fo.life > fo.max) { bo.forks.splice(fk, 1); }
             else {
               strokePath(fo.pts, fo.pts.length, 0.07 * fa, 2, GLOW);
-              strokePath(fo.pts, fo.pts.length, 0.34 * fa, 0.7, WHITE);
+              strokePath(fo.pts, fo.pts.length, 0.22 * fa, 0.7, WHITE);
             }
           }
           for (var br = 0; br < bo.branches.length; br++) {
             var bb = bo.branches[br];
             if (revealed >= bb.at) {
               strokePath(bb.pts, bb.pts.length, 0.09 * a, 2.5, GLOW);
-              strokePath(bb.pts, bb.pts.length, 0.34 * a, 0.8, WHITE);
+              strokePath(bb.pts, bb.pts.length, 0.22 * a, 0.8, WHITE);
               if (!bb.sparked && bo.phase === 'grow') {
                 bb.sparked = true;
                 var tip = bb.pts[bb.pts.length - 1];
