@@ -90,7 +90,7 @@ body {
 .header-socials .social-link:hover { background: rgba(153,69,255,0.18); transform: translateY(-1px); animation: none; border-color: rgba(153,69,255,0.5); }
 .header-socials .social-icon { display: flex; align-items: center; }
 
-.description-block { position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(153,69,255,0.1) 0%, rgba(255,255,255,0.03) 38%); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid #9945FF; border-radius: 16px; padding: 22px 26px 34px; margin-bottom: 20px; box-shadow: 0 4px 18px rgba(0,0,0,0.3); }
+.description-block { position: relative; overflow: hidden; background: linear-gradient(135deg, rgba(153,69,255,0.1) 0%, rgba(255,255,255,0.03) 38%); border: 1px solid rgba(255,255,255,0.08); border-left: 3px solid #9945FF; border-radius: 8px; padding: 22px 26px 34px; margin-bottom: 20px; box-shadow: 0 4px 18px rgba(0,0,0,0.3); }
 .description { font-size: 18px; line-height: 1.8; color: #e8e8e8; white-space: pre-wrap; word-break: break-word; }
 .description-block::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent); }
 .description-block::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 60%; background: radial-gradient(ellipse at 50% 120%, rgba(255,255,255,0.05), transparent 70%); pointer-events: none; }
@@ -99,7 +99,7 @@ body {
 .contract-block {
   display: flex; align-items: center; gap: 10px;
   background: rgba(153,69,255,0.08); border: 1px solid rgba(153,69,255,0.2);
-  border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; flex-wrap: wrap; max-width: 820px;
+  border-radius: 6px; padding: 16px 20px; margin-bottom: 20px; flex-wrap: wrap; max-width: 820px;
   position: relative; overflow: hidden;
 }
 .contract-block::after {
@@ -107,9 +107,9 @@ body {
   background: linear-gradient(90deg, transparent, rgba(153,69,255,0.12), transparent);
   animation: shimmer 3s infinite;
 }
-.contract-label { font-size: 13px; font-weight: 800; color: #9945FF; letter-spacing: 1.5px; flex-shrink: 0; }
+.contract-label { font-size: 12px; font-weight: 700; color: #9945FF; letter-spacing: 2.5px; font-family: 'JetBrains Mono','SF Mono',ui-monospace,monospace; flex-shrink: 0; }
 .contract-address { font-family: monospace; font-size: 14px; color: #aaa; word-break: break-all; flex: 1; }
-.copy-btn { background: rgba(153,69,255,0.2); border: 1px solid rgba(153,69,255,0.3); color: #9945FF; font-size: 14px; font-weight: 700; padding: 9px 18px; border-radius: 8px; cursor: pointer; flex-shrink: 0; transition: background 0.2s, transform 0.15s; position: relative; z-index: 1; }
+.copy-btn { background: rgba(153,69,255,0.2); border: 1px solid rgba(153,69,255,0.3); color: #9945FF; font-size: 14px; font-weight: 700; padding: 9px 18px; border-radius: 4px; cursor: pointer; flex-shrink: 0; transition: background 0.2s, transform 0.15s; position: relative; z-index: 1; }
 .copy-btn:hover { background: rgba(153,69,255,0.35); transform: translateY(-1px); }
 
 .buy-links { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
@@ -129,19 +129,19 @@ body {
 
 .card {
   background: linear-gradient(160deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.015) 100%);
-  border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 20px 22px;
+  border: 1px solid rgba(255,255,255,0.09); border-radius: 8px; padding: 20px 22px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.35); transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 .card:hover { border-color: rgba(153,69,255,0.35); box-shadow: 0 8px 36px rgba(153,69,255,0.12); transform: translateY(-2px); }
-.card-title { font-size: 15px; font-weight: 800; color: #9945FF; letter-spacing: 2px; margin-bottom: 16px; text-transform: uppercase; }
+.card-title { font-size: 13px; font-weight: 700; color: #9945FF; letter-spacing: 3px; margin-bottom: 16px; text-transform: uppercase; font-family: 'JetBrains Mono','SF Mono',ui-monospace,monospace; }
 
 .tokenomics-block {
   background: linear-gradient(160deg, rgba(255,255,255,0.045) 0%, rgba(255,255,255,0.015) 100%);
-  border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 20px 22px; box-shadow: 0 4px 24px rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.09); border-radius: 8px; padding: 20px 22px; box-shadow: 0 4px 24px rgba(0,0,0,0.35);
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
 }
 .tokenomics-block:hover { border-color: rgba(153,69,255,0.35); box-shadow: 0 8px 36px rgba(153,69,255,0.12); transform: translateY(-2px); }
-.tokenomics-title { font-size: 15px; font-weight: 800; color: #9945FF; letter-spacing: 2px; margin-bottom: 16px; text-transform: uppercase; }
+.tokenomics-title { font-size: 13px; font-weight: 700; color: #9945FF; letter-spacing: 3px; margin-bottom: 16px; text-transform: uppercase; font-family: 'JetBrains Mono','SF Mono',ui-monospace,monospace; }
 .tokenomics-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .tokenomics-row:last-child { border-bottom: none; }
 .tokenomics-label { font-size: 16px; color: #666; }
@@ -161,15 +161,15 @@ body {
 
 .countdown-card {}
 .countdown-grid { display: grid; margin-top: 2px; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.countdown-item { text-align: center; background: rgba(153,69,255,0.08); border-radius: 12px; padding: 12px 4px; border: 1px solid rgba(153,69,255,0.15); }
+.countdown-item { text-align: center; background: rgba(153,69,255,0.08); border-radius: 6px; padding: 12px 4px; border: 1px solid rgba(153,69,255,0.15); }
 .countdown-num { font-size: 30px; font-weight: 900; color: #9945FF; line-height: 1; }
-.countdown-label { font-size: 13px; color: #666; margin-top: 6px; text-transform: uppercase; letter-spacing: 1px; }
+.countdown-label { font-size: 12px; color: #666; margin-top: 6px; text-transform: uppercase; letter-spacing: 2px; font-family: 'JetBrains Mono','SF Mono',ui-monospace,monospace; }
 .countdown-launched { font-size: 20px; font-weight: 800; color: #14F195; text-align: center; padding: 16px; }
 
 .about-card {}
 .about-text { font-size: 18px; line-height: 1.8; color: #aaa; margin-bottom: 20px; }
 .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 14px; }
-.team-member { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 16px 12px; background: rgba(255,255,255,0.03); border-radius: 14px; border: 1px solid rgba(255,255,255,0.06); transition: border-color 0.2s; }
+.team-member { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 8px; padding: 16px 12px; background: rgba(255,255,255,0.03); border-radius: 6px; border: 1px solid rgba(255,255,255,0.06); transition: border-color 0.2s; }
 .team-member:hover { border-color: rgba(153,69,255,0.3); }
 .team-avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, #9945FF, #14F195); display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #000; }
 .team-photo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; display: block; }
@@ -196,7 +196,7 @@ body {
 .roadmap-content { flex: 1; padding-top: 4px; }
 .roadmap-title { font-size: 18px; font-weight: 700; color: #fff; margin-bottom: 5px; }
 .roadmap-desc { font-size: 15px; color: #888; line-height: 1.6; margin-bottom: 5px; }
-.roadmap-status-label { font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+.roadmap-status-label { font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; font-family: 'JetBrains Mono','SF Mono',ui-monospace,monospace; }
 .status-completed .roadmap-status-label { color: #14F195; }
 .status-inprogress .roadmap-status-label { color: #9945FF; }
 .status-upcoming .roadmap-status-label { color: #444; }
