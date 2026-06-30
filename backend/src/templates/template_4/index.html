@@ -55,14 +55,14 @@
   </div>
 
   <script>
-    // ===== Electric Storm v2: top-down bolts that GROW to a target, branch sparks, softer =====
+    // ===== Electric Storm v3: tapered, flashing, more realistic top-down bolts =====
     (function() {
       var canvas = document.getElementById('bg-storm');
       if (!canvas || !canvas.getContext) return;
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       var ctx = canvas.getContext('2d');
       var w, h, dpr, raf, running = true;
-      var bolts = [], sparks = [], spawnTimer = 0;
+      var bolts = [], sparks = [], spawnTimer = 0, flash = 0;
       var CORE = '200,215,255';
       var GLOW = '90,120,255';
       var DEEP = '60,80,230';
@@ -78,25 +78,25 @@
 
       function makeBolt() {
         var startX = Math.random() * w;
-        var steps = 16 + (Math.random() * 12 | 0);
+        var steps = 22 + (Math.random() * 14 | 0);
         var pts = [[startX, -10]];
         var targetX = startX + (Math.random() - 0.5) * w * 0.4;
-        var cx = startX, cy = -10;
         var endY = h * (0.55 + Math.random() * 0.4);
         for (var i = 1; i <= steps; i++) {
           var prog = i / steps;
           var aimX = startX + (targetX - startX) * prog;
-          cx = aimX + (Math.random() - 0.5) * 70;
-          cy = (endY) * prog;
+          var jit = 55 * (1 - prog * 0.5);
+          var cx = aimX + (Math.random() - 0.5) * jit;
+          var cy = endY * prog;
           pts.push([cx, cy]);
         }
         var branches = [];
-        for (var b = 0; b < pts.length; b++) {
-          if (Math.random() < 0.20 && b > 1) {
+        for (var b = 2; b < pts.length - 1; b++) {
+          if (Math.random() < 0.18) {
             var bsteps = 3 + (Math.random() * 4 | 0);
             var bx = pts[b][0], by = pts[b][1], bpts = [[bx, by]];
             for (var j = 0; j < bsteps; j++) {
-              bx += (Math.random() - 0.5) * 60;
+              bx += (Math.random() - 0.5) * 55;
               by += (h / steps) * (0.3 + Math.random() * 0.6);
               bpts.push([bx, by]);
             }
@@ -105,11 +105,10 @@
         }
         return {
           pts: pts, branches: branches,
-          grow: 0,
-          growMax: pts.length,
-          growSpeed: 0.6 + Math.random() * 0.5,
-          hold: 0, holdMax: 8 + (Math.random() * 10 | 0),
-          fade: 1, phase: 'grow'
+          grow: 0, growMax: pts.length,
+          growSpeed: 0.8 + Math.random() * 0.6,
+          hold: 0, holdMax: 7 + (Math.random() * 9 | 0),
+          fade: 1, phase: 'grow', flashed: false
         };
       }
 
@@ -118,14 +117,18 @@
         if (bolts.length > 4) bolts.shift();
       }
 
-      function strokePts(pts, upto, alpha, width, col) {
+      function strokeTapered(pts, upto, alpha, baseW, col) {
         if (upto < 2) return;
-        ctx.strokeStyle = 'rgba(' + col + ',' + alpha + ')';
-        ctx.lineWidth = width;
-        ctx.beginPath();
-        ctx.moveTo(pts[0][0], pts[0][1]);
-        for (var i = 1; i < upto && i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
-        ctx.stroke();
+        var n = Math.min(upto, pts.length);
+        for (var i = 1; i < n; i++) {
+          var tp = 1 - (i / pts.length);
+          ctx.strokeStyle = 'rgba(' + col + ',' + alpha + ')';
+          ctx.lineWidth = Math.max(0.3, baseW * (0.25 + 0.75 * tp));
+          ctx.beginPath();
+          ctx.moveTo(pts[i-1][0], pts[i-1][1]);
+          ctx.lineTo(pts[i][0], pts[i][1]);
+          ctx.stroke();
+        }
       }
 
       function addSpark(x, y) {
@@ -142,23 +145,30 @@
 
         ctx.globalCompositeOperation = 'lighter';
 
+        if (flash > 0) {
+          ctx.fillStyle = 'rgba(120,140,255,' + (flash * 0.10) + ')';
+          ctx.fillRect(0, 0, w, h);
+          flash -= 0.08;
+          if (flash < 0) flash = 0;
+        }
+
         var hz = ctx.createLinearGradient(0, 0, 0, h * 0.55);
         hz.addColorStop(0, 'rgba(' + DEEP + ',0.09)');
         hz.addColorStop(1, 'rgba(' + DEEP + ',0)');
         ctx.fillStyle = hz; ctx.fillRect(0, 0, w, h);
 
         spawnTimer--;
-        if (spawnTimer <= 0) {
-          spawnBolt();
-          spawnTimer = 22 + (Math.random() * 40 | 0);
-        }
+        if (spawnTimer <= 0) { spawnBolt(); spawnTimer = 22 + (Math.random() * 40 | 0); }
 
         for (var bi = bolts.length - 1; bi >= 0; bi--) {
           var bo = bolts[bi];
 
           if (bo.phase === 'grow') {
             bo.grow += bo.growSpeed;
-            if (bo.grow >= bo.growMax) { bo.grow = bo.growMax; bo.phase = 'hold'; }
+            if (bo.grow >= bo.growMax) {
+              bo.grow = bo.growMax; bo.phase = 'hold';
+              if (!bo.flashed) { bo.flashed = true; flash = Math.max(flash, 0.7 + Math.random() * 0.3); }
+            }
           } else if (bo.phase === 'hold') {
             bo.hold++;
             if (bo.hold >= bo.holdMax) bo.phase = 'fade';
@@ -168,16 +178,16 @@
           }
 
           var revealed = Math.floor(bo.grow);
-          var flick = bo.phase === 'fade' ? bo.fade : (0.7 + 0.3 * Math.sin(bo.grow * 1.3));
+          var flick = bo.phase === 'fade' ? bo.fade : (0.75 + 0.25 * Math.sin(bo.grow * 1.3));
           var a = (0.18 + 0.34 * flick);
 
-          strokePts(bo.pts, revealed, a * 0.4, 4, GLOW);
-          strokePts(bo.pts, revealed, a * 0.8, 1.2, CORE);
+          strokeTapered(bo.pts, revealed, a * 0.4, 5, GLOW);
+          strokeTapered(bo.pts, revealed, a * 0.85, 1.6, CORE);
 
           for (var br = 0; br < bo.branches.length; br++) {
             var bb = bo.branches[br];
             if (revealed >= bb.at) {
-              strokePts(bb.pts, bb.pts.length, a * 0.5, 0.9, CORE);
+              strokeTapered(bb.pts, bb.pts.length, a * 0.5, 1.1, CORE);
               if (!bb.sparked && bo.phase === 'grow') {
                 bb.sparked = true;
                 var tip = bb.pts[bb.pts.length - 1];
