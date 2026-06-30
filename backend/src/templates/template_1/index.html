@@ -55,15 +55,15 @@
   </div>
 
   <script>
-    // ===== Animated constellation network background =====
+    // ===== Animated constellation network background (intensified) =====
     // Full-screen canvas behind everything (z-index:-1). Purely decorative.
     (function() {
       var canvas = document.getElementById('bg-net');
       if (!canvas || !canvas.getContext) return;
       if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       var ctx = canvas.getContext('2d');
-      var w, h, dpr, nodes, raf, running = true, t = 0;
-      var LINK = 150;
+      var w, h, dpr, nodes, pulses, raf, running = true, t = 0, pulseTimer = 0;
+      var LINK = 190;              // link distance (px) — denser web
       var PURPLE = '153,69,255';
       var GREEN = '20,241,149';
 
@@ -75,40 +75,46 @@
       }
 
       function build() {
-        var count = Math.min(90, Math.max(36, Math.round((w * h) / 22000)));
+        var count = Math.min(150, Math.max(60, Math.round((w * h) / 13000)));
         nodes = [];
         for (var i = 0; i < count; i++) {
+          var depth = Math.random();
           nodes.push({
             x: Math.random() * w,
             y: Math.random() * h,
-            vx: (Math.random() - 0.5) * 0.28,
-            vy: (Math.random() - 0.5) * 0.28,
-            r: Math.random() * 1.7 + 0.8,
-            g: Math.random() < 0.25,
+            vx: (Math.random() - 0.5) * 0.45,
+            vy: (Math.random() - 0.5) * 0.45,
+            r: depth * 2.8 + 1.0,         // bigger, with depth variation
+            z: depth,
+            g: Math.random() < 0.38,      // more green
             ph: Math.random() * Math.PI * 2
           });
         }
+        // travelling pulses fired along links
+        pulses = [];
       }
 
       function draw() {
         if (!running) return;
-        t += 0.005;
+        t += 0.007;
         ctx.clearRect(0, 0, w, h);
 
+        // Soft breathing glow blobs (drift slowly).
         var gx = w * (0.3 + 0.08 * Math.sin(t * 0.6));
         var gy = h * (0.25 + 0.06 * Math.cos(t * 0.5));
         var grd = ctx.createRadialGradient(gx, gy, 0, gx, gy, Math.max(w, h) * 0.5);
-        grd.addColorStop(0, 'rgba(' + PURPLE + ',0.10)');
+        grd.addColorStop(0, 'rgba(' + PURPLE + ',0.16)');
         grd.addColorStop(1, 'rgba(' + PURPLE + ',0)');
         ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h);
 
         var gx2 = w * (0.75 - 0.08 * Math.cos(t * 0.4));
         var gy2 = h * (0.8 - 0.06 * Math.sin(t * 0.5));
         var grd2 = ctx.createRadialGradient(gx2, gy2, 0, gx2, gy2, Math.max(w, h) * 0.45);
-        grd2.addColorStop(0, 'rgba(' + GREEN + ',0.07)');
+        grd2.addColorStop(0, 'rgba(' + GREEN + ',0.12)');
         grd2.addColorStop(1, 'rgba(' + GREEN + ',0)');
         ctx.fillStyle = grd2; ctx.fillRect(0, 0, w, h);
 
+        // Move nodes.
         for (var i = 0; i < nodes.length; i++) {
           var n = nodes[i];
           n.x += n.vx; n.y += n.vy;
@@ -116,31 +122,63 @@
           if (n.y < -20) n.y = h + 20; else if (n.y > h + 20) n.y = -20;
         }
 
+        // Links (brighter, thicker, green-tinged on closer pairs).
+        var closePairs = [];
         for (var a = 0; a < nodes.length; a++) {
           for (var b = a + 1; b < nodes.length; b++) {
             var dx = nodes[a].x - nodes[b].x, dy = nodes[a].y - nodes[b].y;
             var d = Math.sqrt(dx * dx + dy * dy);
             if (d < LINK) {
-              var alpha = (1 - d / LINK) * 0.22;
-              ctx.strokeStyle = 'rgba(' + PURPLE + ',' + alpha + ')';
-              ctx.lineWidth = 1;
+              var str = 1 - d / LINK;
+              var alpha = str * 0.38;
+              var lc = (nodes[a].g || nodes[b].g) ? GREEN : PURPLE;
+              ctx.strokeStyle = 'rgba(' + lc + ',' + alpha + ')';
+              ctx.lineWidth = 0.6 + str * 1.4;
               ctx.beginPath();
               ctx.moveTo(nodes[a].x, nodes[a].y);
               ctx.lineTo(nodes[b].x, nodes[b].y);
               ctx.stroke();
+              if (str > 0.45) closePairs.push([a, b]);
             }
           }
         }
 
+        // Spawn travelling pulses along close links.
+        pulseTimer++;
+        if (pulseTimer > 6 && closePairs.length) {
+          pulseTimer = 0;
+          var pr = closePairs[(Math.random() * closePairs.length) | 0];
+          pulses.push({ a: pr[0], b: pr[1], t: 0, sp: 0.02 + Math.random() * 0.03, g: Math.random() < 0.5 });
+          if (pulses.length > 40) pulses.shift();
+        }
+        // Draw + advance pulses.
+        for (var pi = pulses.length - 1; pi >= 0; pi--) {
+          var pl = pulses[pi];
+          pl.t += pl.sp;
+          if (pl.t >= 1) { pulses.splice(pi, 1); continue; }
+          var na = nodes[pl.a], nb = nodes[pl.b];
+          var px = na.x + (nb.x - na.x) * pl.t;
+          var py = na.y + (nb.y - na.y) * pl.t;
+          var pcol = pl.g ? GREEN : PURPLE;
+          ctx.beginPath();
+          ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(' + pcol + ',0.9)';
+          ctx.shadowColor = 'rgba(' + pcol + ',0.9)';
+          ctx.shadowBlur = 10;
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+
+        // Nodes (with gentle twinkle).
         for (var k = 0; k < nodes.length; k++) {
           var p = nodes[k];
           var tw = 0.6 + 0.4 * Math.sin(t * 2 + p.ph);
           var col = p.g ? GREEN : PURPLE;
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(' + col + ',' + (0.65 * tw) + ')';
-          ctx.shadowColor = 'rgba(' + col + ',0.6)';
-          ctx.shadowBlur = 6;
+          ctx.fillStyle = 'rgba(' + col + ',' + (0.85 * tw) + ')';
+          ctx.shadowColor = 'rgba(' + col + ',0.8)';
+          ctx.shadowBlur = 10;
           ctx.fill();
           ctx.shadowBlur = 0;
         }
