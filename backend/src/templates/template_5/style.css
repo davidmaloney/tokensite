@@ -42,17 +42,14 @@ body {
 .page-wrapper { max-width: 1200px; margin: 0 auto; min-height: 100vh; display: flex; flex-direction: column; }
 
 .banner-container {
-  width: 100%; aspect-ratio: 5 / 2; overflow: hidden;
-  background: linear-gradient(135deg, #0d0630 0%, #060d2e 50%, #04010f 100%);
+  width: 100%; aspect-ratio: 5 / 2;
+  background: transparent;
   flex-shrink: 0; margin-top: 24px; border-radius: 20px;
-  box-shadow: 0 8px 40px rgba(0,0,0,0.6); position: relative;
+  position: relative;
 }
-.banner-container::after {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 55%; max-height: 200px;
-  background: linear-gradient(to bottom, rgba(4,1,15,0) 0%, rgba(4,1,15,0.10) 40%, rgba(4,1,15,0.32) 72%, rgba(4,1,15,0.62) 100%); pointer-events: none;
-}
-.banner-img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.banner-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #0d0630 0%, #060d2e 50%, #04010f 100%); }
+.banner-container::after { content: none; }
+.banner-img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 20px; -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%); mask-image: linear-gradient(to bottom, #000 55%, transparent 100%); }
+.banner-placeholder { width: 100%; height: 100%; border-radius: 20px; background: linear-gradient(135deg, #0d0630 0%, #060d2e 50%, #04010f 100%); -webkit-mask-image: linear-gradient(to bottom, #000 55%, transparent 100%); mask-image: linear-gradient(to bottom, #000 55%, transparent 100%); }
 
 .content-container { padding: 0 28px 56px; flex: 1; width: 100%; }
 
