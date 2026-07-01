@@ -9,6 +9,8 @@
 </head>
 <body style="opacity:0;transition:opacity 0.5s ease;">
 
+  <canvas id="bg-fire" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
+
   <div id="intro-overlay">
     <div id="intro-card">
       <div id="intro-avatar-wrap"></div>
@@ -53,6 +55,108 @@
   </div>
 
   <script>
+    // ===== Forge embers — glowing sparks rising from the fire, heat shimmer =====
+    (function() {
+      var canvas = document.getElementById('bg-fire');
+      if (!canvas || !canvas.getContext) return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var ctx = canvas.getContext('2d');
+      var w, h, dpr, raf, running = true, t = 0;
+      var embers, smokes;
+      var HOT = [
+        [255,120,30],
+        [251,146,60],
+        [255,190,80],
+        [255,224,150]
+      ];
+
+      function size() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        w = window.innerWidth; h = window.innerHeight;
+        canvas.width = w * dpr; canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function newEmber(anywhere) {
+        var depth = Math.random();
+        var c = HOT[(Math.random() * HOT.length) | 0];
+        return {
+          x: Math.random() * w,
+          y: anywhere ? Math.random() * h : h + 10 + Math.random() * 40,
+          z: depth,
+          r: 0.7 + depth * 2.4,
+          col: c,
+          vy: -(0.6 + depth * 2.2),
+          drift: (Math.random() - 0.5) * 0.6,
+          sway: Math.random() * Math.PI * 2,
+          swaySp: 0.01 + Math.random() * 0.03,
+          swayAmp: 6 + depth * 20,
+          life: 0,
+          max: 120 + Math.random() * 200,
+          flick: Math.random() * Math.PI * 2
+        };
+      }
+
+      function build() {
+        var mobile = w < 700;
+        var count = mobile ? Math.round(w * h / 12000) : Math.round(w * h / 6500);
+        count = Math.max(mobile ? 40 : 90, Math.min(mobile ? 110 : 280, count));
+        embers = [];
+        for (var i = 0; i < count; i++) embers.push(newEmber(true));
+      }
+
+      function draw() {
+        if (!running) return;
+        t += 0.01;
+
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = '#0a0805';
+        ctx.fillRect(0, 0, w, h);
+        var gy = h;
+        var grd = ctx.createRadialGradient(w * 0.5, gy, 0, w * 0.5, gy, Math.max(w, h) * 0.75);
+        grd.addColorStop(0, 'rgba(255,120,30,0.10)');
+        grd.addColorStop(0.5, 'rgba(251,146,60,0.04)');
+        grd.addColorStop(1, 'rgba(251,146,60,0)');
+        ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h);
+
+        ctx.globalCompositeOperation = 'lighter';
+
+        for (var i = 0; i < embers.length; i++) {
+          var e = embers[i];
+          e.sway += e.swaySp; e.flick += 0.2; e.life++;
+          e.vy -= 0.002;
+          var x = e.x + Math.sin(e.sway) * e.swayAmp + e.drift * e.life * 0.1;
+          e.y += e.vy;
+          if (e.y < -10 || e.life > e.max) { embers[i] = newEmber(false); continue; }
+
+          var lifeK = Math.min(1, e.life / 20) * (1 - Math.max(0, (e.life - (e.max - 40)) / 40));
+          var flick = 0.65 + 0.35 * Math.sin(e.flick);
+          var a = (0.25 + e.z * 0.5) * lifeK * flick;
+          var col = e.col.join(',');
+
+          ctx.beginPath();
+          ctx.arc(x, e.y, e.r * 3.2, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(' + col + ',' + (a * 0.18) + ')';
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(x, e.y, e.r, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(' + col + ',' + a + ')';
+          ctx.fill();
+        }
+
+        ctx.globalCompositeOperation = 'source-over';
+        raf = requestAnimationFrame(draw);
+      }
+
+      size(); build(); draw();
+      var rt;
+      window.addEventListener('resize', function() { clearTimeout(rt); rt = setTimeout(function(){ size(); build(); }, 200); });
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden) { running = false; if (raf) cancelAnimationFrame(raf); }
+        else if (!running) { running = true; draw(); }
+      });
+    })();
+
     // Body fade in
     document.body.style.opacity = '0';
 
@@ -87,18 +191,8 @@
         }
       }
 
-      // Fade in body first
-      setTimeout(function() {
-        document.body.style.opacity = '1';
-      }, 50);
-
-      // Show intro card
-      setTimeout(function() {
-        card.style.opacity = '1';
-        card.style.transform = 'scale(1)';
-      }, 150);
-
-      // Fade out intro
+      setTimeout(function() { document.body.style.opacity = '1'; }, 50);
+      setTimeout(function() { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }, 150);
       setTimeout(function() {
         overlay.style.opacity = '0';
         setTimeout(function() { overlay.style.display = 'none'; }, 1000);
@@ -124,7 +218,6 @@
         });
       }, { threshold: 0.1 });
 
-      // Delay so intro plays first
       setTimeout(function() {
         cards.forEach(function(el) { observer.observe(el); });
       }, 2000);
