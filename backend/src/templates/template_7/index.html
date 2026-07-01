@@ -9,6 +9,8 @@
 </head>
 <body style="opacity:0;transition:opacity 0.5s ease;">
 
+  <canvas id="bg-space" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
+
   <div id="intro-overlay">
     <div id="intro-card">
       <div id="intro-avatar-wrap"></div>
@@ -53,6 +55,142 @@
   </div>
 
   <script>
+    // ===== To the moon — parallax starfield, moon glow, rising launch streaks =====
+    (function() {
+      var canvas = document.getElementById('bg-space');
+      if (!canvas || !canvas.getContext) return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var ctx = canvas.getContext('2d');
+      var w, h, dpr, raf, running = true, t = 0;
+      var stars, dust, streaks = [], streakTimer = 0;
+      var STAR = '235,240,255';
+      var CYAN = '150,210,255';
+      var VIOLET = '150,130,255';
+
+      function size() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        w = window.innerWidth; h = window.innerHeight;
+        canvas.width = w * dpr; canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        ctx.lineCap = 'round';
+      }
+
+      function build() {
+        var mobile = w < 700;
+        var scount = mobile ? Math.round(w * h / 6000) : Math.round(w * h / 3500);
+        scount = Math.max(mobile ? 60 : 140, Math.min(mobile ? 160 : 420, scount));
+        stars = [];
+        for (var i = 0; i < scount; i++) {
+          var depth = Math.random();
+          stars.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            z: depth,
+            r: depth * 1.5 + 0.3,
+            vy: -(0.05 + depth * 0.35),
+            tw: Math.random() * Math.PI * 2,
+            twSp: 0.01 + Math.random() * 0.04,
+            col: Math.random() < 0.18 ? (Math.random() < 0.5 ? CYAN : VIOLET) : STAR
+          });
+        }
+        var dcount = mobile ? 20 : 46;
+        dust = [];
+        for (var d = 0; d < dcount; d++) {
+          dust.push({ x: Math.random()*w, y: Math.random()*h, r: Math.random()*1.2+0.4,
+            vy: -(0.05 + Math.random()*0.12), a: Math.random()*0.12+0.03 });
+        }
+        streaks = [];
+      }
+
+      function draw() {
+        if (!running) return;
+        t += 0.006;
+
+        ctx.globalCompositeOperation = 'source-over';
+        var bg = ctx.createLinearGradient(0, 0, 0, h);
+        bg.addColorStop(0, '#05030f');
+        bg.addColorStop(0.6, '#080618');
+        bg.addColorStop(1, '#0a0820');
+        ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+
+        var mx = w * 0.78, my = h * 0.24, mr = Math.min(w, h) * 0.20;
+        var mg = ctx.createRadialGradient(mx, my, 0, mx, my, mr);
+        mg.addColorStop(0, 'rgba(200,215,255,0.16)');
+        mg.addColorStop(0.5, 'rgba(150,170,255,0.05)');
+        mg.addColorStop(1, 'rgba(150,170,255,0)');
+        ctx.fillStyle = mg; ctx.fillRect(0, 0, w, h);
+
+        ctx.globalCompositeOperation = 'lighter';
+
+        for (var di = 0; di < dust.length; di++) {
+          var dm = dust[di];
+          dm.y += dm.vy;
+          if (dm.y < -4) { dm.y = h + 4; dm.x = Math.random()*w; }
+          ctx.beginPath(); ctx.arc(dm.x, dm.y, dm.r, 0, Math.PI*2);
+          ctx.fillStyle = 'rgba(' + STAR + ',' + dm.a + ')'; ctx.fill();
+        }
+
+        for (var i = 0; i < stars.length; i++) {
+          var s = stars[i];
+          s.y += s.vy; s.tw += s.twSp;
+          if (s.y < -4) { s.y = h + 4; s.x = Math.random() * w; }
+          var a = (0.35 + 0.65 * (0.5 + 0.5 * Math.sin(s.tw))) * (0.3 + s.z * 0.7);
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(' + s.col + ',' + a + ')';
+          ctx.fill();
+          if (s.z > 0.8) {
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r * 2.6, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(' + s.col + ',' + (a * 0.14) + ')';
+            ctx.fill();
+          }
+        }
+
+        streakTimer--;
+        if (streakTimer <= 0) {
+          streakTimer = (w < 700 ? 90 : 60) + (Math.random() * 120 | 0);
+          streaks.push({
+            x: Math.random() * w, y: h + 20,
+            vy: -(3 + Math.random() * 3), vx: (Math.random() - 0.5) * 0.6,
+            life: 0, max: 60 + Math.random() * 50, col: Math.random() < 0.5 ? CYAN : STAR
+          });
+          if (streaks.length > 4) streaks.shift();
+        }
+        for (var si = streaks.length - 1; si >= 0; si--) {
+          var st = streaks[si];
+          var px = st.x, py = st.y;
+          st.x += st.vx; st.y += st.vy; st.life++;
+          if (st.life > st.max || st.y < -30) { streaks.splice(si, 1); continue; }
+          var sa = (1 - st.life / st.max) * 0.7;
+          var grad = ctx.createLinearGradient(px, py, px - st.vx * 6, py - st.vy * 6);
+          grad.addColorStop(0, 'rgba(' + st.col + ',' + sa + ')');
+          grad.addColorStop(1, 'rgba(' + st.col + ',0)');
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(st.x, st.y);
+          ctx.lineTo(st.x - st.vx * 6, st.y - st.vy * 6);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(st.x, st.y, 1.8, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(' + STAR + ',' + sa + ')';
+          ctx.fill();
+        }
+
+        ctx.globalCompositeOperation = 'source-over';
+        raf = requestAnimationFrame(draw);
+      }
+
+      size(); build(); draw();
+      var rt;
+      window.addEventListener('resize', function() { clearTimeout(rt); rt = setTimeout(function(){ size(); build(); }, 200); });
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden) { running = false; if (raf) cancelAnimationFrame(raf); }
+        else if (!running) { running = true; draw(); }
+      });
+    })();
+
     // Body fade in
     document.body.style.opacity = '0';
 
@@ -87,18 +225,8 @@
         }
       }
 
-      // Fade in body first
-      setTimeout(function() {
-        document.body.style.opacity = '1';
-      }, 50);
-
-      // Show intro card
-      setTimeout(function() {
-        card.style.opacity = '1';
-        card.style.transform = 'scale(1)';
-      }, 150);
-
-      // Fade out intro
+      setTimeout(function() { document.body.style.opacity = '1'; }, 50);
+      setTimeout(function() { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }, 150);
       setTimeout(function() {
         overlay.style.opacity = '0';
         setTimeout(function() { overlay.style.display = 'none'; }, 1000);
@@ -124,7 +252,6 @@
         });
       }, { threshold: 0.1 });
 
-      // Delay so intro plays first
       setTimeout(function() {
         cards.forEach(function(el) { observer.observe(el); });
       }, 2000);
