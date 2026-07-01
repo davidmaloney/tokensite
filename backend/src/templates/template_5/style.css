@@ -48,8 +48,8 @@ body {
   box-shadow: 0 8px 40px rgba(0,0,0,0.6); position: relative;
 }
 .banner-container::after {
-  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 25%; max-height: 120px;
-  background: linear-gradient(to bottom, transparent, #04010f); pointer-events: none;
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 55%; max-height: 200px;
+  background: linear-gradient(to bottom, rgba(4,1,15,0) 0%, rgba(4,1,15,0.10) 40%, rgba(4,1,15,0.32) 72%, rgba(4,1,15,0.62) 100%); pointer-events: none;
 }
 .banner-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .banner-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #0d0630 0%, #060d2e 50%, #04010f 100%); }
@@ -127,12 +127,14 @@ body {
 
 .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; margin-bottom: 20px; align-items: start; }
 
-.card { background: linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 20px 22px; box-shadow: 0 4px 24px rgba(0,0,0,0.4); transition: border-color 0.2s; }
+.card { position: relative; background: linear-gradient(160deg, rgba(200,168,75,0.05) 0%, rgba(255,255,255,0.015) 100%); border: 1px solid rgba(200,168,75,0.14); border-radius: 16px; padding: 20px 22px; box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 24px rgba(200,168,75,0.05); transition: border-color 0.2s, box-shadow 0.2s; }
+.card::before { content: ''; position: absolute; top: 0; left: 12px; right: 12px; height: 1px; background: linear-gradient(90deg, transparent, rgba(240,208,112,0.5), transparent); }
 .card:hover { border-color: rgba(200,168,75,0.25); }
-.card-title { font-size: 15px; font-weight: 800; color: #c8a84b; letter-spacing: 2px; margin-bottom: 16px; text-transform: uppercase; }
+.card-title { font-size: 13px; font-weight: 700; color: #c8a84b; letter-spacing: 4px; margin-bottom: 16px; text-transform: uppercase; }
 
-.tokenomics-block { background: linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.02) 100%); border: 1px solid rgba(255,255,255,0.07); border-radius: 16px; padding: 20px 22px; box-shadow: 0 4px 24px rgba(0,0,0,0.4); }
-.tokenomics-title { font-size: 15px; font-weight: 800; color: #c8a84b; letter-spacing: 2px; margin-bottom: 16px; text-transform: uppercase; }
+.tokenomics-block { position: relative; background: linear-gradient(160deg, rgba(200,168,75,0.05) 0%, rgba(255,255,255,0.015) 100%); border: 1px solid rgba(200,168,75,0.14); border-radius: 16px; padding: 20px 22px; box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 24px rgba(200,168,75,0.05); }
+.tokenomics-block::before { content: ''; position: absolute; top: 0; left: 12px; right: 12px; height: 1px; background: linear-gradient(90deg, transparent, rgba(240,208,112,0.5), transparent); }
+.tokenomics-title { font-size: 13px; font-weight: 700; color: #c8a84b; letter-spacing: 4px; margin-bottom: 16px; text-transform: uppercase; }
 .tokenomics-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
 .tokenomics-row:last-child { border-bottom: none; }
 .tokenomics-label { font-size: 16px; color: #5a5a7a; }
