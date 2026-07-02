@@ -100,21 +100,23 @@ export default function CreatePage() {
             ← Back to Dashboard
           </button>
           <div style={{ fontSize: "36px", marginBottom: "16px" }}>🚀</div>
-          <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>Before you launch</h2>
+          <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>Two things to get right</h2>
           <p style={{ fontSize: "14px", color: "#888", lineHeight: 1.7, marginBottom: "20px" }}>
-            Almost there! Just a heads up — your slug cannot be changed once your page is created. Everything else is flexible.
+            Almost there — just two things that can't be freely changed later, so please double-check them.
           </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "24px", textAlign: "left" }}>
-            {[
-              "Your slug is permanent — choose it carefully",
-              "Everything else can be updated anytime",
-              "Meme culture and crypto slang are totally welcome",
-            ].map((item) => (
-              <div key={item} style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-                <span style={{ color: "#9945FF", flexShrink: 0, marginTop: "2px" }}>●</span>
-                <span style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.5 }}>{item}</span>
-              </div>
-            ))}
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "24px", textAlign: "left" }}>
+            <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+              <span style={{ color: "#9945FF", flexShrink: 0, marginTop: "2px" }}>●</span>
+              <span style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.5 }}>
+                <strong style={{ color: "#fff" }}>Your slug is permanent.</strong> The web address you choose can't be changed once the page is created.
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+              <span style={{ color: "#9945FF", flexShrink: 0, marginTop: "2px" }}>●</span>
+              <span style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.5 }}>
+                <strong style={{ color: "#fff" }}>Your contract address locks after launch.</strong> Once your page is active you can change the contract address only a few times before it's locked for good — so make sure it's right.
+              </span>
+            </div>
           </div>
           <button className="btn-primary" style={{ width: "100%", fontSize: "15px", padding: "13px" }}
             onClick={() => setShowWarning(false)}>
