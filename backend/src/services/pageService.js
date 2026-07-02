@@ -79,6 +79,27 @@ export async function updatePageContent(pageId, walletAddress, { templateId, con
 
   const existing = JSON.parse(page.content_json || "{}");
 
+  // --- Contract-address change limit (after activation only) ---
+  // Rule: while a page is NOT active (draft/unpaid), the CA can be changed freely.
+  // Once a page is active, the owner gets a fixed number of CA changes (3) and then
+  // the contract address is locked. Changing any OTHER field never costs a turn.
+  const CA_CHANGE_LIMIT = 3;
+  const now = Math.floor(Date.now() / 1000);
+  const isActive = page.status === "active" && page.expires_at && page.expires_at > now;
+  const oldCA = (existing.contractAddress || "").trim();
+  // Only consider it a CA change if the incoming content actually includes the field.
+  const incomingHasCA = Object.prototype.hasOwnProperty.call(content, "contractAddress");
+  const newCA = incomingHasCA ? String(content.contractAddress || "").trim() : oldCA;
+  const caIsChanging = incomingHasCA && newCA !== oldCA;
+  const usedSoFar = Number(page.ca_changes_used || 0);
+
+  if (caIsChanging && isActive && usedSoFar >= CA_CHANGE_LIMIT) {
+    // Out of changes: reject with a clear, catchable error.
+    const err = new Error("CA change limit reached");
+    err.code = "CA_LOCKED";
+    throw err;
+  }
+
   // Merge: start with existing content, overlay with incoming content.
   // This means if the frontend fails to send avatar/banner, we keep
   // whatever was already saved — the URL is never lost.
@@ -121,10 +142,11 @@ export async function updatePageContent(pageId, walletAddress, { templateId, con
     logger.warn("team_photo_cleanup_failed", { err: err.message });
   }
 
-  const now = Math.floor(Date.now() / 1000);
+  // Reuse the `now` computed above for the CA-limit check.
+  const nextCaUsed = (caIsChanging && isActive) ? (usedSoFar + 1) : usedSoFar;
   await pool.query(
-    "UPDATE pages SET template_id = $1, content_json = $2, updated_at = $3 WHERE id = $4",
-    [templateId || page.template_id, JSON.stringify(merged), now, pageId]
+    "UPDATE pages SET template_id = $1, content_json = $2, ca_changes_used = $3, updated_at = $4 WHERE id = $5",
+    [templateId || page.template_id, JSON.stringify(merged), nextCaUsed, now, pageId]
   );
 
   invalidateCache(page.slug);
