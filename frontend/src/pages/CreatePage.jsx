@@ -114,7 +114,7 @@ export default function CreatePage() {
             <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
               <span style={{ color: "#9945FF", flexShrink: 0, marginTop: "2px" }}>●</span>
               <span style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.5 }}>
-                <strong style={{ color: "#fff" }}>Your contract address locks after launch.</strong> Once your page is active you can change the contract address only a few times before it's locked for good — so make sure it's right.
+                <strong style={{ color: "#fff" }}>Your contract address can be locked in later.</strong> Take your time — you never have to change it, and you can leave it untouched for as long as you like. If you do need to fix it after your page is live, you get three changes before it's locked in for good, so there's room to get it right.
               </span>
             </div>
           </div>
