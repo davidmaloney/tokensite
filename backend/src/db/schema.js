@@ -51,4 +51,12 @@ export async function applySchema(pool) {
     CREATE INDEX IF NOT EXISTS idx_transactions_reference ON transactions(reference_id);
     CREATE INDEX IF NOT EXISTS idx_transactions_page ON transactions(page_id);
   `);
+
+  // --- Migration: contract-address change counter (safe, idempotent) ---
+  // Adds ca_changes_used to existing 'pages' tables without disturbing rows.
+  // Postgres ADD COLUMN IF NOT EXISTS does nothing if the column already exists;
+  // existing rows automatically receive the DEFAULT 0 (i.e. a full 3 changes left).
+  await pool.query(
+    "ALTER TABLE pages ADD COLUMN IF NOT EXISTS ca_changes_used INTEGER NOT NULL DEFAULT 0"
+  );
 }
