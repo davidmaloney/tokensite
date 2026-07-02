@@ -31,6 +31,7 @@ export default function ManagePage() {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editContractAddress, setEditContractAddress] = useState("");
+  const [originalCA, setOriginalCA] = useState("");
   const [editBuyLinks, setEditBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
   const [editTokenomics, setEditTokenomics] = useState({});
   const [editAvatar, setEditAvatar] = useState(null);
@@ -60,6 +61,7 @@ export default function ManagePage() {
       setEditName(c.name || "");
       setEditDescription(c.description || "");
       setEditContractAddress(c.contractAddress || "");
+      setOriginalCA(c.contractAddress || "");
       setEditBuyLinks({
         raydium: c.buyLinks?.raydium || "",
         pumpfun: c.buyLinks?.pumpfun || "",
@@ -127,6 +129,24 @@ export default function ManagePage() {
   };
 
   const handleSave = async () => {
+    // Contract-address change guard: if the page is live and the CA is actually
+    // being changed, warn the user first (each change is limited and then locks).
+    const caChanging = (editContractAddress || "").trim() !== (originalCA || "").trim();
+    const nowSec = Math.floor(Date.now() / 1000);
+    const pageActive = page && page.status === "active" && page.expires_at && page.expires_at > nowSec;
+    if (caChanging && pageActive) {
+      const used = Number(page.ca_changes_used || 0);
+      const remainingBefore = 3 - used;
+      if (remainingBefore <= 0) {
+        setSaveMessage("Contract address is locked — no changes remaining.");
+        return;
+      }
+      const afterThis = remainingBefore - 1;
+      const msg = afterThis > 0
+        ? "You're about to change the contract address. You'll have " + afterThis + " change" + (afterThis === 1 ? "" : "s") + " left after this. Are you sure it's correct?"
+        : "This is your LAST allowed contract-address change. After saving, the contract address will be locked permanently. Are you absolutely sure it's correct?";
+      if (!window.confirm(msg)) return;
+    }
     setSaving(true);
     setSaveMessage("");
     try {
@@ -303,7 +323,33 @@ export default function ManagePage() {
             </div>
             <div>
               <label>Contract Address</label>
-              <input value={editContractAddress} onChange={(e) => setEditContractAddress(e.target.value)} style={{ fontFamily: "monospace", fontSize: "12px" }} />
+              {(() => {
+                const nowSec = Math.floor(Date.now() / 1000);
+                const pageActive = page && page.status === "active" && page.expires_at && page.expires_at > nowSec;
+                const used = Number((page && page.ca_changes_used) || 0);
+                const remaining = 3 - used;
+                const locked = pageActive && remaining <= 0;
+                return (
+                  <>
+                    <input
+                      value={editContractAddress}
+                      onChange={(e) => { if (!locked) setEditContractAddress(e.target.value); }}
+                      readOnly={locked}
+                      style={{ fontFamily: "monospace", fontSize: "12px", opacity: locked ? 0.6 : 1, cursor: locked ? "not-allowed" : "text" }}
+                    />
+                    {pageActive && !locked && (
+                      <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "4px" }}>
+                        ⚠️ The contract address locks after a limited number of changes. You have {remaining} change{remaining === 1 ? "" : "s"} remaining — please make sure it's correct.
+                      </div>
+                    )}
+                    {locked && (
+                      <div style={{ fontSize: "11px", color: "#ff6464", marginTop: "4px" }}>
+                        🔒 The contract address is locked — you've used all available changes.
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
             <div>
               <label>Buy Links</label>
