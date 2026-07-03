@@ -1,14 +1,14 @@
 import React from "react";
 
 const TEMPLATES = [
-  { id: "template_1", name: "Dark Crypto", description: "Dark theme, purple & green neon", color: "#9945FF" },
-  { id: "template_2", name: "Clean Launch", description: "Minimal white, clean DeFi look", color: "#14F195" },
-  { id: "template_3", name: "Neon Degen", description: "Pure black, hot pink & cyan glow", color: "#FF007A" },
-  { id: "template_4", name: "Midnight Blue", description: "Deep navy, electric blue accents", color: "#1E90FF" },
-  { id: "template_5", name: "Deep Space", description: "Dark blue gradients, gold accents, premium feel", color: "#c8a84b" },
-  { id: "template_6", name: "Obsidian", description: "Warm near-black, sharp electric blue, minimal", color: "#0ea5e9" },
-  { id: "template_7", name: "Forge", description: "Deep dark warmth, bold orange & amber energy", color: "#fb923c" },
-  { id: "template_8", name: "Arctic", description: "Cold dark blue, ice white & cyan, fast & clean", color: "#7dd3fc" },
+  { id: "template_1", name: "Genesis", description: "Techie purple & green, connected-network feel", color: "#9945FF" },
+  { id: "template_2", name: "Aurora", description: "Clean light theme, elegant flowing lines", color: "#14a37f" },
+  { id: "template_3", name: "Degen", description: "Pure black, hot pink & cyan chaos", color: "#FF007A" },
+  { id: "template_4", name: "Storm", description: "Deep navy, electric indigo lightning", color: "#5A78FF" },
+  { id: "template_5", name: "24K", description: "Dark & gold, premium jackpot glow", color: "#c8a84b" },
+  { id: "template_6", name: "Playground", description: "Playful pink, fun bubbly energy", color: "#ff5fa2" },
+  { id: "template_7", name: "Moonshot", description: "Deep space starfield, to-the-moon vibe", color: "#7fb2ff" },
+  { id: "template_8", name: "Amber", description: "Dark warmth, glowing orange fire", color: "#ff8a3c" },
 ];
 
 export default function TemplateSelector({ value, onChange }) {
