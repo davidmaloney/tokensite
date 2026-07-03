@@ -34,9 +34,9 @@ const THEMES = {
   template_3: { dark: true,  accent: "#FF007A", buyGrad: "linear-gradient(135deg,#FF007A,#00F5FF)", buyText: "#000", pageBg: "#000000", bannerGrad: "linear-gradient(135deg,#1a0010,#00101a)" },
   template_4: { dark: true,  accent: "#1E90FF", buyGrad: "linear-gradient(135deg,#1E90FF,#00BFFF)", buyText: "#fff", pageBg: "#0a0f1e", bannerGrad: "linear-gradient(135deg,#0a0f1e,#0d1f3c)" },
   template_5: { dark: true,  accent: "#c8a84b", buyGrad: "linear-gradient(135deg,#c8a84b,#f0d070)", buyText: "#000", pageBg: "#04010f", bannerGrad: "linear-gradient(135deg,#0d0630,#060d2e)" },
-  template_6: { dark: true,  accent: "#0ea5e9", buyGrad: "#0ea5e9",                                  buyText: "#fff", pageBg: "#0c0c0e", bannerGrad: "linear-gradient(160deg,#141418,#0c0c0e)" },
-  template_7: { dark: true,  accent: "#fb923c", buyGrad: "linear-gradient(135deg,#fb923c,#fbbf24)", buyText: "#000", pageBg: "#0a0805", bannerGrad: "linear-gradient(135deg,#1a0f02,#120a01)" },
-  template_8: { dark: true,  accent: "#7dd3fc", buyGrad: "linear-gradient(135deg,#7dd3fc,#e0f2fe)", buyText: "#000", pageBg: "#060a10", bannerGrad: "linear-gradient(135deg,#0a1220,#060e18)" },
+  template_6: { dark: true,  accent: "#ff5fa2", buyGrad: "linear-gradient(135deg,#ff5fa2,#ffd66a)", buyText: "#000", pageBg: "#0e0e16", bannerGrad: "linear-gradient(160deg,#1a0e18,#0e0e16)" },
+  template_7: { dark: true,  accent: "#7fb2ff", buyGrad: "linear-gradient(135deg,#7fb2ff,#a58cff)", buyText: "#000", pageBg: "#05030f", bannerGrad: "linear-gradient(135deg,#0a0e2a,#05030f)" },
+  template_8: { dark: true,  accent: "#ff8a3c", buyGrad: "linear-gradient(135deg,#ff8a3c,#ff5e2c)", buyText: "#000", pageBg: "#0a0805", bannerGrad: "linear-gradient(135deg,#1a0f05,#0a0805)" },
 };
 
 function getTheme(templateId) {
@@ -50,6 +50,92 @@ function accentRgba(hex, alpha) {
   const g = parseInt(h.substring(2, 4), 16);
   const b = parseInt(h.substring(4, 6), 16);
   return "rgba(" + r + "," + g + "," + b + "," + alpha + ")";
+}
+
+// Animated background canvas for the preview — a lightweight but real version of each
+// template's live animation, so people see the actual vibe while building their page.
+// Keyed by templateId; each template gets a distinct effect + palette.
+function PreviewCanvas({ templateId }) {
+  const ref = React.useRef(null);
+
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let raf, w, h, t = 0;
+    const parent = canvas.parentElement;
+
+    function resize() {
+      w = canvas.width = parent.offsetWidth;
+      h = canvas.height = parent.offsetHeight;
+    }
+    resize();
+    window.addEventListener("resize", resize);
+
+    // Palette + mode per template.
+    const CFG = {
+      template_1: { type: "net",     c1: "#9945FF", c2: "#14F195" },
+      template_2: { type: "flow",    c1: "#14a37f", c2: "#0d7a5f", light: true },
+      template_3: { type: "field",   c1: "#FF007A", c2: "#00F5FF" },
+      template_4: { type: "storm",   c1: "#5A78FF", c2: "#00BFFF" },
+      template_5: { type: "glow",    c1: "#c8a84b", c2: "#f0d070" },
+      template_6: { type: "bubbles", c1: "#ff5fa2", c2: "#ffd66a" },
+      template_7: { type: "space",   c1: "#7fb2ff", c2: "#a58cff" },
+      template_8: { type: "fire",    c1: "#ff8a3c", c2: "#ff5e2c" },
+    };
+    const cfg = CFG[templateId] || CFG.template_1;
+
+    // Build particles depending on effect type.
+    const N = 46;
+    const pts = [];
+    for (let i = 0; i < N; i++) {
+      pts.push({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.5,
+        vy: (Math.random() - 0.5) * 0.5 - (cfg.type === "fire" ? 0.5 : 0),
+        r: Math.random() * 2 + 1,
+        seed: Math.random() * 1000,
+      });
+    }
+
+    function hexA(hex, a) {
+      const x = hex.replace("#", "");
+      return "rgba(" + parseInt(x.substr(0,2),16) + "," + parseInt(x.substr(2,2),16) + "," + parseInt(x.substr(4,2),16) + "," + a + ")";
+    }
+
+    function draw() {
+      t += 0.01;
+      ctx.clearRect(0, 0, w, h);
+
+      if (cfg.type === "net") {
+        for (const p of pts) { p.x += p.vx; p.y += p.vy; if (p.x<0||p.x>w) p.vx*=-1; if (p.y<0||p.y>h) p.vy*=-1; }
+        for (let i=0;i<pts.length;i++){ for (let j=i+1;j<pts.length;j++){ const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.hypot(dx,dy); if(d<90){ ctx.strokeStyle=hexA(cfg.c2, (1-d/90)*0.22); ctx.lineWidth=0.6; ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke(); } } }
+        for (const p of pts){ ctx.fillStyle=hexA(cfg.c1,0.8); ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); }
+      } else if (cfg.type === "space") {
+        for (const p of pts){ p.y += 0.15 + p.r*0.1; if (p.y>h) p.y=0; const tw=0.5+0.5*Math.sin(t*3+p.seed); ctx.fillStyle=hexA(p.seed%2?cfg.c1:cfg.c2, tw*0.9); ctx.beginPath(); ctx.arc(p.x,p.y,p.r*0.8,0,7); ctx.fill(); }
+      } else if (cfg.type === "fire") {
+        for (const p of pts){ p.y += p.vy; p.x += Math.sin(t*2+p.seed)*0.4; if (p.y<0){ p.y=h; p.x=Math.random()*w; } const life=p.y/h; ctx.fillStyle=hexA(life>0.5?cfg.c1:cfg.c2, life*0.7); ctx.beginPath(); ctx.arc(p.x,p.y,p.r*(1.2-life+0.4),0,7); ctx.fill(); }
+      } else if (cfg.type === "bubbles") {
+        for (const p of pts){ p.y -= 0.3+p.r*0.08; p.x += Math.sin(t+p.seed)*0.3; if (p.y< -6){ p.y=h+6; p.x=Math.random()*w; } ctx.fillStyle=hexA(p.seed%2?cfg.c1:cfg.c2,0.5); ctx.beginPath(); ctx.arc(p.x,p.y,p.r*1.6,0,7); ctx.fill(); }
+      } else if (cfg.type === "field") {
+        for (const p of pts){ const a=Math.sin((p.x+t*40)/60)+Math.cos((p.y+t*30)/60); p.x+=Math.cos(a)*1.1; p.y+=Math.sin(a)*1.1; if (p.x<0)p.x=w; if(p.x>w)p.x=0; if(p.y<0)p.y=h; if(p.y>h)p.y=0; ctx.fillStyle=hexA(p.seed%2?cfg.c1:cfg.c2,0.7); ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); }
+      } else if (cfg.type === "storm") {
+        for (const p of pts){ p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>w)p.vx*=-1; if(p.y<0||p.y>h)p.vy*=-1; ctx.fillStyle=hexA(cfg.c1,0.6); ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,7); ctx.fill(); }
+        if (Math.random()>0.94){ ctx.strokeStyle=hexA(cfg.c2,0.5); ctx.lineWidth=1; ctx.beginPath(); let lx=Math.random()*w, ly=0; ctx.moveTo(lx,ly); for(let k=0;k<5;k++){ lx+=(Math.random()-0.5)*40; ly+=h/5; ctx.lineTo(lx,ly); } ctx.stroke(); }
+      } else if (cfg.type === "glow") {
+        for (const p of pts){ p.x+=p.vx*0.6; p.y+=p.vy*0.6; if(p.x<0||p.x>w)p.vx*=-1; if(p.y<0||p.y>h)p.vy*=-1; const pl=0.4+0.6*Math.sin(t*2+p.seed); ctx.fillStyle=hexA(cfg.c1,pl*0.7); ctx.beginPath(); ctx.arc(p.x,p.y,p.r*1.3,0,7); ctx.fill(); }
+      } else { // flow (light, elegant)
+        ctx.lineWidth=1;
+        for (let i=0;i<6;i++){ ctx.strokeStyle=hexA(cfg.c1,0.18); ctx.beginPath(); for(let x=0;x<=w;x+=12){ const y=h/2+Math.sin((x+t*30+i*40)/50)*(18+i*6); x===0?ctx.moveTo(x,y):ctx.lineTo(x,y); } ctx.stroke(); }
+      }
+      raf = requestAnimationFrame(draw);
+    }
+    draw();
+
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", resize); };
+  }, [templateId]);
+
+  return <canvas ref={ref} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }} />;
 }
 
 function CountdownPreview({ date, label, accentColor }) {
@@ -112,7 +198,12 @@ export default function PagePreview({ data, templateId }) {
       border: isDark ? "1px solid #222" : "1px solid #ddd",
       fontFamily: "Inter, system-ui, sans-serif",
       maxWidth: "900px", width: "100%", minHeight: "400px",
+      position: "relative",
     }}>
+
+      <PreviewCanvas templateId={templateId} />
+
+      <div style={{ position: "relative", zIndex: 1 }}>
 
       {data.banner?.preview ? (
         <img src={data.banner.preview} alt="banner" style={{ width: "100%", aspectRatio: "5 / 2", objectFit: "cover", display: "block" }} />
@@ -253,6 +344,7 @@ export default function PagePreview({ data, templateId }) {
           )}
 
         </div>
+      </div>
       </div>
     </div>
   );
