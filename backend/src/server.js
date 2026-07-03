@@ -17,6 +17,7 @@ import { upload, processAndSaveImage } from "./services/mediaService.js";
 import pagesRouter from "./routes/pages.js";
 import paymentsRouter from "./routes/payments.js";
 import adminRouter from "./routes/admin.js";
+import previewRouter from "./routes/preview.js";
 import subdomainRouter from "./routes/subdomain.js";
 import { invalidatePageCache } from "./routes/subdomain.js";
 import { registerCacheInvalidator } from "./services/pageService.js";
@@ -75,6 +76,7 @@ app.use("/api/pages", pagesRouter);
 app.use("/api/payments", paymentsRouter);
 app.use("/api/pricing", paymentsRouter);
 app.use("/api/admin", adminRouter);
+app.use("/api/preview", previewRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", domain: DOMAIN, mock: process.env.MOCK_MODE === "true" });
