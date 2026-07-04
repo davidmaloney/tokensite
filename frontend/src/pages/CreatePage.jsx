@@ -100,9 +100,9 @@ export default function CreatePage() {
             ← Back to Dashboard
           </button>
           <div style={{ fontSize: "36px", marginBottom: "16px" }}>🚀</div>
-          <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>Two things to get right</h2>
+          <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>A few things to get right</h2>
           <p style={{ fontSize: "14px", color: "#888", lineHeight: 1.7, marginBottom: "20px" }}>
-            Almost there — just two things that can't be freely changed later, so please double-check them.
+            Everything on your page is optional and can be edited freely before you activate. Just three things are worth double-checking, because they settle once your page goes live.
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "24px", textAlign: "left" }}>
             <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
@@ -114,7 +114,13 @@ export default function CreatePage() {
             <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
               <span style={{ color: "#9945FF", flexShrink: 0, marginTop: "2px" }}>●</span>
               <span style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.5 }}>
-                <strong style={{ color: "#fff" }}>Your contract address can be locked in later.</strong> Take your time — you never have to change it, and you can leave it untouched for as long as you like. If you do need to fix it after your page is live, you get three changes before it's locked in for good, so there's room to get it right.
+                <strong style={{ color: "#fff" }}>Your contract address settles when you go live.</strong> Change it freely while your page is a draft — whatever's set when you activate is locked in. After that you get three changes in the editor to fix it, then it's final. No pressure: you can leave it untouched for as long as you like.
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+              <span style={{ color: "#9945FF", flexShrink: 0, marginTop: "2px" }}>●</span>
+              <span style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.5 }}>
+                <strong style={{ color: "#fff" }}>Your buy links work the same way.</strong> Edit them freely before activating; whatever's set when you go live is locked in. After that you get three changes shared across all your buy buttons, then they're final — so give them a quick check.
               </span>
             </div>
           </div>
