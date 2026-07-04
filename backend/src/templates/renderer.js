@@ -207,13 +207,28 @@ export function renderPage(page) {
     ).join("\n");
 
   const buyLinks = content.buyLinks || {};
-  const buyHtml = Object.entries(buyLinks)
+  let buyHtml = Object.entries(buyLinks)
     .filter(([, url]) => url && url.trim())
     .map(([key, url]) =>
       "<a href=\"" + escapeHtml(url) + "\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"buy-btn buy-" + key + "\">" +
       "<span class=\"buy-icon\">" + (BUY_ICONS[key] || "") + "</span>" +
       "<span>" + (BUY_LABELS[key] || key) + "</span></a>"
     ).join("\n");
+
+  // Tron special-case: Tron DEXs don't support pre-filling the output token via URL,
+  // so instead of a normal buy button we render a button that copies the contract
+  // address to the buyer's clipboard AND opens SunSwap in a new tab. By the time they
+  // arrive on SunSwap, the CA is already copied and ready to paste. Driven purely off
+  // the contract address being a Tron address, so it works with no stored buy link.
+  const caTrimmedForTron = (content.contractAddress || "").trim();
+  if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(caTrimmedForTron)) {
+    const caJs = escapeHtml(caTrimmedForTron).replace(/'/g, "\\'");
+    const tronBtnFinal =
+      "<a href=\"https://sunswap.com\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"buy-btn buy-sunswap\" " +
+      "onclick=\"navigator.clipboard.writeText('" + caJs + "');var s=this.querySelector('.buy-sunswap-label');if(s){var o=s.textContent;s.textContent='\\u2713 CA copied \\u2014 paste on SunSwap';setTimeout(function(){s.textContent=o},2500)}\">" +
+      "<span class=\"buy-sunswap-label\">Copy CA &amp; Buy on SunSwap &#8594;</span></a>";
+    buyHtml = buyHtml ? (buyHtml + "\n" + tronBtnFinal) : tronBtnFinal;
+  }
 
   const contractAddress = content.contractAddress || "";
   const contractHtml = contractAddress
