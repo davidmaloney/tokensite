@@ -8,6 +8,10 @@ import TemplateSelector from "../components/TemplateSelector";
 import PagePreview from "../components/PagePreview";
 import PaymentModal from "../components/PaymentModal";
 
+// Each buy button belongs to one or more address "families" (chains). We detect
+// the family from the contract address the user typed (see detectChain below) and
+// only enable the buttons that can actually work for it — the rest are greyed out.
+// "chains" lists which detected families this button supports.
 const BUY_LINK_TYPES = [
   {
     key: "raydium",
@@ -15,6 +19,7 @@ const BUY_LINK_TYPES = [
     prefix: "https://raydium.io/swap/?inputMint=sol&outputMint=",
     placeholder: "CA",
     hint: "Solana — Enter your token CA",
+    chains: ["solana"],
   },
   {
     key: "pumpfun",
@@ -22,29 +27,60 @@ const BUY_LINK_TYPES = [
     prefix: "https://pump.fun/coin/",
     placeholder: "CA",
     hint: "Solana — Enter your token CA",
+    chains: ["solana"],
   },
   {
     key: "uniswap",
     label: "Uniswap",
-    prefix: "https://app.uniswap.org/swap?outputCurrency=",
-    placeholder: "0x...",
-    hint: "Ethereum / Base / Arbitrum / Polygon — Enter your token address",
+    // Uniswap web app now supports EVM chains AND Solana. The #/ hash route is
+    // required for the token to pre-fill. We append the outputCurrency at save time.
+    prefix: "https://app.uniswap.org/#/swap?outputCurrency=",
+    placeholder: "0x... or Solana CA",
+    hint: "Ethereum / Base / Arbitrum / Polygon / Solana — Enter your token address",
+    chains: ["evm", "solana"],
   },
   {
     key: "pancakeswap",
     label: "PancakeSwap",
-    prefix: "https://pancakeswap.finance/swap?outputCurrency=",
+    // BSC. inputCurrency=BNB + chain=bsc makes the swap box pre-fill reliably.
+    prefix: "https://pancakeswap.finance/swap?chain=bsc&inputCurrency=BNB&outputCurrency=",
     placeholder: "0x...",
     hint: "BSC — Enter your token address",
+    chains: ["evm"],
   },
   {
     key: "sushiswap",
     label: "SushiSwap",
-    prefix: "https://www.sushi.com/swap?token1=",
+    // Sushi puts the chain in the path. Defaulting to Ethereum; users can switch
+    // network on the Sushi page if their token is on another EVM chain.
+    prefix: "https://www.sushi.com/ethereum/swap?token1=",
     placeholder: "0x...",
-    hint: "Multi-chain — Enter your token address",
+    hint: "Ethereum & other EVM chains — Enter your token address",
+    chains: ["evm"],
+  },
+  {
+    key: "sunswap",
+    label: "SunSwap",
+    // Tron's main DEX (Uniswap fork). Likely pre-fills via outputCurrency; if not,
+    // it still opens SunSwap where the user can paste the CA.
+    prefix: "https://sunswap.com/#/?outputCurrency=",
+    placeholder: "T...",
+    hint: "Tron — Enter your token address",
+    chains: ["tron"],
   },
 ];
+
+// Detect the address "family" from the contract address, using the same formats
+// the backend validates. Returns "solana" | "evm" | "tron" | "other" | null.
+// null = nothing typed yet (buttons stay available but inert until a CA exists).
+function detectChain(ca) {
+  const a = (ca || "").trim();
+  if (!a) return null;
+  if (/^0x[0-9a-fA-F]{40}$/.test(a)) return "evm";            // Ethereum/BSC/Base/etc
+  if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a)) return "tron";   // Tron
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return "solana"; // Solana base58
+  return "other";                                             // Sui/Aptos/unknown
+}
 
 export default function CreatePage() {
   const { connected, publicKey } = useWallet();
@@ -56,7 +92,7 @@ export default function CreatePage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [contractAddress, setContractAddress] = useState("");
-  const [buyLinks, setBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
+  const [buyLinks, setBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "", sunswap: "" });
   const [tokenomics, setTokenomics] = useState({});
   const [avatar, setAvatar] = useState(null);
   const [banner, setBanner] = useState(null);
@@ -217,7 +253,17 @@ export default function CreatePage() {
         uploadImage(banner, "banner"),
       ]);
 
-      const filteredBuyLinks = Object.fromEntries(Object.entries(buyLinks).filter(([, v]) => v && v.trim()));
+      // Keep only buy links that are non-empty AND belong to a button that matches
+      // the detected chain — so a link left over from a different chain (if the user
+      // changed the CA) is never saved.
+      const filteredBuyLinks = Object.fromEntries(
+        Object.entries(buyLinks).filter(([k, v]) => {
+          if (!v || !v.trim()) return false;
+          const def = BUY_LINK_TYPES.find((t) => t.key === k);
+          if (!def) return false;
+          return detectedChain === null || def.chains.includes(detectedChain);
+        })
+      );
       const filteredTokenomics = Object.fromEntries(Object.entries(tokenomics).filter(([, v]) => v && v.trim()));
 
       // Upload each team member's photo (if any), then build the clean team array.
@@ -280,6 +326,9 @@ export default function CreatePage() {
     { key: "network", label: "Network", hint: "e.g. Solana" },
   ];
 
+  // Which chain family the typed contract address belongs to (null until typed).
+  const detectedChain = detectChain(contractAddress);
+
   return (
     <div style={{ maxWidth: "900px", margin: "0 auto", padding: "32px 20px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
@@ -341,42 +390,56 @@ export default function CreatePage() {
               </div>
               <div>
                 <label>Buy Links <span style={{ color: "#555" }}>(optional)</span></label>
+                {detectedChain === "other" && (
+                  <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "4px" }}>
+                    Buy buttons aren't available for this network yet — the DEXs we support don't list it.
+                  </div>
+                )}
                 <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "6px" }}>
-                  {BUY_LINK_TYPES.map(({ key, label, prefix, placeholder, hint }) => (
-                    <div key={key}>
-                      <div style={{ fontSize: "12px", color: "#14F195", marginBottom: "4px", fontWeight: 600 }}>{label}</div>
-                      <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", overflow: "hidden" }}>
-                        <span style={{
-                          padding: "10px 10px 10px 12px",
-                          fontSize: "10px",
-                          color: "#555",
-                          whiteSpace: "nowrap",
-                          borderRight: "1px solid rgba(255,255,255,0.08)",
-                          flexShrink: 0,
-                          maxWidth: "200px",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }}>
-                          {prefix}
-                        </span>
-                        <input
-                          value={getBuyLinkDisplay(key)}
-                          onChange={(e) => setBuyLinkDisplay(key, e.target.value)}
-                          placeholder={placeholder}
-                          style={{
-                            border: "none",
-                            background: "transparent",
-                            flex: 1,
-                            padding: "10px 12px",
-                            fontSize: "13px",
-                            outline: "none",
-                            color: "#fff",
-                          }}
-                        />
+                  {BUY_LINK_TYPES.map(({ key, label, prefix, placeholder, hint, chains }) => {
+                    // A button is usable when no CA is typed yet (detectedChain null),
+                    // or when the detected chain is one this button supports.
+                    const usable = detectedChain === null || chains.includes(detectedChain);
+                    return (
+                      <div key={key} style={{ opacity: usable ? 1 : 0.4 }}>
+                        <div style={{ fontSize: "12px", color: usable ? "#14F195" : "#666", marginBottom: "4px", fontWeight: 600 }}>
+                          {label}{!usable && <span style={{ color: "#666", fontWeight: 400 }}> — not for this chain</span>}
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", overflow: "hidden" }}>
+                          <span style={{
+                            padding: "10px 10px 10px 12px",
+                            fontSize: "10px",
+                            color: "#555",
+                            whiteSpace: "nowrap",
+                            borderRight: "1px solid rgba(255,255,255,0.08)",
+                            flexShrink: 0,
+                            maxWidth: "200px",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}>
+                            {prefix}
+                          </span>
+                          <input
+                            value={getBuyLinkDisplay(key)}
+                            onChange={(e) => { if (usable) setBuyLinkDisplay(key, e.target.value); }}
+                            readOnly={!usable}
+                            placeholder={placeholder}
+                            style={{
+                              border: "none",
+                              background: "transparent",
+                              flex: 1,
+                              padding: "10px 12px",
+                              fontSize: "13px",
+                              outline: "none",
+                              color: "#fff",
+                              cursor: usable ? "text" : "not-allowed",
+                            }}
+                          />
+                        </div>
+                        <div style={{ fontSize: "11px", color: "#555", marginTop: "4px", paddingLeft: "2px" }}>{hint}</div>
                       </div>
-                      <div style={{ fontSize: "11px", color: "#555", marginTop: "4px", paddingLeft: "2px" }}>{hint}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
               <div>
