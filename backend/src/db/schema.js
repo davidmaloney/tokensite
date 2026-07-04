@@ -59,4 +59,15 @@ export async function applySchema(pool) {
   await pool.query(
     "ALTER TABLE pages ADD COLUMN IF NOT EXISTS ca_changes_used INTEGER NOT NULL DEFAULT 0"
   );
+
+  // --- Migration: buy-links change counter (safe, idempotent) ---
+  // Mirrors ca_changes_used exactly, but tracked separately. This is a single
+  // SHARED budget across ALL buy buttons (Raydium, Pump.fun, Uniswap,
+  // PancakeSwap, SushiSwap) — any add/edit/removal to the buy-link set counts
+  // as one change. Free while the page is inactive; the set locks in on
+  // activation; 3 changes allowed after that, then locked. Existing rows get
+  // DEFAULT 0 (a full 3 changes left).
+  await pool.query(
+    "ALTER TABLE pages ADD COLUMN IF NOT EXISTS buylinks_changes_used INTEGER NOT NULL DEFAULT 0"
+  );
 }
