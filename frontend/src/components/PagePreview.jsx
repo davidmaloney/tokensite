@@ -62,7 +62,10 @@ function buildContent(data) {
   return content;
 }
 
-export default function PagePreview({ data, templateId }) {
+// `debounceMs` controls how long we wait after a change before re-rendering the
+// preview. Create flow uses the default (snappy); the edit page passes a longer
+// value since users scroll to view it, so a gentler delay saves needless renders.
+export default function PagePreview({ data, templateId, debounceMs = 500 }) {
   const [html, setHtml] = useState("");
   const [loading, setLoading] = useState(true);
   const debounceRef = useRef(null);
@@ -85,10 +88,10 @@ export default function PagePreview({ data, templateId }) {
         setHtml("<!DOCTYPE html><html><body style=\"margin:0;background:#0d0d0d\"></body></html>");
       }
       setLoading(false);
-    }, 500);
+    }, debounceMs);
 
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
-  }, [data, templateId]);
+  }, [data, templateId, debounceMs]);
 
   return (
     <div style={{
