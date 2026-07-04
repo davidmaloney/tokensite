@@ -26,7 +26,6 @@ export default function ManagePage() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [showPayment, setShowPayment] = useState(false);
-  const [activeTab, setActiveTab] = useState("edit");
 
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
@@ -297,19 +296,7 @@ export default function ManagePage() {
         </button>
       </div>
 
-      <div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
-        {["edit", "preview"].map((tab) => (
-          <div key={tab} onClick={() => setActiveTab(tab)} style={{
-            padding: "8px 18px", borderRadius: "20px", fontSize: "13px", fontWeight: 600, cursor: "pointer",
-            background: activeTab === tab ? "linear-gradient(135deg, #9945FF, #14F195)" : "rgba(255,255,255,0.05)",
-            color: activeTab === tab ? "#000" : "#888",
-          }}>
-            {tab === "edit" ? "Edit" : "Preview"}
-          </div>
-        ))}
-      </div>
-
-      {activeTab === "edit" && (
+      {(
         <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
           <div className="glass" style={{ borderRadius: "12px", padding: "24px", display: "flex", flexDirection: "column", gap: "16px" }}>
             <h2 style={{ fontSize: "16px", fontWeight: 700 }}>Basic Info</h2>
@@ -498,7 +485,11 @@ export default function ManagePage() {
         </div>
       )}
 
-      {activeTab === "preview" && (
+      {/* Live preview, always visible below the edit form. Updates as the user
+          edits (debounced at 1500ms — longer than the create flow, since here
+          people scroll down to view it, so a gentler delay avoids wasted renders). */}
+      <div style={{ marginTop: "28px" }}>
+        <div style={{ fontSize: "16px", fontWeight: 700, marginBottom: "12px" }}>Live Preview</div>
         <PagePreview
           data={{
             name: editName, description: editDescription, avatar: editAvatar, banner: editBanner,
@@ -508,8 +499,9 @@ export default function ManagePage() {
             aboutText: editAboutText, team: editTeam, roadmap: editRoadmap,
           }}
           templateId={editTemplateId}
+          debounceMs={1500}
         />
-      )}
+      </div>
 
       {showPayment && (
         <PaymentModal
