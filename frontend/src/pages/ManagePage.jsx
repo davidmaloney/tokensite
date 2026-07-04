@@ -8,13 +8,29 @@ import TemplateSelector from "../components/TemplateSelector";
 import PagePreview from "../components/PagePreview";
 import PaymentModal from "../components/PaymentModal";
 
+// Each buy button belongs to one or more address "families" (chains). We detect
+// the family from the contract address the user typed (detectChain below) and only
+// enable the buttons that can work for it — the rest are greyed out. "chains" lists
+// which detected families a button supports.
 const BUY_LINK_TYPES = [
-  { key: "raydium", label: "Raydium", prefix: "https://raydium.io/swap/?inputMint=sol&outputMint=", placeholder: "CA", hint: "Solana — Enter your token CA" },
-  { key: "pumpfun", label: "Pump.fun", prefix: "https://pump.fun/coin/", placeholder: "CA", hint: "Solana — Enter your token CA" },
-  { key: "uniswap", label: "Uniswap", prefix: "https://app.uniswap.org/swap?outputCurrency=", placeholder: "0x...", hint: "Ethereum / Base / Arbitrum / Polygon" },
-  { key: "pancakeswap", label: "PancakeSwap", prefix: "https://pancakeswap.finance/swap?outputCurrency=", placeholder: "0x...", hint: "BSC" },
-  { key: "sushiswap", label: "SushiSwap", prefix: "https://www.sushi.com/swap?token1=", placeholder: "0x...", hint: "Multi-chain" },
+  { key: "raydium", label: "Raydium", prefix: "https://raydium.io/swap/?inputMint=sol&outputMint=", placeholder: "CA", hint: "Solana — Enter your token CA", chains: ["solana"] },
+  { key: "pumpfun", label: "Pump.fun", prefix: "https://pump.fun/coin/", placeholder: "CA", hint: "Solana — Enter your token CA", chains: ["solana"] },
+  { key: "uniswap", label: "Uniswap", prefix: "https://app.uniswap.org/#/swap?outputCurrency=", placeholder: "0x... or Solana CA", hint: "Ethereum / Base / Arbitrum / Polygon / Solana", chains: ["evm", "solana"] },
+  { key: "pancakeswap", label: "PancakeSwap", prefix: "https://pancakeswap.finance/swap?chain=bsc&inputCurrency=BNB&outputCurrency=", placeholder: "0x...", hint: "BSC", chains: ["evm"] },
+  { key: "sushiswap", label: "SushiSwap", prefix: "https://www.sushi.com/ethereum/swap?token1=", placeholder: "0x...", hint: "Ethereum & other EVM chains", chains: ["evm"] },
+  { key: "sunswap", label: "SunSwap", prefix: "https://sunswap.com/#/?outputCurrency=", placeholder: "T...", hint: "Tron", chains: ["tron"] },
 ];
+
+// Detect the address "family" from the contract address, using the same formats
+// the backend validates. Returns "solana" | "evm" | "tron" | "other" | null.
+function detectChain(ca) {
+  const a = (ca || "").trim();
+  if (!a) return null;
+  if (/^0x[0-9a-fA-F]{40}$/.test(a)) return "evm";
+  if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a)) return "tron";
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return "solana";
+  return "other";
+}
 
 // Normalise a buyLinks object into a stable string so key order never matters
 // and only real content differences count as a change (mirrors the backend).
@@ -42,8 +58,8 @@ export default function ManagePage() {
   const [editDescription, setEditDescription] = useState("");
   const [editContractAddress, setEditContractAddress] = useState("");
   const [originalCA, setOriginalCA] = useState("");
-  const [editBuyLinks, setEditBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
-  const [originalBuyLinks, setOriginalBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
+  const [editBuyLinks, setEditBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "", sunswap: "" });
+  const [originalBuyLinks, setOriginalBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "", sunswap: "" });
   const [editTokenomics, setEditTokenomics] = useState({});
   const [editAvatar, setEditAvatar] = useState(null);
   const [editBanner, setEditBanner] = useState(null);
@@ -79,6 +95,7 @@ export default function ManagePage() {
         uniswap: c.buyLinks?.uniswap || "",
         pancakeswap: c.buyLinks?.pancakeswap || "",
         sushiswap: c.buyLinks?.sushiswap || "",
+        sunswap: c.buyLinks?.sunswap || "",
       };
       setEditBuyLinks(loadedBuyLinks);
       setOriginalBuyLinks(loadedBuyLinks);
@@ -109,6 +126,9 @@ export default function ManagePage() {
   const buyLinksRemaining = 3 - buyLinksUsed;
   const buyLinksLocked = pageIsActive && buyLinksRemaining <= 0;
 
+  // Which chain family the current contract address belongs to (null until typed).
+  const detectedChain = detectChain(editContractAddress);
+
   const getBuyLinkDisplay = (key) => {
     const type = BUY_LINK_TYPES.find((t) => t.key === key);
     if (!type) return editBuyLinks[key];
@@ -120,6 +140,8 @@ export default function ManagePage() {
     if (buyLinksLocked) return;
     const type = BUY_LINK_TYPES.find((t) => t.key === key);
     if (!type) return;
+    // Don't allow typing into a button whose chain doesn't match the CA.
+    if (detectedChain !== null && !type.chains.includes(detectedChain)) return;
     setEditBuyLinks({ ...editBuyLinks, [key]: val ? type.prefix + val.replace(type.prefix, "") : "" });
   };
 
@@ -191,7 +213,16 @@ export default function ManagePage() {
     setSaving(true);
     setSaveMessage("");
     try {
-      const filteredBuyLinks = Object.fromEntries(Object.entries(editBuyLinks).filter(([, v]) => v && v.trim()));
+      // Keep only non-empty buy links whose button matches the detected chain, so a
+      // link left over from a different chain (if the CA changed) is never saved.
+      const filteredBuyLinks = Object.fromEntries(
+        Object.entries(editBuyLinks).filter(([k, v]) => {
+          if (!v || !v.trim()) return false;
+          const def = BUY_LINK_TYPES.find((t) => t.key === k);
+          if (!def) return false;
+          return detectedChain === null || def.chains.includes(detectedChain);
+        })
+      );
       const filteredTokenomics = Object.fromEntries(Object.entries(editTokenomics).filter(([, v]) => v && v.trim()));
       const filteredRoadmap = editRoadmap.filter((m) => m.title && m.title.trim());
 
@@ -392,17 +423,30 @@ export default function ManagePage() {
                   🔒 Your buy links are locked — you've used all available changes.
                 </div>
               )}
+              {detectedChain === "other" && (
+                <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "2px", marginBottom: "6px" }}>
+                  Buy buttons aren't available for this network yet — the DEXs we support don't list it.
+                </div>
+              )}
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "6px" }}>
-                {BUY_LINK_TYPES.map(({ key, label, prefix, placeholder, hint }) => (
-                  <div key={key}>
-                    <div style={{ fontSize: "12px", color: "#14F195", marginBottom: "4px", fontWeight: 600 }}>{label}</div>
-                    <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", overflow: "hidden", opacity: buyLinksLocked ? 0.6 : 1 }}>
-                      <span style={{ padding: "10px 10px 10px 12px", fontSize: "10px", color: "#555", whiteSpace: "nowrap", borderRight: "1px solid rgba(255,255,255,0.08)", flexShrink: 0, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis" }}>{prefix}</span>
-                      <input value={getBuyLinkDisplay(key)} onChange={(e) => setBuyLinkDisplay(key, e.target.value)} readOnly={buyLinksLocked} placeholder={placeholder} style={{ border: "none", background: "transparent", flex: 1, padding: "10px 12px", fontSize: "13px", outline: "none", color: "#fff", cursor: buyLinksLocked ? "not-allowed" : "text" }} />
+                {BUY_LINK_TYPES.map(({ key, label, prefix, placeholder, hint, chains }) => {
+                  // A button is chain-usable when no CA is typed yet, or the detected
+                  // chain is supported. It's editable only if also not locked.
+                  const chainOk = detectedChain === null || chains.includes(detectedChain);
+                  const disabled = buyLinksLocked || !chainOk;
+                  return (
+                    <div key={key} style={{ opacity: chainOk ? 1 : 0.4 }}>
+                      <div style={{ fontSize: "12px", color: chainOk ? "#14F195" : "#666", marginBottom: "4px", fontWeight: 600 }}>
+                        {label}{!chainOk && <span style={{ color: "#666", fontWeight: 400 }}> — not for this chain</span>}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", overflow: "hidden", opacity: buyLinksLocked ? 0.6 : 1 }}>
+                        <span style={{ padding: "10px 10px 10px 12px", fontSize: "10px", color: "#555", whiteSpace: "nowrap", borderRight: "1px solid rgba(255,255,255,0.08)", flexShrink: 0, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis" }}>{prefix}</span>
+                        <input value={getBuyLinkDisplay(key)} onChange={(e) => setBuyLinkDisplay(key, e.target.value)} readOnly={disabled} placeholder={placeholder} style={{ border: "none", background: "transparent", flex: 1, padding: "10px 12px", fontSize: "13px", outline: "none", color: "#fff", cursor: disabled ? "not-allowed" : "text" }} />
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#555", marginTop: "4px", paddingLeft: "2px" }}>{hint}</div>
                     </div>
-                    <div style={{ fontSize: "11px", color: "#555", marginTop: "4px", paddingLeft: "2px" }}>{hint}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
             <div>
@@ -537,9 +581,6 @@ export default function ManagePage() {
         </div>
       )}
 
-      {/* Live preview, always visible below the edit form. Updates as the user
-          edits (debounced at 1500ms — longer than the create flow, since here
-          people scroll down to view it, so a gentler delay avoids wasted renders). */}
       <div style={{ marginTop: "28px" }}>
         <div style={{ fontSize: "16px", fontWeight: 700, marginBottom: "12px" }}>Live Preview</div>
         <PagePreview
