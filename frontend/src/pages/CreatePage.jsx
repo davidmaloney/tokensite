@@ -32,9 +32,9 @@ const BUY_LINK_TYPES = [
   {
     key: "uniswap",
     label: "Uniswap",
-    // Uniswap web app now supports EVM chains AND Solana. The #/ hash route is
-    // required for the token to pre-fill. We append the outputCurrency at save time.
-    prefix: "https://app.uniswap.org/#/swap?outputCurrency=",
+    // Uniswap web app now supports EVM chains AND Solana. inputCurrency must be set
+    // alongside outputCurrency or the token won't pre-fill in the swap box.
+    prefix: "https://app.uniswap.org/swap?chain=mainnet&inputCurrency=ETH&outputCurrency=",
     placeholder: "0x... or Solana CA",
     hint: "Ethereum / Base / Arbitrum / Polygon / Solana — Enter your token address",
     chains: ["evm", "solana"],
@@ -51,22 +51,12 @@ const BUY_LINK_TYPES = [
   {
     key: "sushiswap",
     label: "SushiSwap",
-    // Sushi puts the chain in the path. Defaulting to Ethereum; users can switch
-    // network on the Sushi page if their token is on another EVM chain.
-    prefix: "https://www.sushi.com/ethereum/swap?token1=",
+    // Sushi uses tokenIn/tokenOut with the chain in the path. Defaulting to Ethereum;
+    // users can switch network on the Sushi page if their token is on another EVM chain.
+    prefix: "https://www.sushi.com/ethereum/swap?tokenIn=NATIVE&tokenOut=",
     placeholder: "0x...",
     hint: "Ethereum & other EVM chains — Enter your token address",
     chains: ["evm"],
-  },
-  {
-    key: "sunswap",
-    label: "SunSwap",
-    // Tron's main DEX (Uniswap fork). Likely pre-fills via outputCurrency; if not,
-    // it still opens SunSwap where the user can paste the CA.
-    prefix: "https://sunswap.com/#/?outputCurrency=",
-    placeholder: "T...",
-    hint: "Tron — Enter your token address",
-    chains: ["tron"],
   },
 ];
 
@@ -92,7 +82,7 @@ export default function CreatePage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [contractAddress, setContractAddress] = useState("");
-  const [buyLinks, setBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "", sunswap: "" });
+  const [buyLinks, setBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
   const [tokenomics, setTokenomics] = useState({});
   const [avatar, setAvatar] = useState(null);
   const [banner, setBanner] = useState(null);
@@ -390,6 +380,11 @@ export default function CreatePage() {
               </div>
               <div>
                 <label>Buy Links <span style={{ color: "#555" }}>(optional)</span></label>
+                {detectedChain === "tron" && (
+                  <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "4px" }}>
+                    Buy buttons aren't available for Tron tokens yet — Tron DEXs don't support direct buy links. Buyers can still copy the contract address above to trade manually.
+                  </div>
+                )}
                 {detectedChain === "other" && (
                   <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "4px" }}>
                     Buy buttons aren't available for this network yet — the DEXs we support don't list it.
