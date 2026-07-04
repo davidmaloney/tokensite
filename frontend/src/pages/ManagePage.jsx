@@ -15,10 +15,9 @@ import PaymentModal from "../components/PaymentModal";
 const BUY_LINK_TYPES = [
   { key: "raydium", label: "Raydium", prefix: "https://raydium.io/swap/?inputMint=sol&outputMint=", placeholder: "CA", hint: "Solana — Enter your token CA", chains: ["solana"] },
   { key: "pumpfun", label: "Pump.fun", prefix: "https://pump.fun/coin/", placeholder: "CA", hint: "Solana — Enter your token CA", chains: ["solana"] },
-  { key: "uniswap", label: "Uniswap", prefix: "https://app.uniswap.org/#/swap?outputCurrency=", placeholder: "0x... or Solana CA", hint: "Ethereum / Base / Arbitrum / Polygon / Solana", chains: ["evm", "solana"] },
+  { key: "uniswap", label: "Uniswap", prefix: "https://app.uniswap.org/swap?chain=mainnet&inputCurrency=ETH&outputCurrency=", placeholder: "0x... or Solana CA", hint: "Ethereum / Base / Arbitrum / Polygon / Solana", chains: ["evm", "solana"] },
   { key: "pancakeswap", label: "PancakeSwap", prefix: "https://pancakeswap.finance/swap?chain=bsc&inputCurrency=BNB&outputCurrency=", placeholder: "0x...", hint: "BSC", chains: ["evm"] },
-  { key: "sushiswap", label: "SushiSwap", prefix: "https://www.sushi.com/ethereum/swap?token1=", placeholder: "0x...", hint: "Ethereum & other EVM chains", chains: ["evm"] },
-  { key: "sunswap", label: "SunSwap", prefix: "https://sunswap.com/#/?outputCurrency=", placeholder: "T...", hint: "Tron", chains: ["tron"] },
+  { key: "sushiswap", label: "SushiSwap", prefix: "https://www.sushi.com/ethereum/swap?tokenIn=NATIVE&tokenOut=", placeholder: "0x...", hint: "Ethereum & other EVM chains", chains: ["evm"] },
 ];
 
 // Detect the address "family" from the contract address, using the same formats
@@ -58,8 +57,8 @@ export default function ManagePage() {
   const [editDescription, setEditDescription] = useState("");
   const [editContractAddress, setEditContractAddress] = useState("");
   const [originalCA, setOriginalCA] = useState("");
-  const [editBuyLinks, setEditBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "", sunswap: "" });
-  const [originalBuyLinks, setOriginalBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "", sunswap: "" });
+  const [editBuyLinks, setEditBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
+  const [originalBuyLinks, setOriginalBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
   const [editTokenomics, setEditTokenomics] = useState({});
   const [editAvatar, setEditAvatar] = useState(null);
   const [editBanner, setEditBanner] = useState(null);
@@ -95,7 +94,6 @@ export default function ManagePage() {
         uniswap: c.buyLinks?.uniswap || "",
         pancakeswap: c.buyLinks?.pancakeswap || "",
         sushiswap: c.buyLinks?.sushiswap || "",
-        sunswap: c.buyLinks?.sunswap || "",
       };
       setEditBuyLinks(loadedBuyLinks);
       setOriginalBuyLinks(loadedBuyLinks);
@@ -421,6 +419,11 @@ export default function ManagePage() {
               {buyLinksLocked && (
                 <div style={{ fontSize: "11px", color: "#ff6464", marginTop: "2px", marginBottom: "6px" }}>
                   🔒 Your buy links are locked — you've used all available changes.
+                </div>
+              )}
+              {detectedChain === "tron" && (
+                <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "2px", marginBottom: "6px" }}>
+                  Buy buttons aren't available for Tron tokens yet — Tron DEXs don't support direct buy links. Buyers can still copy the contract address above to trade manually.
                 </div>
               )}
               {detectedChain === "other" && (
