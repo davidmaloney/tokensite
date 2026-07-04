@@ -16,6 +16,17 @@ const BUY_LINK_TYPES = [
   { key: "sushiswap", label: "SushiSwap", prefix: "https://www.sushi.com/swap?token1=", placeholder: "0x...", hint: "Multi-chain" },
 ];
 
+// Normalise a buyLinks object into a stable string so key order never matters
+// and only real content differences count as a change (mirrors the backend).
+function normalizeBuyLinks(buyLinks) {
+  if (!buyLinks || typeof buyLinks !== "object") return "";
+  const cleaned = Object.entries(buyLinks)
+    .map(([k, v]) => [k, (v == null ? "" : String(v)).trim()])
+    .filter(([, v]) => v)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return JSON.stringify(cleaned);
+}
+
 export default function ManagePage() {
   const { pageId } = useParams();
   const { connected, publicKey } = useWallet();
@@ -32,6 +43,7 @@ export default function ManagePage() {
   const [editContractAddress, setEditContractAddress] = useState("");
   const [originalCA, setOriginalCA] = useState("");
   const [editBuyLinks, setEditBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
+  const [originalBuyLinks, setOriginalBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
   const [editTokenomics, setEditTokenomics] = useState({});
   const [editAvatar, setEditAvatar] = useState(null);
   const [editBanner, setEditBanner] = useState(null);
@@ -61,13 +73,15 @@ export default function ManagePage() {
       setEditDescription(c.description || "");
       setEditContractAddress(c.contractAddress || "");
       setOriginalCA(c.contractAddress || "");
-      setEditBuyLinks({
+      const loadedBuyLinks = {
         raydium: c.buyLinks?.raydium || "",
         pumpfun: c.buyLinks?.pumpfun || "",
         uniswap: c.buyLinks?.uniswap || "",
         pancakeswap: c.buyLinks?.pancakeswap || "",
         sushiswap: c.buyLinks?.sushiswap || "",
-      });
+      };
+      setEditBuyLinks(loadedBuyLinks);
+      setOriginalBuyLinks(loadedBuyLinks);
       setEditTokenomics(c.tokenomics || {});
       setEditSocials(c.socials || {});
       setEditTemplateId(p.template_id || "template_1");
@@ -86,6 +100,15 @@ export default function ManagePage() {
     setLoading(false);
   };
 
+  // Is the page currently live? Used to decide whether the CA / buy-link limits apply.
+  const nowSecTop = Math.floor(Date.now() / 1000);
+  const pageIsActive = page && page.status === "active" && page.expires_at && page.expires_at > nowSecTop;
+
+  // Buy-links lock state (shared budget of 3 across ALL buy buttons, after activation).
+  const buyLinksUsed = Number((page && page.buylinks_changes_used) || 0);
+  const buyLinksRemaining = 3 - buyLinksUsed;
+  const buyLinksLocked = pageIsActive && buyLinksRemaining <= 0;
+
   const getBuyLinkDisplay = (key) => {
     const type = BUY_LINK_TYPES.find((t) => t.key === key);
     if (!type) return editBuyLinks[key];
@@ -94,6 +117,7 @@ export default function ManagePage() {
   };
 
   const setBuyLinkDisplay = (key, val) => {
+    if (buyLinksLocked) return;
     const type = BUY_LINK_TYPES.find((t) => t.key === key);
     if (!type) return;
     setEditBuyLinks({ ...editBuyLinks, [key]: val ? type.prefix + val.replace(type.prefix, "") : "" });
@@ -146,6 +170,24 @@ export default function ManagePage() {
         : "This is your LAST allowed contract-address change. After saving, the contract address will be locked permanently. Are you absolutely sure it's correct?";
       if (!window.confirm(msg)) return;
     }
+
+    // Buy-links change guard: same behaviour, but a single shared budget across
+    // all buy buttons. Only warn when the page is live and the set really changed.
+    const buyLinksChanging = normalizeBuyLinks(editBuyLinks) !== normalizeBuyLinks(originalBuyLinks);
+    if (buyLinksChanging && pageActive) {
+      const usedBL = Number(page.buylinks_changes_used || 0);
+      const remainingBeforeBL = 3 - usedBL;
+      if (remainingBeforeBL <= 0) {
+        setSaveMessage("Buy links are locked — no changes remaining.");
+        return;
+      }
+      const afterThisBL = remainingBeforeBL - 1;
+      const msgBL = afterThisBL > 0
+        ? "You're about to change your buy links. You'll have " + afterThisBL + " change" + (afterThisBL === 1 ? "" : "s") + " left after this (shared across all buy buttons). Are you sure they're correct?"
+        : "This is your LAST allowed buy-links change. After saving, your buy links will be locked permanently. Are you absolutely sure they're correct?";
+      if (!window.confirm(msgBL)) return;
+    }
+
     setSaving(true);
     setSaveMessage("");
     try {
@@ -157,7 +199,7 @@ export default function ManagePage() {
       if (editName) content.name = editName;
       if (editDescription) content.description = editDescription;
       if (editContractAddress) content.contractAddress = editContractAddress;
-      if (Object.keys(filteredBuyLinks).length > 0) content.buyLinks = filteredBuyLinks;
+      content.buyLinks = filteredBuyLinks;
       if (Object.keys(filteredTokenomics).length > 0) content.tokenomics = filteredTokenomics;
       content.socials = Object.fromEntries(Object.entries(editSocials).filter(([, v]) => v && v.trim()));
       if (editContractAddress) content.showTicker = editShowTicker;
@@ -340,13 +382,23 @@ export default function ManagePage() {
             </div>
             <div>
               <label>Buy Links</label>
+              {pageIsActive && !buyLinksLocked && (
+                <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "2px", marginBottom: "6px" }}>
+                  ⚠️ Your buy links lock after a limited number of changes. You have {buyLinksRemaining} change{buyLinksRemaining === 1 ? "" : "s"} remaining — shared across all buy buttons, so please make sure they're correct.
+                </div>
+              )}
+              {buyLinksLocked && (
+                <div style={{ fontSize: "11px", color: "#ff6464", marginTop: "2px", marginBottom: "6px" }}>
+                  🔒 Your buy links are locked — you've used all available changes.
+                </div>
+              )}
               <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "6px" }}>
                 {BUY_LINK_TYPES.map(({ key, label, prefix, placeholder, hint }) => (
                   <div key={key}>
                     <div style={{ fontSize: "12px", color: "#14F195", marginBottom: "4px", fontWeight: 600 }}>{label}</div>
-                    <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", overflow: "hidden", opacity: buyLinksLocked ? 0.6 : 1 }}>
                       <span style={{ padding: "10px 10px 10px 12px", fontSize: "10px", color: "#555", whiteSpace: "nowrap", borderRight: "1px solid rgba(255,255,255,0.08)", flexShrink: 0, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis" }}>{prefix}</span>
-                      <input value={getBuyLinkDisplay(key)} onChange={(e) => setBuyLinkDisplay(key, e.target.value)} placeholder={placeholder} style={{ border: "none", background: "transparent", flex: 1, padding: "10px 12px", fontSize: "13px", outline: "none", color: "#fff" }} />
+                      <input value={getBuyLinkDisplay(key)} onChange={(e) => setBuyLinkDisplay(key, e.target.value)} readOnly={buyLinksLocked} placeholder={placeholder} style={{ border: "none", background: "transparent", flex: 1, padding: "10px 12px", fontSize: "13px", outline: "none", color: "#fff", cursor: buyLinksLocked ? "not-allowed" : "text" }} />
                     </div>
                     <div style={{ fontSize: "11px", color: "#555", marginTop: "4px", paddingLeft: "2px" }}>{hint}</div>
                   </div>
