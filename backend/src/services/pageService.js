@@ -70,6 +70,18 @@ function deleteOldImage(oldUrl, newUrl) {
   }
 }
 
+// Normalise a buyLinks object into a stable string for comparison, so that
+// key order never matters and only real content differences count as a change.
+// Empty / whitespace-only values are dropped so "" and undefined are equal.
+function normalizeBuyLinks(buyLinks) {
+  if (!buyLinks || typeof buyLinks !== "object") return "";
+  const cleaned = Object.entries(buyLinks)
+    .map(([k, v]) => [k, (v == null ? "" : String(v)).trim()])
+    .filter(([, v]) => v)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  return JSON.stringify(cleaned);
+}
+
 export async function updatePageContent(pageId, walletAddress, { templateId, content }) {
   const pool = getDb();
   const pageResult = await pool.query("SELECT * FROM pages WHERE id = $1", [pageId]);
@@ -79,13 +91,14 @@ export async function updatePageContent(pageId, walletAddress, { templateId, con
 
   const existing = JSON.parse(page.content_json || "{}");
 
+  const now = Math.floor(Date.now() / 1000);
+  const isActive = page.status === "active" && page.expires_at && page.expires_at > now;
+
   // --- Contract-address change limit (after activation only) ---
   // Rule: while a page is NOT active (draft/unpaid), the CA can be changed freely.
   // Once a page is active, the owner gets a fixed number of CA changes (3) and then
   // the contract address is locked. Changing any OTHER field never costs a turn.
   const CA_CHANGE_LIMIT = 3;
-  const now = Math.floor(Date.now() / 1000);
-  const isActive = page.status === "active" && page.expires_at && page.expires_at > now;
   const oldCA = (existing.contractAddress || "").trim();
   // Only consider it a CA change if the incoming content actually includes the field.
   const incomingHasCA = Object.prototype.hasOwnProperty.call(content, "contractAddress");
@@ -97,6 +110,26 @@ export async function updatePageContent(pageId, walletAddress, { templateId, con
     // Out of changes: reject with a clear, catchable error.
     const err = new Error("CA change limit reached");
     err.code = "CA_LOCKED";
+    throw err;
+  }
+
+  // --- Buy-links change limit (after activation only) ---
+  // Mirrors the CA rule exactly but tracked separately. This is ONE shared budget
+  // (3) across ALL buy buttons combined: any add, edit or removal to the buy-link
+  // set counts as a single change. Free while inactive; the set locks in on
+  // activation; 3 changes after that, then locked. Editing any other field never
+  // costs a turn. We only consider it a change if the incoming content actually
+  // includes the buyLinks field.
+  const BUYLINKS_CHANGE_LIMIT = 3;
+  const incomingHasBuyLinks = Object.prototype.hasOwnProperty.call(content, "buyLinks");
+  const oldBuyLinksNorm = normalizeBuyLinks(existing.buyLinks);
+  const newBuyLinksNorm = incomingHasBuyLinks ? normalizeBuyLinks(content.buyLinks) : oldBuyLinksNorm;
+  const buyLinksAreChanging = incomingHasBuyLinks && newBuyLinksNorm !== oldBuyLinksNorm;
+  const buyLinksUsedSoFar = Number(page.buylinks_changes_used || 0);
+
+  if (buyLinksAreChanging && isActive && buyLinksUsedSoFar >= BUYLINKS_CHANGE_LIMIT) {
+    const err = new Error("Buy links change limit reached");
+    err.code = "BUYLINKS_LOCKED";
     throw err;
   }
 
@@ -144,9 +177,10 @@ export async function updatePageContent(pageId, walletAddress, { templateId, con
 
   // Reuse the `now` computed above for the CA-limit check.
   const nextCaUsed = (caIsChanging && isActive) ? (usedSoFar + 1) : usedSoFar;
+  const nextBuyLinksUsed = (buyLinksAreChanging && isActive) ? (buyLinksUsedSoFar + 1) : buyLinksUsedSoFar;
   await pool.query(
-    "UPDATE pages SET template_id = $1, content_json = $2, ca_changes_used = $3, updated_at = $4 WHERE id = $5",
-    [templateId || page.template_id, JSON.stringify(merged), nextCaUsed, now, pageId]
+    "UPDATE pages SET template_id = $1, content_json = $2, ca_changes_used = $3, buylinks_changes_used = $4, updated_at = $5 WHERE id = $6",
+    [templateId || page.template_id, JSON.stringify(merged), nextCaUsed, nextBuyLinksUsed, now, pageId]
   );
 
   invalidateCache(page.slug);
