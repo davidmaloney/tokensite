@@ -109,7 +109,6 @@ router.put("/:id", async (req, res) => {
     if (err.message === "Unauthorized") return res.status(403).json({ error: "Unauthorized" });
     if (err.message === "Page not found") return res.status(404).json({ error: "Page not found" });
     if (err.code === "CA_LOCKED") return res.status(403).json({ error: "This page has used all of its contract-address changes, so the contract address is now locked." });
-    if (err.code === "BUYLINKS_LOCKED") return res.status(403).json({ error: "This page has used all of its buy-link changes, so the buy links are now locked." });
     res.status(500).json({ error: "Failed to update page." });
   }
 });
