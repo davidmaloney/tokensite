@@ -206,7 +206,9 @@ export function renderPage(page) {
 
   const buyLinks = content.buyLinks || {};
   let buyHtml = Object.entries(buyLinks)
-    .filter(([, url]) => url && url.trim())
+    // Skip any stored "sunswap" link — Tron gets the dedicated copy-and-open button
+    // below instead, so we never render a plain (empty) SunSwap buy button.
+    .filter(([key, url]) => key !== "sunswap" && url && url.trim())
     .map(([key, url]) =>
       "<a href=\"" + escapeHtml(url) + "\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"buy-btn buy-" + key + "\">" +
       "<span class=\"buy-icon\">" + (BUY_ICONS[key] || "") + "</span>" +
