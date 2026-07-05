@@ -8,20 +8,19 @@ import TemplateSelector from "../components/TemplateSelector";
 import PagePreview from "../components/PagePreview";
 import PaymentModal from "../components/PaymentModal";
 
-// Each buy button belongs to one or more address "families" (chains). We detect
-// the family from the contract address the user typed (detectChain below) and only
-// enable the buttons that can work for it — the rest are greyed out. "chains" lists
-// which detected families a button supports.
-const BUY_LINK_TYPES = [
-  { key: "raydium", label: "Raydium", prefix: "https://raydium.io/swap/?inputMint=sol&outputMint=", placeholder: "CA", hint: "Solana — Enter your token CA", chains: ["solana"] },
-  { key: "pumpfun", label: "Pump.fun", prefix: "https://pump.fun/coin/", placeholder: "CA", hint: "Solana — Enter your token CA", chains: ["solana"] },
-  { key: "uniswap", label: "Uniswap", prefix: "https://app.uniswap.org/swap?chain=mainnet&inputCurrency=ETH&outputCurrency=", placeholder: "0x... or Solana CA", hint: "Ethereum / Base / Arbitrum / Polygon / Solana", chains: ["evm", "solana"] },
-  { key: "pancakeswap", label: "PancakeSwap", prefix: "https://pancakeswap.finance/swap?chain=bsc&inputCurrency=BNB&outputCurrency=", placeholder: "0x...", hint: "BSC", chains: ["evm"] },
-  { key: "sushiswap", label: "SushiSwap", prefix: "https://www.sushi.com/ethereum/swap?tokenIn=NATIVE&tokenOut=", placeholder: "0x...", hint: "Ethereum & other EVM chains", chains: ["evm"] },
+// --- Buy-link system (identical logic to CreatePage.jsx & the backend renderer) --
+// The contract address gives the chain FAMILY (solana / evm / tron). For EVM the
+// address can't say which evm chain, so the creator picks it (buyChain). From
+// (family + CA + buyChain) we build the finished buy buttons automatically.
+
+const EVM_CHAINS = [
+  { id: "ethereum", label: "Ethereum", dex: "uniswap",     uniChain: "mainnet"  },
+  { id: "bsc",      label: "BNB Chain (BSC)", dex: "pancakeswap"                 },
+  { id: "base",     label: "Base",     dex: "uniswap",     uniChain: "base"     },
+  { id: "arbitrum", label: "Arbitrum", dex: "uniswap",     uniChain: "arbitrum" },
+  { id: "polygon",  label: "Polygon",  dex: "uniswap",     uniChain: "polygon"  },
 ];
 
-// Detect the address "family" from the contract address, using the same formats
-// the backend validates. Returns "solana" | "evm" | "tron" | "other" | null.
 function detectChain(ca) {
   const a = (ca || "").trim();
   if (!a) return null;
@@ -31,15 +30,40 @@ function detectChain(ca) {
   return "other";
 }
 
-// Normalise a buyLinks object into a stable string so key order never matters
-// and only real content differences count as a change (mirrors the backend).
-function normalizeBuyLinks(buyLinks) {
-  if (!buyLinks || typeof buyLinks !== "object") return "";
-  const cleaned = Object.entries(buyLinks)
-    .map(([k, v]) => [k, (v == null ? "" : String(v)).trim()])
-    .filter(([, v]) => v)
-    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-  return JSON.stringify(cleaned);
+function buildBuyLinks(family, ca, evmChain) {
+  const a = (ca || "").trim();
+  if (!a) return [];
+  if (family === "solana") {
+    return [
+      { key: "raydium", label: "Buy on Raydium", url: "https://raydium.io/swap/?inputMint=sol&outputMint=" + a },
+      { key: "pumpfun", label: "Buy on Pump.fun", url: "https://pump.fun/coin/" + a },
+    ];
+  }
+  if (family === "tron") {
+    return [
+      { key: "sunswap", label: "Copy CA & Buy on SunSwap", url: "https://sunswap.com", tron: true, ca: a },
+    ];
+  }
+  if (family === "evm") {
+    const chain = EVM_CHAINS.find((c) => c.id === evmChain);
+    if (!chain) return [];
+    if (chain.dex === "uniswap") {
+      return [
+        { key: "uniswap", label: "Buy on Uniswap", url: "https://app.uniswap.org/swap?chain=" + chain.uniChain + "&inputCurrency=ETH&outputCurrency=" + a },
+      ];
+    }
+    if (chain.dex === "pancakeswap") {
+      return [
+        { key: "pancakeswap", label: "Buy on PancakeSwap", url: "https://pancakeswap.finance/swap?chain=bsc&outputCurrency=" + a },
+      ];
+    }
+  }
+  return [];
+}
+
+// Stable string of the built links, for detecting a real change (lock logic).
+function buyLinksSignature(family, ca, evmChain) {
+  return buildBuyLinks(family, ca, evmChain).map((b) => b.key + ":" + b.url).sort().join("|");
 }
 
 export default function ManagePage() {
@@ -57,8 +81,9 @@ export default function ManagePage() {
   const [editDescription, setEditDescription] = useState("");
   const [editContractAddress, setEditContractAddress] = useState("");
   const [originalCA, setOriginalCA] = useState("");
-  const [editBuyLinks, setEditBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
-  const [originalBuyLinks, setOriginalBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
+  const [editBuyChain, setEditBuyChain] = useState("");       // EVM chain pick (only used for EVM CAs)
+  const [originalCA_forLock, setOriginalCA_forLock] = useState("");   // CA at load, for change detection
+  const [originalBuyChain, setOriginalBuyChain] = useState("");       // buyChain at load, for change detection
   const [editTokenomics, setEditTokenomics] = useState({});
   const [editAvatar, setEditAvatar] = useState(null);
   const [editBanner, setEditBanner] = useState(null);
@@ -88,15 +113,9 @@ export default function ManagePage() {
       setEditDescription(c.description || "");
       setEditContractAddress(c.contractAddress || "");
       setOriginalCA(c.contractAddress || "");
-      const loadedBuyLinks = {
-        raydium: c.buyLinks?.raydium || "",
-        pumpfun: c.buyLinks?.pumpfun || "",
-        uniswap: c.buyLinks?.uniswap || "",
-        pancakeswap: c.buyLinks?.pancakeswap || "",
-        sushiswap: c.buyLinks?.sushiswap || "",
-      };
-      setEditBuyLinks(loadedBuyLinks);
-      setOriginalBuyLinks(loadedBuyLinks);
+      setEditBuyChain(c.buyChain || "");
+      setOriginalBuyChain(c.buyChain || "");
+      setOriginalCA_forLock(c.contractAddress || "");
       setEditTokenomics(c.tokenomics || {});
       setEditSocials(c.socials || {});
       setEditTemplateId(p.template_id || "template_1");
@@ -119,29 +138,13 @@ export default function ManagePage() {
   const nowSecTop = Math.floor(Date.now() / 1000);
   const pageIsActive = page && page.status === "active" && page.expires_at && page.expires_at > nowSecTop;
 
-  // Buy-links lock state (shared budget of 3 across ALL buy buttons, after activation).
+  // Buy-button lock state (3 changes to the buy setup after the page goes live).
   const buyLinksUsed = Number((page && page.buylinks_changes_used) || 0);
   const buyLinksRemaining = 3 - buyLinksUsed;
   const buyLinksLocked = pageIsActive && buyLinksRemaining <= 0;
 
   // Which chain family the current contract address belongs to (null until typed).
   const detectedChain = detectChain(editContractAddress);
-
-  const getBuyLinkDisplay = (key) => {
-    const type = BUY_LINK_TYPES.find((t) => t.key === key);
-    if (!type) return editBuyLinks[key];
-    const full = editBuyLinks[key] || "";
-    return full.startsWith(type.prefix) ? full.slice(type.prefix.length) : full;
-  };
-
-  const setBuyLinkDisplay = (key, val) => {
-    if (buyLinksLocked) return;
-    const type = BUY_LINK_TYPES.find((t) => t.key === key);
-    if (!type) return;
-    // Don't allow typing into a button whose chain doesn't match the CA.
-    if (detectedChain !== null && !type.chains.includes(detectedChain)) return;
-    setEditBuyLinks({ ...editBuyLinks, [key]: val ? type.prefix + val.replace(type.prefix, "") : "" });
-  };
 
   const addTeamMember = () => {
     if (editTeam.length < 4) setEditTeam([...editTeam, { name: "", role: "", twitter: "", photo: null }]);
@@ -191,36 +194,32 @@ export default function ManagePage() {
       if (!window.confirm(msg)) return;
     }
 
-    // Buy-links change guard: same behaviour, but a single shared budget across
-    // all buy buttons. Only warn when the page is live and the set really changed.
-    const buyLinksChanging = normalizeBuyLinks(editBuyLinks) !== normalizeBuyLinks(originalBuyLinks);
+    // Buy-button change guard: the buy setup is derived from the CA + chain pick.
+    // A "change" = the resulting buy links differ from what's stored. Same 3-change
+    // budget after the page is live, then locked.
+    const beforeSig = buyLinksSignature(detectChain(originalCA_forLock), originalCA_forLock, originalBuyChain);
+    const afterSig = buyLinksSignature(detectedChain, editContractAddress, editBuyChain);
+    const buyLinksChanging = beforeSig !== afterSig;
     if (buyLinksChanging && pageActive) {
       const usedBL = Number(page.buylinks_changes_used || 0);
       const remainingBeforeBL = 3 - usedBL;
       if (remainingBeforeBL <= 0) {
-        setSaveMessage("Buy links are locked — no changes remaining.");
+        setSaveMessage("Buy buttons are locked — no changes remaining.");
         return;
       }
       const afterThisBL = remainingBeforeBL - 1;
       const msgBL = afterThisBL > 0
-        ? "You're about to change your buy links. You'll have " + afterThisBL + " change" + (afterThisBL === 1 ? "" : "s") + " left after this (shared across all buy buttons). Are you sure they're correct?"
-        : "This is your LAST allowed buy-links change. After saving, your buy links will be locked permanently. Are you absolutely sure they're correct?";
+        ? "You're about to change your buy button setup. You'll have " + afterThisBL + " change" + (afterThisBL === 1 ? "" : "s") + " left after this. Are you sure it's correct?"
+        : "This is your LAST allowed buy-button change. After saving, your buy setup will be locked permanently. Are you absolutely sure it's correct?";
       if (!window.confirm(msgBL)) return;
     }
 
     setSaving(true);
     setSaveMessage("");
     try {
-      // Keep only non-empty buy links whose button matches the detected chain, so a
-      // link left over from a different chain (if the CA changed) is never saved.
-      const filteredBuyLinks = Object.fromEntries(
-        Object.entries(editBuyLinks).filter(([k, v]) => {
-          if (!v || !v.trim()) return false;
-          const def = BUY_LINK_TYPES.find((t) => t.key === k);
-          if (!def) return false;
-          return detectedChain === null || def.chains.includes(detectedChain);
-        })
-      );
+      // Build the finished buy links from (chain family + CA + chosen EVM chain).
+      const builtLinks = buildBuyLinks(detectedChain, editContractAddress, editBuyChain);
+      const filteredBuyLinks = Object.fromEntries(builtLinks.map((b) => [b.key, b.url]));
       const filteredTokenomics = Object.fromEntries(Object.entries(editTokenomics).filter(([, v]) => v && v.trim()));
       const filteredRoadmap = editRoadmap.filter((m) => m.title && m.title.trim());
 
@@ -229,6 +228,7 @@ export default function ManagePage() {
       if (editDescription) content.description = editDescription;
       if (editContractAddress) content.contractAddress = editContractAddress;
       content.buyLinks = filteredBuyLinks;
+      if (detectedChain === "evm" && editBuyChain) content.buyChain = editBuyChain;
       if (Object.keys(filteredTokenomics).length > 0) content.tokenomics = filteredTokenomics;
       content.socials = Object.fromEntries(Object.entries(editSocials).filter(([, v]) => v && v.trim()));
       if (editContractAddress) content.showTicker = editShowTicker;
@@ -410,47 +410,78 @@ export default function ManagePage() {
               })()}
             </div>
             <div>
-              <label>Buy Links</label>
+              <label>Buy Button</label>
               {pageIsActive && !buyLinksLocked && (
                 <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "2px", marginBottom: "6px" }}>
-                  ⚠️ Your buy links lock after a limited number of changes. You have {buyLinksRemaining} change{buyLinksRemaining === 1 ? "" : "s"} remaining — shared across all buy buttons, so please make sure they're correct.
+                  ⚠️ Your buy setup locks after a limited number of changes. You have {buyLinksRemaining} change{buyLinksRemaining === 1 ? "" : "s"} remaining — so please make sure it's correct.
                 </div>
               )}
               {buyLinksLocked && (
                 <div style={{ fontSize: "11px", color: "#ff6464", marginTop: "2px", marginBottom: "6px" }}>
-                  🔒 Your buy links are locked — you've used all available changes.
+                  🔒 Your buy setup is locked — you've used all available changes.
                 </div>
               )}
+
+              {!editContractAddress && (
+                <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>
+                  Add a contract address above and we'll set up the right buy button automatically.
+                </div>
+              )}
+
+              {detectedChain === "solana" && (
+                <div style={{ fontSize: "11px", color: "#14F195", marginTop: "6px" }}>
+                  ✓ Solana — buyers get Raydium &amp; Pump.fun buttons.
+                </div>
+              )}
+
               {detectedChain === "tron" && (
-                <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "2px", marginBottom: "6px" }}>
-                  Buy buttons aren't available for Tron tokens yet — Tron DEXs don't support direct buy links. Buyers can still copy the contract address above to trade manually.
+                <div style={{ fontSize: "11px", color: "#14F195", marginTop: "6px" }}>
+                  ✓ Tron — buyers get a one-tap button that copies your CA and opens SunSwap.
                 </div>
               )}
-              {detectedChain === "other" && (
-                <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "2px", marginBottom: "6px" }}>
-                  Buy buttons aren't available for this network yet — the DEXs we support don't list it.
-                </div>
-              )}
-              <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "6px" }}>
-                {BUY_LINK_TYPES.map(({ key, label, prefix, placeholder, hint, chains }) => {
-                  // A button is chain-usable when no CA is typed yet, or the detected
-                  // chain is supported. It's editable only if also not locked.
-                  const chainOk = detectedChain === null || chains.includes(detectedChain);
-                  const disabled = buyLinksLocked || !chainOk;
-                  return (
-                    <div key={key} style={{ opacity: chainOk ? 1 : 0.4 }}>
-                      <div style={{ fontSize: "12px", color: chainOk ? "#14F195" : "#666", marginBottom: "4px", fontWeight: 600 }}>
-                        {label}{!chainOk && <span style={{ color: "#666", fontWeight: 400 }}> — not for this chain</span>}
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", overflow: "hidden", opacity: buyLinksLocked ? 0.6 : 1 }}>
-                        <span style={{ padding: "10px 10px 10px 12px", fontSize: "10px", color: "#555", whiteSpace: "nowrap", borderRight: "1px solid rgba(255,255,255,0.08)", flexShrink: 0, maxWidth: "200px", overflow: "hidden", textOverflow: "ellipsis" }}>{prefix}</span>
-                        <input value={getBuyLinkDisplay(key)} onChange={(e) => setBuyLinkDisplay(key, e.target.value)} readOnly={disabled} placeholder={placeholder} style={{ border: "none", background: "transparent", flex: 1, padding: "10px 12px", fontSize: "13px", outline: "none", color: "#fff", cursor: disabled ? "not-allowed" : "text" }} />
-                      </div>
-                      <div style={{ fontSize: "11px", color: "#555", marginTop: "4px", paddingLeft: "2px" }}>{hint}</div>
+
+              {detectedChain === "evm" && (
+                <div style={{ marginTop: "8px" }}>
+                  <div style={{ fontSize: "12px", color: "#aaa", marginBottom: "6px" }}>
+                    Which chain is your token on?
+                  </div>
+                  <select
+                    value={editBuyChain}
+                    onChange={(e) => { if (!buyLinksLocked) setEditBuyChain(e.target.value); }}
+                    disabled={buyLinksLocked}
+                    style={{ width: "100%", padding: "10px 12px", fontSize: "13px", opacity: buyLinksLocked ? 0.6 : 1, cursor: buyLinksLocked ? "not-allowed" : "pointer" }}
+                  >
+                    <option value="">Select your chain…</option>
+                    {EVM_CHAINS.map((c) => (
+                      <option key={c.id} value={c.id}>{c.label}</option>
+                    ))}
+                  </select>
+                  {editBuyChain && (
+                    <div style={{ fontSize: "11px", color: "#14F195", marginTop: "6px" }}>
+                      ✓ {EVM_CHAINS.find((c) => c.id === editBuyChain)?.label} — buyers get a{" "}
+                      {EVM_CHAINS.find((c) => c.id === editBuyChain)?.dex === "pancakeswap" ? "PancakeSwap" : "Uniswap"} button.
                     </div>
-                  );
-                })}
-              </div>
+                  )}
+                </div>
+              )}
+
+              {detectedChain === "other" && (
+                <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "6px" }}>
+                  Buy buttons aren't available for this network yet — the DEXs we support don't list it. Buyers can still copy your contract address to trade manually.
+                </div>
+              )}
+
+              {/* Preview of the actual buttons buyers will see */}
+              {buildBuyLinks(detectedChain, editContractAddress, editBuyChain).length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "10px" }}>
+                  {buildBuyLinks(detectedChain, editContractAddress, editBuyChain).map((b) => (
+                    <div key={b.key} style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(20,241,149,0.08)", border: "1px solid rgba(20,241,149,0.25)", borderRadius: "8px", padding: "10px 12px" }}>
+                      <span style={{ fontSize: "13px", color: "#14F195", fontWeight: 600 }}>{b.label}</span>
+                      <span style={{ fontSize: "10px", color: "#555" }}>▸ buyers land here</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <div>
               <label>Tokenomics</label>
@@ -589,7 +620,7 @@ export default function ManagePage() {
         <PagePreview
           data={{
             name: editName, description: editDescription, avatar: editAvatar, banner: editBanner,
-            socials: editSocials, contractAddress: editContractAddress, buyLinks: editBuyLinks,
+            socials: editSocials, contractAddress: editContractAddress, buyChain: editBuyChain,
             tokenomics: editTokenomics, showTicker: editShowTicker, showChart: editShowChart,
             countdownDate: editCountdownDate, countdownLabel: editCountdownLabel,
             aboutText: editAboutText, team: editTeam, roadmap: editRoadmap,
