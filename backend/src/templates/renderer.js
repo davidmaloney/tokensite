@@ -55,7 +55,6 @@ const BUY_ICONS = {
   pumpfun: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>',
   uniswap: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M9.563 2.048a.88.88 0 00-.528.04C7.24 2.744 5.98 4.854 5.98 7.1c0 .592.08 1.168.232 1.72C4.76 9.716 4 11.26 4 13c0 3.864 3.584 7 8 7s8-3.136 8-7c0-1.74-.76-3.284-2.212-4.18.152-.552.232-1.128.232-1.72 0-2.246-1.26-4.356-3.055-5.012a.88.88 0 00-.528-.04c-.336.08-.584.304-.704.616C13.5 4.812 12.796 5.4 12 5.4s-1.5-.588-1.733-1.736c-.12-.312-.368-.536-.704-.616zm2.437 5.152c2.652 0 4.8 2.016 4.8 4.5S14.652 16.2 12 16.2s-4.8-2.016-4.8-4.5 2.148-4.5 4.8-4.5z"/></svg>',
   pancakeswap: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 5h2v2h-2V7zm0 4h2v6h-2v-6z"/></svg>',
-  sushiswap: '<svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 4c1.1 0 2 .9 2 2s-.9 2-2 2-2-.9-2-2 .9-2 2-2zm0 12c-2.67 0-5.02-1.33-6.44-3.36C7.12 13.26 9.45 12 12 12s4.88 1.26 6.44 3.64C16.02 17.67 14.67 18 12 18z"/></svg>',
 };
 
 const BUY_LABELS = {
@@ -64,7 +63,6 @@ const BUY_LABELS = {
   pumpfun: "Buy on Pump.fun",
   uniswap: "Buy on Uniswap",
   pancakeswap: "Buy on PancakeSwap",
-  sushiswap: "Buy on SushiSwap",
 };
 
 const TOKENOMICS_LABELS = {
