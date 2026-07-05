@@ -61,11 +61,6 @@ function buildBuyLinks(family, ca, evmChain) {
   return [];
 }
 
-// Stable string of the built links, for detecting a real change (lock logic).
-function buyLinksSignature(family, ca, evmChain) {
-  return buildBuyLinks(family, ca, evmChain).map((b) => b.key + ":" + b.url).sort().join("|");
-}
-
 export default function ManagePage() {
   const { pageId } = useParams();
   const { connected, publicKey } = useWallet();
@@ -82,8 +77,6 @@ export default function ManagePage() {
   const [editContractAddress, setEditContractAddress] = useState("");
   const [originalCA, setOriginalCA] = useState("");
   const [editBuyChain, setEditBuyChain] = useState("");       // EVM chain pick (only used for EVM CAs)
-  const [originalCA_forLock, setOriginalCA_forLock] = useState("");   // CA at load, for change detection
-  const [originalBuyChain, setOriginalBuyChain] = useState("");       // buyChain at load, for change detection
   const [editTokenomics, setEditTokenomics] = useState({});
   const [editAvatar, setEditAvatar] = useState(null);
   const [editBanner, setEditBanner] = useState(null);
@@ -114,8 +107,6 @@ export default function ManagePage() {
       setEditContractAddress(c.contractAddress || "");
       setOriginalCA(c.contractAddress || "");
       setEditBuyChain(c.buyChain || "");
-      setOriginalBuyChain(c.buyChain || "");
-      setOriginalCA_forLock(c.contractAddress || "");
       setEditTokenomics(c.tokenomics || {});
       setEditSocials(c.socials || {});
       setEditTemplateId(p.template_id || "template_1");
@@ -134,14 +125,9 @@ export default function ManagePage() {
     setLoading(false);
   };
 
-  // Is the page currently live? Used to decide whether the CA / buy-link limits apply.
+  // Is the page currently live? Used to decide whether the CA limit applies.
   const nowSecTop = Math.floor(Date.now() / 1000);
   const pageIsActive = page && page.status === "active" && page.expires_at && page.expires_at > nowSecTop;
-
-  // Buy-button lock state (3 changes to the buy setup after the page goes live).
-  const buyLinksUsed = Number((page && page.buylinks_changes_used) || 0);
-  const buyLinksRemaining = 3 - buyLinksUsed;
-  const buyLinksLocked = pageIsActive && buyLinksRemaining <= 0;
 
   // Which chain family the current contract address belongs to (null until typed).
   const detectedChain = detectChain(editContractAddress);
@@ -192,26 +178,6 @@ export default function ManagePage() {
         ? "You're about to change the contract address. You'll have " + afterThis + " change" + (afterThis === 1 ? "" : "s") + " left after this. Are you sure it's correct?"
         : "This is your LAST allowed contract-address change. After saving, the contract address will be locked permanently. Are you absolutely sure it's correct?";
       if (!window.confirm(msg)) return;
-    }
-
-    // Buy-button change guard: the buy setup is derived from the CA + chain pick.
-    // A "change" = the resulting buy links differ from what's stored. Same 3-change
-    // budget after the page is live, then locked.
-    const beforeSig = buyLinksSignature(detectChain(originalCA_forLock), originalCA_forLock, originalBuyChain);
-    const afterSig = buyLinksSignature(detectedChain, editContractAddress, editBuyChain);
-    const buyLinksChanging = beforeSig !== afterSig;
-    if (buyLinksChanging && pageActive) {
-      const usedBL = Number(page.buylinks_changes_used || 0);
-      const remainingBeforeBL = 3 - usedBL;
-      if (remainingBeforeBL <= 0) {
-        setSaveMessage("Buy buttons are locked — no changes remaining.");
-        return;
-      }
-      const afterThisBL = remainingBeforeBL - 1;
-      const msgBL = afterThisBL > 0
-        ? "You're about to change your buy button setup. You'll have " + afterThisBL + " change" + (afterThisBL === 1 ? "" : "s") + " left after this. Are you sure it's correct?"
-        : "This is your LAST allowed buy-button change. After saving, your buy setup will be locked permanently. Are you absolutely sure it's correct?";
-      if (!window.confirm(msgBL)) return;
     }
 
     setSaving(true);
@@ -411,16 +377,6 @@ export default function ManagePage() {
             </div>
             <div>
               <label>Buy Button</label>
-              {pageIsActive && !buyLinksLocked && (
-                <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "2px", marginBottom: "6px" }}>
-                  ⚠️ Your buy setup locks after a limited number of changes. You have {buyLinksRemaining} change{buyLinksRemaining === 1 ? "" : "s"} remaining — so please make sure it's correct.
-                </div>
-              )}
-              {buyLinksLocked && (
-                <div style={{ fontSize: "11px", color: "#ff6464", marginTop: "2px", marginBottom: "6px" }}>
-                  🔒 Your buy setup is locked — you've used all available changes.
-                </div>
-              )}
 
               {!editContractAddress && (
                 <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>
@@ -447,9 +403,8 @@ export default function ManagePage() {
                   </div>
                   <select
                     value={editBuyChain}
-                    onChange={(e) => { if (!buyLinksLocked) setEditBuyChain(e.target.value); }}
-                    disabled={buyLinksLocked}
-                    style={{ width: "100%", padding: "10px 12px", fontSize: "13px", opacity: buyLinksLocked ? 0.6 : 1, cursor: buyLinksLocked ? "not-allowed" : "pointer" }}
+                    onChange={(e) => setEditBuyChain(e.target.value)}
+                    style={{ width: "100%", padding: "10px 12px", fontSize: "13px", cursor: "pointer" }}
                   >
                     <option value="">Select your chain…</option>
                     {EVM_CHAINS.map((c) => (
