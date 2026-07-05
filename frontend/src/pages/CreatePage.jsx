@@ -8,68 +8,69 @@ import TemplateSelector from "../components/TemplateSelector";
 import PagePreview from "../components/PagePreview";
 import PaymentModal from "../components/PaymentModal";
 
-// Each buy button belongs to one or more address "families" (chains). We detect
-// the family from the contract address the user typed (see detectChain below) and
-// only enable the buttons that can actually work for it — the rest are greyed out.
-// "chains" lists which detected families this button supports.
-const BUY_LINK_TYPES = [
-  {
-    key: "raydium",
-    label: "Raydium",
-    prefix: "https://raydium.io/swap/?inputMint=sol&outputMint=",
-    placeholder: "CA",
-    hint: "Solana — Enter your token CA",
-    chains: ["solana"],
-  },
-  {
-    key: "pumpfun",
-    label: "Pump.fun",
-    prefix: "https://pump.fun/coin/",
-    placeholder: "CA",
-    hint: "Solana — Enter your token CA",
-    chains: ["solana"],
-  },
-  {
-    key: "uniswap",
-    label: "Uniswap",
-    // Uniswap web app now supports EVM chains AND Solana. inputCurrency must be set
-    // alongside outputCurrency or the token won't pre-fill in the swap box.
-    prefix: "https://app.uniswap.org/swap?chain=mainnet&inputCurrency=ETH&outputCurrency=",
-    placeholder: "0x... or Solana CA",
-    hint: "Ethereum / Base / Arbitrum / Polygon / Solana — Enter your token address",
-    chains: ["evm", "solana"],
-  },
-  {
-    key: "pancakeswap",
-    label: "PancakeSwap",
-    // BSC. inputCurrency=BNB + chain=bsc makes the swap box pre-fill reliably.
-    prefix: "https://pancakeswap.finance/swap?chain=bsc&inputCurrency=BNB&outputCurrency=",
-    placeholder: "0x...",
-    hint: "BSC — Enter your token address",
-    chains: ["evm"],
-  },
-  {
-    key: "sushiswap",
-    label: "SushiSwap",
-    // Sushi uses tokenIn/tokenOut with the chain in the path. Defaulting to Ethereum;
-    // users can switch network on the Sushi page if their token is on another EVM chain.
-    prefix: "https://www.sushi.com/ethereum/swap?tokenIn=NATIVE&tokenOut=",
-    placeholder: "0x...",
-    hint: "Ethereum & other EVM chains — Enter your token address",
-    chains: ["evm"],
-  },
+// --- Buy-link system -------------------------------------------------------
+// A meme coin's contract address tells us its chain FAMILY (solana / evm / tron).
+// For EVM the address alone can't say WHICH evm chain (ETH/BSC/Base/etc all look
+// identical), so the page creator picks it once. From (chain + CA) we build the
+// correct buy button automatically — the creator never edits a URL by hand.
+//
+// buildBuyLinks(chain, ca) is the single source of truth, mirrored byte-for-byte
+// in ManagePage.jsx and the backend renderer so create / edit / live page always
+// agree. Returns an array of { key, label, url } — ready-to-use buy buttons.
+
+// EVM chains the creator can choose from, each mapped to the DEX that works there.
+const EVM_CHAINS = [
+  { id: "ethereum", label: "Ethereum", dex: "uniswap",     uniChain: "mainnet"  },
+  { id: "bsc",      label: "BNB Chain (BSC)", dex: "pancakeswap"                 },
+  { id: "base",     label: "Base",     dex: "uniswap",     uniChain: "base"     },
+  { id: "arbitrum", label: "Arbitrum", dex: "uniswap",     uniChain: "arbitrum" },
+  { id: "polygon",  label: "Polygon",  dex: "uniswap",     uniChain: "polygon"  },
 ];
 
-// Detect the address "family" from the contract address, using the same formats
-// the backend validates. Returns "solana" | "evm" | "tron" | "other" | null.
-// null = nothing typed yet (buttons stay available but inert until a CA exists).
+// Detect the address family. Returns "solana" | "evm" | "tron" | "other" | null.
 function detectChain(ca) {
   const a = (ca || "").trim();
   if (!a) return null;
-  if (/^0x[0-9a-fA-F]{40}$/.test(a)) return "evm";            // Ethereum/BSC/Base/etc
-  if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a)) return "tron";   // Tron
-  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return "solana"; // Solana base58
-  return "other";                                             // Sui/Aptos/unknown
+  if (/^0x[0-9a-fA-F]{40}$/.test(a)) return "evm";
+  if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a)) return "tron";
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return "solana";
+  return "other";
+}
+
+// Build the finished buy buttons for a given family + CA (+ evmChain when family
+// is "evm"). Formats below are the ones confirmed to pre-fill the token in each
+// DEX's swap box. Returns [] when nothing applies (e.g. no CA, or unsupported).
+function buildBuyLinks(family, ca, evmChain) {
+  const a = (ca || "").trim();
+  if (!a) return [];
+  if (family === "solana") {
+    return [
+      { key: "raydium", label: "Buy on Raydium", url: "https://raydium.io/swap/?inputMint=sol&outputMint=" + a },
+      { key: "pumpfun", label: "Buy on Pump.fun", url: "https://pump.fun/coin/" + a },
+    ];
+  }
+  if (family === "tron") {
+    // Tron DEXs don't support pre-filling the output token by URL, so the button
+    // copies the CA and opens SunSwap (handled specially in the renderer/preview).
+    return [
+      { key: "sunswap", label: "Copy CA & Buy on SunSwap", url: "https://sunswap.com", tron: true, ca: a },
+    ];
+  }
+  if (family === "evm") {
+    const chain = EVM_CHAINS.find((c) => c.id === evmChain);
+    if (!chain) return [];
+    if (chain.dex === "uniswap") {
+      return [
+        { key: "uniswap", label: "Buy on Uniswap", url: "https://app.uniswap.org/swap?chain=" + chain.uniChain + "&inputCurrency=ETH&outputCurrency=" + a },
+      ];
+    }
+    if (chain.dex === "pancakeswap") {
+      return [
+        { key: "pancakeswap", label: "Buy on PancakeSwap", url: "https://pancakeswap.finance/swap?chain=bsc&outputCurrency=" + a },
+      ];
+    }
+  }
+  return [];
 }
 
 export default function CreatePage() {
@@ -82,7 +83,7 @@ export default function CreatePage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [contractAddress, setContractAddress] = useState("");
-  const [buyLinks, setBuyLinks] = useState({ raydium: "", pumpfun: "", uniswap: "", pancakeswap: "", sushiswap: "" });
+  const [buyChain, setBuyChain] = useState(""); // EVM chain the creator picks (only used when the CA is an EVM address)
   const [tokenomics, setTokenomics] = useState({});
   const [avatar, setAvatar] = useState(null);
   const [banner, setBanner] = useState(null);
@@ -126,27 +127,21 @@ export default function CreatePage() {
             ← Back to Dashboard
           </button>
           <div style={{ fontSize: "36px", marginBottom: "16px" }}>🚀</div>
-          <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>A few things to get right</h2>
-          <p style={{ fontSize: "14px", color: "#888", lineHeight: 1.7, marginBottom: "20px" }}>
-            Everything on your page is optional and can be edited freely before you activate. Just three things are worth double-checking, because they settle once your page goes live.
+          <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>Before you build</h2>
+          <p style={{ fontSize: "14px", color: "#888", lineHeight: 1.6, marginBottom: "20px" }}>
+            Everything's optional and fully editable while your page is a draft. Two things to know:
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "24px", textAlign: "left" }}>
             <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
               <span style={{ color: "#9945FF", flexShrink: 0, marginTop: "2px" }}>●</span>
               <span style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.5 }}>
-                <strong style={{ color: "#fff" }}>Your slug is permanent.</strong> The web address you choose can't be changed once the page is created.
+                <strong style={{ color: "#fff" }}>Your slug is permanent</strong> — pick your web address carefully, it can't be changed later.
               </span>
             </div>
             <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
               <span style={{ color: "#9945FF", flexShrink: 0, marginTop: "2px" }}>●</span>
               <span style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.5 }}>
-                <strong style={{ color: "#fff" }}>Your contract address settles when you go live.</strong> Change it freely while your page is a draft — whatever's set when you activate is locked in. After that you get three changes in the editor to fix it, then it's final. No pressure: you can leave it untouched for as long as you like.
-              </span>
-            </div>
-            <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
-              <span style={{ color: "#9945FF", flexShrink: 0, marginTop: "2px" }}>●</span>
-              <span style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.5 }}>
-                <strong style={{ color: "#fff" }}>Your buy links work the same way.</strong> Edit them freely before activating; whatever's set when you go live is locked in. After that you get three changes shared across all your buy buttons, then they're final — so give them a quick check.
+                <strong style={{ color: "#fff" }}>Your contract address &amp; buy button lock in when you go live</strong> — but don't worry, you still get <strong style={{ color: "#14F195" }}>3 edits to each</strong> afterwards, so you're never stuck.
               </span>
             </div>
           </div>
@@ -191,19 +186,6 @@ export default function CreatePage() {
     return res.data.url;
   };
 
-  const getBuyLinkDisplay = (key) => {
-    const type = BUY_LINK_TYPES.find((t) => t.key === key);
-    if (!type) return buyLinks[key];
-    const full = buyLinks[key] || "";
-    return full.startsWith(type.prefix) ? full.slice(type.prefix.length) : full;
-  };
-
-  const setBuyLinkDisplay = (key, val) => {
-    const type = BUY_LINK_TYPES.find((t) => t.key === key);
-    if (!type) return;
-    setBuyLinks({ ...buyLinks, [key]: val ? type.prefix + val.replace(type.prefix, "") : "" });
-  };
-
   const addTeamMember = () => {
     if (team.length < 4) setTeam([...team, { name: "", role: "", twitter: "", photo: null }]);
   };
@@ -243,17 +225,10 @@ export default function CreatePage() {
         uploadImage(banner, "banner"),
       ]);
 
-      // Keep only buy links that are non-empty AND belong to a button that matches
-      // the detected chain — so a link left over from a different chain (if the user
-      // changed the CA) is never saved.
-      const filteredBuyLinks = Object.fromEntries(
-        Object.entries(buyLinks).filter(([k, v]) => {
-          if (!v || !v.trim()) return false;
-          const def = BUY_LINK_TYPES.find((t) => t.key === k);
-          if (!def) return false;
-          return detectedChain === null || def.chains.includes(detectedChain);
-        })
-      );
+      // Build the finished buy links from (chain family + CA + chosen EVM chain).
+      // Stored as a { key: url } map so the live page and editor rebuild identically.
+      const builtLinks = buildBuyLinks(detectedChain, contractAddress, buyChain);
+      const filteredBuyLinks = Object.fromEntries(builtLinks.map((b) => [b.key, b.url]));
       const filteredTokenomics = Object.fromEntries(Object.entries(tokenomics).filter(([, v]) => v && v.trim()));
 
       // Upload each team member's photo (if any), then build the clean team array.
@@ -280,6 +255,7 @@ export default function CreatePage() {
       if (description) content.description = description;
       if (contractAddress) content.contractAddress = contractAddress;
       if (Object.keys(filteredBuyLinks).length > 0) content.buyLinks = filteredBuyLinks;
+      if (detectedChain === "evm" && buyChain) content.buyChain = buyChain;
       if (Object.keys(filteredTokenomics).length > 0) content.tokenomics = filteredTokenomics;
       if (avatarUrl) content.avatar = avatarUrl;
       if (bannerUrl) content.banner = bannerUrl;
@@ -379,63 +355,66 @@ export default function CreatePage() {
                 <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>Supports Solana, Ethereum, BSC, Base, Tron and more</div>
               </div>
               <div>
-                <label>Buy Links <span style={{ color: "#555" }}>(optional)</span></label>
+                <label>Buy Buttons <span style={{ color: "#555" }}>(optional)</span></label>
+                {!contractAddress && (
+                  <div style={{ fontSize: "11px", color: "#555", marginTop: "4px" }}>
+                    Enter your contract address above and we'll set up the right buy button automatically.
+                  </div>
+                )}
+
+                {detectedChain === "solana" && (
+                  <div style={{ fontSize: "11px", color: "#14F195", marginTop: "6px" }}>
+                    ✓ Solana detected — buyers get Raydium &amp; Pump.fun buttons, ready to go.
+                  </div>
+                )}
+
                 {detectedChain === "tron" && (
-                  <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "4px" }}>
-                    Buy buttons aren't available for Tron tokens yet — Tron DEXs don't support direct buy links. Buyers can still copy the contract address above to trade manually.
+                  <div style={{ fontSize: "11px", color: "#14F195", marginTop: "6px" }}>
+                    ✓ Tron detected — buyers get a one-tap button that copies your CA and opens SunSwap.
                   </div>
                 )}
-                {detectedChain === "other" && (
-                  <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "4px" }}>
-                    Buy buttons aren't available for this network yet — the DEXs we support don't list it.
-                  </div>
-                )}
-                <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "6px" }}>
-                  {BUY_LINK_TYPES.map(({ key, label, prefix, placeholder, hint, chains }) => {
-                    // A button is usable when no CA is typed yet (detectedChain null),
-                    // or when the detected chain is one this button supports.
-                    const usable = detectedChain === null || chains.includes(detectedChain);
-                    return (
-                      <div key={key} style={{ opacity: usable ? 1 : 0.4 }}>
-                        <div style={{ fontSize: "12px", color: usable ? "#14F195" : "#666", marginBottom: "4px", fontWeight: 600 }}>
-                          {label}{!usable && <span style={{ color: "#666", fontWeight: 400 }}> — not for this chain</span>}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", overflow: "hidden" }}>
-                          <span style={{
-                            padding: "10px 10px 10px 12px",
-                            fontSize: "10px",
-                            color: "#555",
-                            whiteSpace: "nowrap",
-                            borderRight: "1px solid rgba(255,255,255,0.08)",
-                            flexShrink: 0,
-                            maxWidth: "200px",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}>
-                            {prefix}
-                          </span>
-                          <input
-                            value={getBuyLinkDisplay(key)}
-                            onChange={(e) => { if (usable) setBuyLinkDisplay(key, e.target.value); }}
-                            readOnly={!usable}
-                            placeholder={placeholder}
-                            style={{
-                              border: "none",
-                              background: "transparent",
-                              flex: 1,
-                              padding: "10px 12px",
-                              fontSize: "13px",
-                              outline: "none",
-                              color: "#fff",
-                              cursor: usable ? "text" : "not-allowed",
-                            }}
-                          />
-                        </div>
-                        <div style={{ fontSize: "11px", color: "#555", marginTop: "4px", paddingLeft: "2px" }}>{hint}</div>
+
+                {detectedChain === "evm" && (
+                  <div style={{ marginTop: "8px" }}>
+                    <div style={{ fontSize: "12px", color: "#aaa", marginBottom: "6px" }}>
+                      Which chain is your token on? We'll build the right buy button for it.
+                    </div>
+                    <select
+                      value={buyChain}
+                      onChange={(e) => setBuyChain(e.target.value)}
+                      style={{ width: "100%", padding: "10px 12px", fontSize: "13px" }}
+                    >
+                      <option value="">Select your chain…</option>
+                      {EVM_CHAINS.map((c) => (
+                        <option key={c.id} value={c.id}>{c.label}</option>
+                      ))}
+                    </select>
+                    {buyChain && (
+                      <div style={{ fontSize: "11px", color: "#14F195", marginTop: "6px" }}>
+                        ✓ {EVM_CHAINS.find((c) => c.id === buyChain)?.label} — buyers get a{" "}
+                        {EVM_CHAINS.find((c) => c.id === buyChain)?.dex === "pancakeswap" ? "PancakeSwap" : "Uniswap"} button, ready to go.
                       </div>
-                    );
-                  })}
-                </div>
+                    )}
+                  </div>
+                )}
+
+                {detectedChain === "other" && (
+                  <div style={{ fontSize: "11px", color: "#ffcc44", marginTop: "6px" }}>
+                    Buy buttons aren't available for this network yet — the DEXs we support don't list it. Buyers can still copy your contract address to trade manually.
+                  </div>
+                )}
+
+                {/* Live preview of the actual buttons buyers will see */}
+                {buildBuyLinks(detectedChain, contractAddress, buyChain).length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "10px" }}>
+                    {buildBuyLinks(detectedChain, contractAddress, buyChain).map((b) => (
+                      <div key={b.key} style={{ display: "flex", alignItems: "center", gap: "8px", background: "rgba(20,241,149,0.08)", border: "1px solid rgba(20,241,149,0.25)", borderRadius: "8px", padding: "10px 12px" }}>
+                        <span style={{ fontSize: "13px", color: "#14F195", fontWeight: 600 }}>{b.label}</span>
+                        <span style={{ fontSize: "10px", color: "#555" }}>▸ buyers land here</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div>
                 <label>Tokenomics <span style={{ color: "#555" }}>(optional)</span></label>
@@ -638,7 +617,7 @@ export default function CreatePage() {
           <div>
             <div style={{ fontSize: "13px", color: "#888", marginBottom: "10px" }}>Preview</div>
             <PagePreview
-              data={{ name, description, avatar, banner, socials, contractAddress, buyLinks, tokenomics, showTicker, showChart, countdownDate, countdownLabel, aboutText, team, roadmap }}
+              data={{ name, description, avatar, banner, socials, contractAddress, buyChain, tokenomics, showTicker, showChart, countdownDate, countdownLabel, aboutText, team, roadmap }}
               templateId={templateId}
             />
           </div>
