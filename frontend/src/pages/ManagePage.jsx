@@ -201,7 +201,9 @@ export default function ManagePage() {
       content.socials = Object.fromEntries(Object.entries(editSocials).filter(([, v]) => v && v.trim()));
       if (editContractAddress) content.showTicker = editShowTicker;
       if (editContractAddress) content.showChart = editShowChart;
-      if (!editShowBuyButtons) content.hideBuyButtons = true;
+      // Always set this explicitly (true when hidden, false when shown) so turning
+      // buttons back ON actually clears a previously-saved hidden state.
+      content.hideBuyButtons = !editShowBuyButtons;
       if (editCountdownDate) content.countdown = { date: editCountdownDate, label: editCountdownLabel || "Countdown" };
       if (filteredRoadmap.length > 0) content.roadmap = filteredRoadmap;
 
