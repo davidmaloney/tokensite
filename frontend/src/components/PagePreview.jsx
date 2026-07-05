@@ -84,6 +84,8 @@ function buildContent(data) {
 
   if (data.contractAddress && data.showTicker) content.showTicker = true;
   if (data.contractAddress && data.showChart) content.showChart = true;
+  // Buy buttons show by default; only store the flag when the creator hides them.
+  if (data.hideBuyButtons) content.hideBuyButtons = true;
 
   if (data.countdownDate) content.countdown = { date: data.countdownDate, label: data.countdownLabel || "Countdown" };
 
