@@ -85,6 +85,7 @@ export default function ManagePage() {
 
   const [editShowTicker, setEditShowTicker] = useState(false);
   const [editShowChart, setEditShowChart] = useState(false);
+  const [editShowBuyButtons, setEditShowBuyButtons] = useState(true); // buy buttons on by default
   const [editCountdownDate, setEditCountdownDate] = useState("");
   const [editCountdownLabel, setEditCountdownLabel] = useState("");
   const [editAboutText, setEditAboutText] = useState("");
@@ -112,6 +113,7 @@ export default function ManagePage() {
       setEditTemplateId(p.template_id || "template_1");
       setEditShowTicker(c.showTicker || false);
       setEditShowChart(c.showChart || false);
+      setEditShowBuyButtons(!c.hideBuyButtons);
       setEditCountdownDate(c.countdown?.date ? c.countdown.date.slice(0, 16) : "");
       setEditCountdownLabel(c.countdown?.label || "");
       setEditAboutText(c.about?.text || "");
@@ -199,6 +201,7 @@ export default function ManagePage() {
       content.socials = Object.fromEntries(Object.entries(editSocials).filter(([, v]) => v && v.trim()));
       if (editContractAddress) content.showTicker = editShowTicker;
       if (editContractAddress) content.showChart = editShowChart;
+      if (!editShowBuyButtons) content.hideBuyButtons = true;
       if (editCountdownDate) content.countdown = { date: editCountdownDate, label: editCountdownLabel || "Countdown" };
       if (filteredRoadmap.length > 0) content.roadmap = filteredRoadmap;
 
@@ -480,6 +483,10 @@ export default function ManagePage() {
                   <input type="checkbox" checked={editShowChart} onChange={(e) => setEditShowChart(e.target.checked)} style={{ width: "auto" }} />
                   <span style={{ fontSize: "14px" }}>Show price chart</span>
                 </label>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                  <input type="checkbox" checked={editShowBuyButtons} onChange={(e) => setEditShowBuyButtons(e.target.checked)} style={{ width: "auto" }} />
+                  <span style={{ fontSize: "14px" }}>Show buy buttons</span>
+                </label>
               </div>
             )}
 
@@ -576,7 +583,7 @@ export default function ManagePage() {
           data={{
             name: editName, description: editDescription, avatar: editAvatar, banner: editBanner,
             socials: editSocials, contractAddress: editContractAddress, buyChain: editBuyChain,
-            tokenomics: editTokenomics, showTicker: editShowTicker, showChart: editShowChart,
+            tokenomics: editTokenomics, showTicker: editShowTicker, showChart: editShowChart, hideBuyButtons: !editShowBuyButtons,
             countdownDate: editCountdownDate, countdownLabel: editCountdownLabel,
             aboutText: editAboutText, team: editTeam, roadmap: editRoadmap,
           }}
