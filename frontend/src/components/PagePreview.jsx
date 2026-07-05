@@ -16,6 +16,49 @@ import React, { useEffect, useRef, useState } from "react";
 // with no extra work.
 // ============================================================================
 
+// Buy-link builder — identical logic to CreatePage / ManagePage / renderer, so the
+// preview shows exactly the buttons the live page will. Buy links are derived from
+// the CA + the creator's chain pick (buyChain), never edited by hand.
+const EVM_CHAINS = [
+  { id: "ethereum", label: "Ethereum", dex: "uniswap",     uniChain: "mainnet"  },
+  { id: "bsc",      label: "BNB Chain (BSC)", dex: "pancakeswap"                 },
+  { id: "base",     label: "Base",     dex: "uniswap",     uniChain: "base"     },
+  { id: "arbitrum", label: "Arbitrum", dex: "uniswap",     uniChain: "arbitrum" },
+  { id: "polygon",  label: "Polygon",  dex: "uniswap",     uniChain: "polygon"  },
+];
+
+function detectChain(ca) {
+  const a = (ca || "").trim();
+  if (!a) return null;
+  if (/^0x[0-9a-fA-F]{40}$/.test(a)) return "evm";
+  if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a)) return "tron";
+  if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a)) return "solana";
+  return "other";
+}
+
+function buildBuyLinks(family, ca, evmChain) {
+  const a = (ca || "").trim();
+  if (!a) return [];
+  if (family === "solana") {
+    return [
+      { key: "raydium", url: "https://raydium.io/swap/?inputMint=sol&outputMint=" + a },
+      { key: "pumpfun", url: "https://pump.fun/coin/" + a },
+    ];
+  }
+  // Tron's button is rendered by the backend from the CA directly, so nothing to add here.
+  if (family === "evm") {
+    const chain = EVM_CHAINS.find((c) => c.id === evmChain);
+    if (!chain) return [];
+    if (chain.dex === "uniswap") {
+      return [{ key: "uniswap", url: "https://app.uniswap.org/swap?chain=" + chain.uniChain + "&inputCurrency=ETH&outputCurrency=" + a }];
+    }
+    if (chain.dex === "pancakeswap") {
+      return [{ key: "pancakeswap", url: "https://pancakeswap.finance/swap?chain=bsc&outputCurrency=" + a }];
+    }
+  }
+  return [];
+}
+
 // Map the in-progress `data` prop into the `content` shape the renderer expects.
 function buildContent(data) {
   const content = {};
@@ -23,8 +66,9 @@ function buildContent(data) {
   if (data.description) content.description = data.description;
   if (data.contractAddress) content.contractAddress = data.contractAddress;
 
-  // Buy links + tokenomics: keep only filled entries.
-  const buyLinks = Object.fromEntries(Object.entries(data.buyLinks || {}).filter(([, v]) => v && String(v).trim()));
+  // Buy links: build from the CA + chosen chain, exactly like the live page.
+  const builtLinks = buildBuyLinks(detectChain(data.contractAddress), data.contractAddress, data.buyChain);
+  const buyLinks = Object.fromEntries(builtLinks.map((b) => [b.key, b.url]));
   if (Object.keys(buyLinks).length) content.buyLinks = buyLinks;
 
   const tokenomics = Object.fromEntries(Object.entries(data.tokenomics || {}).filter(([, v]) => v && String(v).trim()));
@@ -52,7 +96,7 @@ function buildContent(data) {
       if (photoSrc) member.photo = photoSrc;
       return member;
     });
-  if ((data.aboutText && data.aboutText.trim()) || team.length > 0) {
+  if ((data.aboutText && data.aboutText.trim()) || team.length) {
     content.about = { text: data.aboutText || "", team };
   }
 
@@ -62,19 +106,15 @@ function buildContent(data) {
   return content;
 }
 
-// `debounceMs` controls how long we wait after a change before re-rendering the
-// preview. Create flow uses the default (snappy); the edit page passes a longer
-// value since users scroll to view it, so a gentler delay saves needless renders.
 export default function PagePreview({ data, templateId, debounceMs = 500 }) {
   const [html, setHtml] = useState("");
-  const [loading, setLoading] = useState(true);
-  const debounceRef = useRef(null);
+  const [loading, setLoading] = useState(false);
+  const timerRef = useRef(null);
 
   useEffect(() => {
-    // Debounce so we don't hit the endpoint on every keystroke.
-    setLoading(true);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(async () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(async () => {
+      setLoading(true);
       try {
         const content = buildContent(data);
         const res = await fetch("/api/preview", {
@@ -85,39 +125,23 @@ export default function PagePreview({ data, templateId, debounceMs = 500 }) {
         const text = await res.text();
         setHtml(text);
       } catch {
-        setHtml("<!DOCTYPE html><html><body style=\"margin:0;background:#0d0d0d\"></body></html>");
+        setHtml("<p style='color:#888;font-family:sans-serif;padding:20px'>Preview unavailable.</p>");
       }
       setLoading(false);
     }, debounceMs);
-
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    return () => timerRef.current && clearTimeout(timerRef.current);
   }, [data, templateId, debounceMs]);
 
   return (
-    <div style={{
-      position: "relative",
-      borderRadius: "12px",
-      overflow: "hidden",
-      border: "1px solid #222",
-      background: "#0d0d0d",
-      maxWidth: "900px",
-      width: "100%",
-      height: "600px",
-    }}>
+    <div style={{ position: "relative", borderRadius: "12px", overflow: "hidden", border: "1px solid rgba(255,255,255,0.1)", background: "#0a0a0a", minHeight: "400px" }}>
       {loading && (
-        <div style={{
-          position: "absolute", top: "10px", right: "12px", zIndex: 2,
-          fontSize: "11px", color: "#888", background: "rgba(0,0,0,0.5)",
-          padding: "4px 10px", borderRadius: "12px", pointerEvents: "none",
-        }}>
-          updating…
-        </div>
+        <div style={{ position: "absolute", top: "10px", right: "12px", fontSize: "11px", color: "#666", zIndex: 2 }}>Updating…</div>
       )}
       <iframe
-        title="Page preview"
         srcDoc={html}
+        title="Page preview"
         sandbox="allow-scripts allow-same-origin"
-        style={{ width: "100%", height: "100%", border: "none", display: "block" }}
+        style={{ width: "100%", height: "600px", border: "none", display: "block" }}
       />
     </div>
   );
