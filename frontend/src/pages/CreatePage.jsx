@@ -129,7 +129,7 @@ export default function CreatePage() {
           <div style={{ fontSize: "36px", marginBottom: "16px" }}>🚀</div>
           <h2 style={{ fontSize: "20px", fontWeight: 800, marginBottom: "12px" }}>Before you build</h2>
           <p style={{ fontSize: "14px", color: "#888", lineHeight: 1.6, marginBottom: "20px" }}>
-            Everything's optional and fully editable while your page is a draft. Two things to know:
+            Everything's optional — fill in what you have now, add the rest whenever. Two things to know:
           </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "24px", textAlign: "left" }}>
             <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
@@ -141,7 +141,7 @@ export default function CreatePage() {
             <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
               <span style={{ color: "#9945FF", flexShrink: 0, marginTop: "2px" }}>●</span>
               <span style={{ fontSize: "13px", color: "#aaa", lineHeight: 1.5 }}>
-                <strong style={{ color: "#fff" }}>Your contract address &amp; buy button lock in when you go live</strong> — but don't worry, you still get <strong style={{ color: "#14F195" }}>3 edits to each</strong> afterwards, so you're never stuck.
+                <strong style={{ color: "#fff" }}>No token yet? No problem.</strong> Add your contract address now or later — there's no rush, and once your page is live you can still update it <strong style={{ color: "#14F195" }}>up to 3 times</strong>. Everything else you can edit freely, anytime.
               </span>
             </div>
           </div>
