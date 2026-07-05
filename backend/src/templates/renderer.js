@@ -86,10 +86,18 @@ function buildChartBlock(contractAddress) {
   if (!contractAddress) return "";
   let chartUrl;
   const addr = contractAddress.trim();
+  // Tron: DexScreener's embed needs a pair/pool address and won't resolve a bare
+  // Tron token CA, so the iframe just loads blank. Rather than show a broken empty
+  // chart, show a short honest note instead.
+  if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(addr)) {
+    return "<div class=\"card chart-card\">" +
+      "<div class=\"card-title\">Price Chart</div>" +
+      "<div style=\"padding:24px;text-align:center;color:#888;font-size:13px;\">" +
+      "Live chart isn't available for Tron tokens yet." +
+      "</div></div>";
+  }
   if (/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr)) {
     chartUrl = "https://dexscreener.com/solana/" + escapeHtml(addr) + "?embed=1&theme=dark&trades=0&info=0";
-  } else if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(addr)) {
-    chartUrl = "https://dexscreener.com/tron/" + escapeHtml(addr) + "?embed=1&theme=dark&trades=0&info=0";
   } else {
     chartUrl = "https://dexscreener.com/search?q=" + escapeHtml(addr) + "&embed=1&theme=dark";
   }
@@ -287,7 +295,9 @@ export function renderPage(page) {
 
   html = html.replace(/\{\{DESC_BLOCK\}\}/g, descHtml);
   html = html.replace(/\{\{CONTRACT_BLOCK\}\}/g, contractHtml);
-  html = html.replace(/\{\{BUY_BLOCK\}\}/g, buyHtml ? "<div class=\"buy-links\">" + buyHtml + "</div>" : "");
+  // Buy buttons show by default; the creator can switch them off (hideBuyButtons).
+  const showBuy = !content.hideBuyButtons;
+  html = html.replace(/\{\{BUY_BLOCK\}\}/g, (showBuy && buyHtml) ? "<div class=\"buy-links\">" + buyHtml + "</div>" : "");
   html = html.replace(/\{\{TOKENOMICS_BLOCK\}\}/g, tokenomicsHtml);
   html = html.replace(/\{\{SOCIAL_BLOCK\}\}/g, socialHtml ? "<div class=\"social-links\">" + socialHtml + "</div>" : "");
   html = html.replace(/\{\{TICKER_BLOCK\}\}/g, tickerHtml);
