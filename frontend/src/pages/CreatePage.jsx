@@ -96,6 +96,7 @@ export default function CreatePage() {
 
   const [showTicker, setShowTicker] = useState(false);
   const [showChart, setShowChart] = useState(false);
+  const [showBuyButtons, setShowBuyButtons] = useState(true); // buy buttons on by default
   const [countdownDate, setCountdownDate] = useState("");
   const [countdownLabel, setCountdownLabel] = useState("");
   const [aboutText, setAboutText] = useState("");
@@ -262,6 +263,7 @@ export default function CreatePage() {
       content.socials = Object.fromEntries(Object.entries(socials).filter(([, v]) => v && v.trim()));
       if (contractAddress && showTicker) content.showTicker = true;
       if (contractAddress && showChart) content.showChart = true;
+      if (!showBuyButtons) content.hideBuyButtons = true;
       if (countdownDate) content.countdown = { date: countdownDate, label: countdownLabel || "Countdown" };
       if (aboutText.trim() || filteredTeam.length > 0) content.about = { text: aboutText, team: filteredTeam };
       if (filteredRoadmap.length > 0) content.roadmap = filteredRoadmap;
@@ -485,6 +487,10 @@ export default function CreatePage() {
                       <input type="checkbox" checked={showChart} onChange={(e) => setShowChart(e.target.checked)} style={{ width: "auto" }} />
                       <span style={{ fontSize: "14px" }}>Show price chart</span>
                     </label>
+                    <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
+                      <input type="checkbox" checked={showBuyButtons} onChange={(e) => setShowBuyButtons(e.target.checked)} style={{ width: "auto" }} />
+                      <span style={{ fontSize: "14px" }}>Show buy buttons</span>
+                    </label>
                   </div>
                 </div>
               )}
@@ -590,6 +596,7 @@ export default function CreatePage() {
                 <div style={{ marginTop: "4px" }}>Template: <strong style={{ color: "#fff" }}>{templateId}</strong></div>
                 {showTicker && <div style={{ marginTop: "4px", color: "#14F195" }}>✓ Live price ticker enabled</div>}
                 {showChart && <div style={{ marginTop: "4px", color: "#14F195" }}>✓ Price chart enabled</div>}
+                {!showBuyButtons && <div style={{ marginTop: "4px", color: "#ffcc44" }}>• Buy buttons hidden</div>}
                 {countdownDate && <div style={{ marginTop: "4px", color: "#14F195" }}>✓ Countdown timer set</div>}
                 {(aboutText || team.filter(m => m.name).length > 0) && <div style={{ marginTop: "4px", color: "#14F195" }}>✓ About section added</div>}
                 {roadmap.filter(m => m.title).length > 0 && <div style={{ marginTop: "4px", color: "#14F195" }}>✓ Roadmap with {roadmap.filter(m => m.title).length} milestones</div>}
@@ -617,7 +624,7 @@ export default function CreatePage() {
           <div>
             <div style={{ fontSize: "13px", color: "#888", marginBottom: "10px" }}>Preview</div>
             <PagePreview
-              data={{ name, description, avatar, banner, socials, contractAddress, buyChain, tokenomics, showTicker, showChart, countdownDate, countdownLabel, aboutText, team, roadmap }}
+              data={{ name, description, avatar, banner, socials, contractAddress, buyChain, tokenomics, showTicker, showChart, hideBuyButtons: !showBuyButtons, countdownDate, countdownLabel, aboutText, team, roadmap }}
               templateId={templateId}
             />
           </div>
