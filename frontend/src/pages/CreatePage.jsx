@@ -485,7 +485,12 @@ export default function CreatePage() {
                     </label>
                     <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
                       <input type="checkbox" checked={showChart} onChange={(e) => setShowChart(e.target.checked)} style={{ width: "auto" }} />
-                      <span style={{ fontSize: "14px" }}>Show price chart</span>
+                      <span style={{ fontSize: "14px" }}>
+                        Show price chart
+                        {detectedChain === "tron" && (
+                          <span style={{ color: "#ffcc44", fontSize: "12px" }}> (not available for Tron tokens yet)</span>
+                        )}
+                      </span>
                     </label>
                     <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
                       <input type="checkbox" checked={showBuyButtons} onChange={(e) => setShowBuyButtons(e.target.checked)} style={{ width: "auto" }} />
