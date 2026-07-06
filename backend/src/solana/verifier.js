@@ -29,7 +29,7 @@ async function withRetry(fn, attempts = RPC_RETRY_ATTEMPTS, delayMs = RPC_RETRY_
 
 async function verifySpecificTransaction({ conn, txHash, treasuryWallet, expectedAmountSol, walletAddress }) {
   const expectedLamports = Math.round(expectedAmountSol * LAMPORTS_PER_SOL);
-  const toleranceLamports = Math.round(expectedLamports * 0.01);
+  const toleranceLamports = Math.round(expectedLamports * 0.02);
 
   // Retry until transaction is found or max attempts reached
   let tx = null;
@@ -107,7 +107,7 @@ export async function verifyPayment({ treasuryWallet, expectedAmountSol, walletA
     );
 
     const expectedLamports = Math.round(expectedAmountSol * LAMPORTS_PER_SOL);
-    const toleranceLamports = Math.round(expectedLamports * 0.01);
+    const toleranceLamports = Math.round(expectedLamports * 0.02);
 
     for (const sig of signatures) {
       try {
