@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{TOKEN_NAME}}</title>
+  {{OG_TAGS}}
+  {{CSS}}
+</head>
+<body style="opacity:0;transition:opacity 0.5s ease;">
+
+  <canvas id="bg-loyal" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
+
+  <div id="intro-overlay">
+    <div id="intro-card">
+      <div id="intro-avatar-wrap"></div>
+      <div id="intro-name"></div>
+    </div>
+  </div>
+
+  <div class="page-wrapper">
+    <div class="banner-container">
+      {{BANNER_BLOCK}}
+    </div>
+    <div class="content-container">
+      <div class="header-row">
+        <div class="avatar-container">
+          {{AVATAR_BLOCK}}
+        </div>
+        <div class="header-main">
+          <div class="name-area">
+            {{NAME_BLOCK}}
+            <div class="slug-tag">{{SLUG}}.shillit.fun</div>
+          </div>
+          <div class="header-socials">
+            {{SOCIAL_BLOCK}}
+          </div>
+        </div>
+      </div>
+      {{DESC_BLOCK}}
+      {{CONTRACT_BLOCK}}
+      {{BUY_BLOCK}}
+      <div class="cards-grid">
+        {{TOKENOMICS_BLOCK}}
+        {{TICKER_BLOCK}}
+        {{COUNTDOWN_BLOCK}}
+        {{ABOUT_BLOCK}}
+        {{ROADMAP_BLOCK}}
+      </div>
+      {{CHART_BLOCK}}
+    </div>
+    <div style="text-align:center;padding:24px 0 16px;font-size:11px;">
+      <a href="https://report.shillit.fun" target="_blank" rel="noreferrer" style="color:#ffffff;text-decoration:none;">Report →</a>
+    </div>
+  </div>
+
+  <script>
+    // ===== Signature "Loyal" background — drifting bones, paw stamps, a bouncing ball =====
+    // Full-screen canvas behind everything (z-index:-1). Purely decorative. Original art
+    // (geometric bones/paws) — evokes ANY dog coin, no branded IP. Warm caramel palette.
+    (function() {
+      var canvas = document.getElementById('bg-loyal');
+      if (!canvas || !canvas.getContext) return;
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var ctx = canvas.getContext('2d');
+      var w, h, dpr, bones, paws, ball, raf, running = true, t = 0;
+      var HONEY = '230,161,90';
+      var CREAM = '255,223,158';
+
+      function size() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        w = window.innerWidth; h = window.innerHeight;
+        canvas.width = w * dpr; canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      // Draw a single bone shape centred at (0,0), length L, rotated by the caller.
+      function bonePath(L) {
+        var r = L * 0.20;          // knob radius
+        var hw = L * 0.5;          // half length
+        ctx.beginPath();
+        // four knobs (two each end) + connecting bar via arcs
+        ctx.arc(-hw, -r * 0.7, r, 0, Math.PI * 2);
+        ctx.arc(-hw,  r * 0.7, r, 0, Math.PI * 2);
+        ctx.arc( hw, -r * 0.7, r, 0, Math.PI * 2);
+        ctx.arc( hw,  r * 0.7, r, 0, Math.PI * 2);
+        ctx.rect(-hw, -r * 0.75, L, r * 1.5);
+      }
+
+      // Draw a paw print (pad + 4 toes) centred at (0,0), size S.
+      function pawPath(S) {
+        ctx.beginPath();
+        ctx.ellipse(0, S * 0.28, S * 0.5, S * 0.42, 0, 0, Math.PI * 2);   // main pad
+        ctx.ellipse(-S * 0.42, -S * 0.28, S * 0.19, S * 0.24, 0, 0, Math.PI * 2);
+        ctx.ellipse(-S * 0.15, -S * 0.5, S * 0.18, S * 0.24, 0, 0, Math.PI * 2);
+        ctx.ellipse( S * 0.15, -S * 0.5, S * 0.18, S * 0.24, 0, 0, Math.PI * 2);
+        ctx.ellipse( S * 0.42, -S * 0.28, S * 0.19, S * 0.24, 0, 0, Math.PI * 2);
+      }
+
+      function build() {
+        var mobile = w < 700;
+        // Drifting bones (rotate + float upward slowly).
+        var boneCount = mobile ? 7 : 14;
+        bones = [];
+        for (var i = 0; i < boneCount; i++) {
+          bones.push({
+            x: Math.random() * w,
+            y: Math.random() * h,
+            L: (mobile ? 26 : 34) + Math.random() * (mobile ? 20 : 34),
+            rot: Math.random() * Math.PI,
+            vr: (Math.random() - 0.5) * 0.006,
+            vy: -(0.12 + Math.random() * 0.30),
+            vx: (Math.random() - 0.5) * 0.20,
+            a: 0.05 + Math.random() * 0.07,
+            cream: Math.random() < 0.5
+          });
+        }
+        // Paw stamps that fade in then out at random spots (like footprints appearing).
+        paws = [];
+        var pawCount = mobile ? 5 : 10;
+        for (var j = 0; j < pawCount; j++) {
+          paws.push(newPaw(Math.random() * 1));
+        }
+        // One playful bouncing ball arcing across the screen.
+        ball = { x: -60, y: h * 0.7, vx: 1.7 + Math.random() * 0.6, phase: Math.random() * Math.PI * 2, r: mobile ? 9 : 12 };
+      }
+
+      function newPaw(startLife) {
+        return {
+          x: Math.random() * w,
+          y: Math.random() * h,
+          S: 16 + Math.random() * 20,
+          rot: (Math.random() - 0.5) * 0.8,
+          life: startLife,               // 0..1 fade in, 1..2 hold, 2..3 fade out
+          sp: 0.004 + Math.random() * 0.005,
+          cream: Math.random() < 0.4
+        };
+      }
+
+      function draw() {
+        if (!running) return;
+        t += 0.01;
+        ctx.clearRect(0, 0, w, h);
+
+        // Soft warm glow blobs drifting (gives depth, like sunlight on fur).
+        var gx = w * (0.28 + 0.08 * Math.sin(t * 0.5));
+        var gy = h * (0.26 + 0.06 * Math.cos(t * 0.45));
+        var grd = ctx.createRadialGradient(gx, gy, 0, gx, gy, Math.max(w, h) * 0.5);
+        grd.addColorStop(0, 'rgba(' + HONEY + ',0.16)');
+        grd.addColorStop(1, 'rgba(' + HONEY + ',0)');
+        ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h);
+
+        var gx2 = w * (0.76 - 0.08 * Math.cos(t * 0.4));
+        var gy2 = h * (0.78 - 0.05 * Math.sin(t * 0.5));
+        var grd2 = ctx.createRadialGradient(gx2, gy2, 0, gx2, gy2, Math.max(w, h) * 0.46);
+        grd2.addColorStop(0, 'rgba(' + CREAM + ',0.10)');
+        grd2.addColorStop(1, 'rgba(' + CREAM + ',0)');
+        ctx.fillStyle = grd2; ctx.fillRect(0, 0, w, h);
+
+        // Paw stamps.
+        for (var p = 0; p < paws.length; p++) {
+          var pw = paws[p];
+          pw.life += pw.sp;
+          if (pw.life > 3) { paws[p] = newPaw(0); continue; }
+          var alpha;
+          if (pw.life < 1) alpha = pw.life;                 // fade in
+          else if (pw.life < 2) alpha = 1;                  // hold
+          else alpha = 3 - pw.life;                         // fade out
+          ctx.save();
+          ctx.translate(pw.x, pw.y);
+          ctx.rotate(pw.rot);
+          pawPath(pw.S);
+          ctx.fillStyle = 'rgba(' + (pw.cream ? CREAM : HONEY) + ',' + (alpha * 0.14) + ')';
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Drifting bones.
+        for (var i = 0; i < bones.length; i++) {
+          var b = bones[i];
+          b.x += b.vx; b.y += b.vy; b.rot += b.vr;
+          if (b.y < -60) { b.y = h + 40; b.x = Math.random() * w; }
+          if (b.x < -60) b.x = w + 40; else if (b.x > w + 60) b.x = -40;
+          ctx.save();
+          ctx.translate(b.x, b.y);
+          ctx.rotate(b.rot);
+          bonePath(b.L);
+          ctx.fillStyle = 'rgba(' + (b.cream ? CREAM : HONEY) + ',' + b.a + ')';
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // Bouncing ball (arcs across, bobs with a sine, resets off-screen).
+        ball.x += ball.vx;
+        if (ball.x > w + 60) { ball.x = -60; ball.y = h * (0.55 + Math.random() * 0.25); }
+        var bob = Math.abs(Math.sin(t * 2 + ball.phase)) * (h * 0.10);
+        var by = ball.y - bob;
+        var bg = ctx.createRadialGradient(ball.x - ball.r * 0.3, by - ball.r * 0.3, ball.r * 0.2, ball.x, by, ball.r);
+        bg.addColorStop(0, 'rgba(' + CREAM + ',0.55)');
+        bg.addColorStop(1, 'rgba(' + HONEY + ',0.15)');
+        ctx.beginPath();
+        ctx.arc(ball.x, by, ball.r, 0, Math.PI * 2);
+        ctx.fillStyle = bg;
+        ctx.fill();
+
+        raf = requestAnimationFrame(draw);
+      }
+
+      size(); build(); draw();
+      var rt;
+      window.addEventListener('resize', function() {
+        clearTimeout(rt);
+        rt = setTimeout(function() { size(); build(); }, 200);
+      });
+      document.addEventListener('visibilitychange', function() {
+        if (document.hidden) { running = false; if (raf) cancelAnimationFrame(raf); }
+        else if (!running) { running = true; draw(); }
+      });
+    })();
+
+    // Body fade in
+    document.body.style.opacity = '0';
+
+    // Intro overlay (morphs the avatar + name on load)
+    (function() {
+      var overlay = document.getElementById('intro-overlay');
+      var card = document.getElementById('intro-card');
+      var avatarWrap = document.getElementById('intro-avatar-wrap');
+      var introName = document.getElementById('intro-name');
+
+      var avatarImg = document.querySelector('.avatar-img');
+      var avatarPlaceholder = document.querySelector('.avatar-placeholder');
+      var tokenName = document.querySelector('.token-name');
+
+      if (avatarImg) {
+        var img = document.createElement('img');
+        img.src = avatarImg.src;
+        img.style.cssText = 'width:220px;height:220px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,223,158,0.3);box-shadow:0 0 80px rgba(0,0,0,0.5);';
+        avatarWrap.appendChild(img);
+      } else if (avatarPlaceholder) {
+        var ph = document.createElement('div');
+        ph.textContent = avatarPlaceholder.textContent;
+        ph.style.cssText = 'width:220px;height:220px;border-radius:50%;background:rgba(255,223,158,0.1);border:4px solid rgba(255,223,158,0.3);display:flex;align-items:center;justify-content:center;font-size:80px;';
+        avatarWrap.appendChild(ph);
+      }
+
+      if (tokenName) {
+        introName.textContent = tokenName.textContent;
+        var slugTag = document.querySelector('.slug-tag');
+        if (slugTag) {
+          introName.style.color = window.getComputedStyle(slugTag).color;
+        }
+      }
+
+      setTimeout(function() { document.body.style.opacity = '1'; }, 50);
+      setTimeout(function() { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }, 150);
+      setTimeout(function() {
+        overlay.style.opacity = '0';
+        setTimeout(function() { overlay.style.display = 'none'; }, 1000);
+      }, 1800);
+    })();
+
+    // Scroll fade-in for cards
+    (function() {
+      var cards = document.querySelectorAll('.card, .tokenomics-block, .description-block, .contract-block, .buy-links, .header-row');
+      cards.forEach(function(el) {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(24px)';
+        el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      });
+
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.style.opacity = '1';
+            entry.target.style.transform = 'translateY(0)';
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      setTimeout(function() {
+        cards.forEach(function(el) { observer.observe(el); });
+      }, 2000);
+    })();
+
+    // Countdown timers
+    document.querySelectorAll('.countdown-card').forEach(function(card) {
+      var target = parseInt(card.getAttribute('data-target'));
+      if (!target) return;
+      function update() {
+        var diff = target - Date.now();
+        if (diff <= 0) {
+          card.querySelector('.countdown-grid').innerHTML = '<div class="countdown-launched">Launched!</div>';
+          return;
+        }
+        var d = Math.floor(diff / 86400000);
+        var h = Math.floor((diff % 86400000) / 3600000);
+        var m = Math.floor((diff % 3600000) / 60000);
+        var s = Math.floor((diff % 60000) / 1000);
+        var dn = card.querySelector('.cd-days'); if (dn) dn.textContent = d;
+        var hn = card.querySelector('.cd-hours'); if (hn) hn.textContent = String(h).padStart(2,'0');
+        var mn = card.querySelector('.cd-mins'); if (mn) mn.textContent = String(m).padStart(2,'0');
+        var sn = card.querySelector('.cd-secs'); if (sn) sn.textContent = String(s).padStart(2,'0');
+      }
+      update();
+      setInterval(update, 1000);
+    });
+
+    // Price ticker
+    document.querySelectorAll('.ticker-card').forEach(function(card) {
+      var ca = card.getAttribute('data-ca');
+      if (!ca) return;
+      var content = card.querySelector('.ticker-content');
+      if (!content) return;
+      fetch('https://api.dexscreener.com/latest/dex/tokens/' + ca)
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          var pairs = d && d.pairs && d.pairs.length > 0 ? d.pairs : null;
+          if (!pairs) { content.innerHTML = '<div class="ticker-na">No price data found</div>'; return; }
+          var p = pairs[0];
+          var price = p.priceUsd ? '$' + parseFloat(p.priceUsd).toFixed(8) : 'N/A';
+          var change = p.priceChange && p.priceChange.h24 !== undefined ? p.priceChange.h24 : null;
+          var changeHtml = change !== null ? '<span class="ticker-change ' + (change >= 0 ? 'positive' : 'negative') + '">' + (change >= 0 ? '+' : '') + parseFloat(change).toFixed(2) + '%</span>' : '';
+          var mcap = p.marketCap ? '$' + Number(p.marketCap).toLocaleString() : 'N/A';
+          var vol = p.volume && p.volume.h24 ? '$' + Number(p.volume.h24).toLocaleString() : 'N/A';
+          content.innerHTML = '<div class="ticker-price">' + price + ' ' + changeHtml + '</div><div class="ticker-stats"><span>MCap: ' + mcap + '</span><span>Vol 24h: ' + vol + '</span></div>';
+        })
+        .catch(function() { content.innerHTML = '<div class="ticker-na">Price data unavailable</div>'; });
+    });
+  </script>
+</body>
+</html>
