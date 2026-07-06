@@ -2,8 +2,28 @@ import React from "react";
 import { Link } from "react-router-dom";
 
 export default function PageCard({ page, domain }) {
-  const isActive = page.status === "active";
-  const expires = page.expires_at ? new Date(page.expires_at * 1000).toLocaleDateString() : "—";
+  const now = Math.floor(Date.now() / 1000);
+  // A page is only truly live if it's active AND not past its expiry.
+  const isActive = page.status === "active" && page.expires_at && page.expires_at > now;
+
+  // Work out how much time is left, so we can show "4 days left" and warn when low.
+  let timeLeftLabel = "—";
+  let daysLeft = null;
+  if (page.expires_at && page.expires_at > now) {
+    const secondsLeft = page.expires_at - now;
+    daysLeft = Math.ceil(secondsLeft / 86400);
+    if (secondsLeft < 86400) {
+      const hoursLeft = Math.max(1, Math.ceil(secondsLeft / 3600));
+      timeLeftLabel = hoursLeft + " hour" + (hoursLeft === 1 ? "" : "s") + " left";
+    } else {
+      timeLeftLabel = daysLeft + " day" + (daysLeft === 1 ? "" : "s") + " left";
+    }
+  } else if (page.expires_at && page.expires_at <= now) {
+    timeLeftLabel = "Expired";
+  }
+
+  // "Expiring soon" = 3 days or less remaining. Used to colour the card's warning.
+  const expiringSoon = daysLeft !== null && daysLeft <= 3;
 
   return (
     <div
@@ -39,8 +59,33 @@ export default function PageCard({ page, domain }) {
       </div>
 
       <div style={{ fontSize: "12px", color: "#666" }}>
-        Template: {page.template_id} &nbsp;·&nbsp; Expires: {expires}
+        Template: {page.template_id}
       </div>
+
+      {/* Time-left line: green normally, amber when 3 days or less remain, so the
+          owner sees it's running low BEFORE the page expires and is deleted. */}
+      {isActive && (
+        <div
+          style={{
+            fontSize: "12px",
+            fontWeight: 600,
+            color: expiringSoon ? "#ffcc44" : "#14F195",
+          }}
+        >
+          {expiringSoon ? "⚠️ " : ""}{timeLeftLabel}
+          {expiringSoon && (
+            <span style={{ color: "#888", fontWeight: 400 }}>
+              {" "}— top up soon to avoid deletion
+            </span>
+          )}
+        </div>
+      )}
+
+      {!isActive && (
+        <div style={{ fontSize: "12px", fontWeight: 600, color: "#ff6464" }}>
+          {timeLeftLabel === "Expired" ? "Expired — reactivate to bring it back" : "Not active"}
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: "8px" }}>
         <Link to={`/manage/${page.id}`} style={{ flex: 1 }}>
