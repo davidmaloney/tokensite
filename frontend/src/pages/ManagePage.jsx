@@ -483,7 +483,12 @@ export default function ManagePage() {
                 </label>
                 <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
                   <input type="checkbox" checked={editShowChart} onChange={(e) => setEditShowChart(e.target.checked)} style={{ width: "auto" }} />
-                  <span style={{ fontSize: "14px" }}>Show price chart</span>
+                  <span style={{ fontSize: "14px" }}>
+                    Show price chart
+                    {detectedChain === "tron" && (
+                      <span style={{ color: "#ffcc44", fontSize: "12px" }}> (not available for Tron tokens yet)</span>
+                    )}
+                  </span>
                 </label>
                 <label style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}>
                   <input type="checkbox" checked={editShowBuyButtons} onChange={(e) => setEditShowBuyButtons(e.target.checked)} style={{ width: "auto" }} />
