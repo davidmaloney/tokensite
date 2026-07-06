@@ -5,7 +5,7 @@ export const PLANS = {
 
 export const SOFT_DELETE_AFTER_EXPIRY_DAYS = 0;
 export const HARD_DELETE_AFTER_SOFT_DELETE_DAYS = 0;
-export const UNPAID_PAGE_CLEANUP_HOURS = 1;
+export const UNPAID_PAGE_CLEANUP_HOURS = 3;
 
 export const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 export const RATE_LIMIT_MAX = 100;
