@@ -171,8 +171,8 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
           </div>
         ) : (
           <>
-            <p style={{ fontSize: "13px", color: "#888", marginBottom: "20px" }}>
-              <strong style={{ color: "#ffcc44" }}>⚠ Heads up:</strong> Your page stays live as long as it is topped up. Page deleted on expiry.
+            <p style={{ fontSize: "13px", color: "#888", marginBottom: "20px", lineHeight: 1.5 }}>
+              <strong style={{ color: "#ffcc44" }}>⚠ Heads up:</strong> Your page stays live only while it's topped up. When it expires it's <strong style={{ color: "#fff" }}>permanently deleted</strong> — the page and its slug are gone and can't be recovered. We'll flag it on your dashboard as the date gets close so you can top up in time.
             </p>
 
             {(status === "idle" || status === "initiating") && (
@@ -203,7 +203,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
                     Stays online while funded
                   </div>
                   <div style={{ fontSize: "11px", color: "#555" }}>
-                    Page deleted on expiry
+                    Permanently deleted on expiry — top up to keep it
                   </div>
                 </div>
 
@@ -226,7 +226,7 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
                 <button className="btn-primary"
                   style={{ width: "100%", fontSize: "15px", padding: "13px" }}
                   onClick={handlePayment} disabled={status === "initiating"}>
-                  {status === "initiating" ? "Processing…" : "Pay with Phantom →"}
+                  {status === "initiating" ? "Processing…" : "Pay with your wallet →"}
                 </button>
               </>
             )}
