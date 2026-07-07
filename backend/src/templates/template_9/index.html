@@ -9,7 +9,7 @@
 </head>
 <body style="opacity:0;transition:opacity 0.5s ease;">
 
-  <canvas id="bg-loyal" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
+  <canvas id="bg-woof" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
 
   <div id="intro-overlay">
     <div id="intro-card">
@@ -55,17 +55,21 @@
   </div>
 
   <script>
-    // ===== Signature "Loyal" background — drifting bones, paw stamps, a bouncing ball =====
-    // Full-screen canvas behind everything (z-index:-1). Purely decorative. Original art
-    // (geometric bones/paws) — evokes ANY dog coin, no branded IP. Warm caramel palette.
-    (function() {
-      var canvas = document.getElementById('bg-loyal');
+    // =========================================================================
+    // "WOOF" — art-directed twilight scene. Composed, layered, parallax.
+    // Layers (far -> near): moon + halo, drifting soft clouds, star/bokeh field,
+    // gracefully arcing well-shaded BONES + PAW prints, warm ember fireflies.
+    // Designed motion (eased arcs, parallax depth, gentle bob) — not a random field.
+    // =========================================================================
+    (function () {
+      var canvas = document.getElementById('bg-woof');
       if (!canvas || !canvas.getContext) return;
-      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       var ctx = canvas.getContext('2d');
-      var w, h, dpr, bones, paws, ball, raf, running = true, t = 0;
-      var HONEY = '230,161,90';
-      var CREAM = '255,223,158';
+      var w, h, dpr, t = 0, raf, running = true;
+      var stars = [], clouds = [], bones = [], paws = [], flies = [], moon;
+
+      var MOON = '207,224,255', EMBER = '255,182,77', EMBERS = '255,213,145', DUSK = '27,42,77';
 
       function size() {
         dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -74,259 +78,271 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
 
-      // Draw a single bone shape centred at (0,0), length L, rotated by the caller.
-      function bonePath(L) {
-        var r = L * 0.20;          // knob radius
-        var hw = L * 0.5;          // half length
+      // ---- rounded bone, properly shaded (gradient + soft rim) ----
+      function drawBone(x, y, L, rot, alpha, scale) {
+        var r = L * 0.19 * scale, hw = L * 0.5 * scale, bw = r * 1.35;
+        ctx.save();
+        ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = alpha;
+        var g = ctx.createLinearGradient(-hw, -r, hw, r);
+        g.addColorStop(0, 'rgba(' + MOON + ',0.95)');
+        g.addColorStop(0.5, 'rgba(235,242,255,0.75)');
+        g.addColorStop(1, 'rgba(159,182,230,0.6)');
+        ctx.fillStyle = g;
+        ctx.shadowColor = 'rgba(' + MOON + ',0.5)'; ctx.shadowBlur = 14 * scale;
+        // bar
         ctx.beginPath();
-        // four knobs (two each end) + connecting bar via arcs
-        ctx.arc(-hw, -r * 0.7, r, 0, Math.PI * 2);
-        ctx.arc(-hw,  r * 0.7, r, 0, Math.PI * 2);
-        ctx.arc( hw, -r * 0.7, r, 0, Math.PI * 2);
-        ctx.arc( hw,  r * 0.7, r, 0, Math.PI * 2);
-        ctx.rect(-hw, -r * 0.75, L, r * 1.5);
+        ctx.moveTo(-hw, -bw * 0.5); ctx.lineTo(hw, -bw * 0.5);
+        ctx.lineTo(hw, bw * 0.5); ctx.lineTo(-hw, bw * 0.5); ctx.closePath(); ctx.fill();
+        // four knobs
+        ctx.beginPath(); ctx.arc(-hw, -r * 0.72, r, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(-hw, r * 0.72, r, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(hw, -r * 0.72, r, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(hw, r * 0.72, r, 0, 7); ctx.fill();
+        // subtle top highlight
+        ctx.shadowBlur = 0; ctx.globalAlpha = alpha * 0.5;
+        ctx.fillStyle = 'rgba(255,255,255,0.6)';
+        ctx.beginPath(); ctx.ellipse(-hw * 0.1, -bw * 0.28, hw * 0.5, bw * 0.16, 0, 0, 7); ctx.fill();
+        ctx.restore();
       }
 
-      // Draw a paw print (pad + 4 toes) centred at (0,0), size S.
-      function pawPath(S) {
-        ctx.beginPath();
-        ctx.ellipse(0, S * 0.28, S * 0.5, S * 0.42, 0, 0, Math.PI * 2);   // main pad
-        ctx.ellipse(-S * 0.42, -S * 0.28, S * 0.19, S * 0.24, 0, 0, Math.PI * 2);
-        ctx.ellipse(-S * 0.15, -S * 0.5, S * 0.18, S * 0.24, 0, 0, Math.PI * 2);
-        ctx.ellipse( S * 0.15, -S * 0.5, S * 0.18, S * 0.24, 0, 0, Math.PI * 2);
-        ctx.ellipse( S * 0.42, -S * 0.28, S * 0.19, S * 0.24, 0, 0, Math.PI * 2);
+      // ---- paw print, soft-shaded ----
+      function drawPaw(x, y, S, rot, alpha) {
+        ctx.save();
+        ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = alpha;
+        var g = ctx.createRadialGradient(0, S * 0.1, S * 0.1, 0, S * 0.1, S);
+        g.addColorStop(0, 'rgba(' + EMBERS + ',0.5)');
+        g.addColorStop(1, 'rgba(' + EMBER + ',0.12)');
+        ctx.fillStyle = g;
+        ctx.shadowColor = 'rgba(' + EMBER + ',0.35)'; ctx.shadowBlur = 12;
+        ctx.beginPath(); ctx.ellipse(0, S * 0.32, S * 0.5, S * 0.42, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(-S * 0.44, -S * 0.26, S * 0.2, S * 0.26, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(-S * 0.16, -S * 0.52, S * 0.19, S * 0.26, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(S * 0.16, -S * 0.52, S * 0.19, S * 0.26, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(S * 0.44, -S * 0.26, S * 0.2, S * 0.26, 0, 0, 7); ctx.fill();
+        ctx.restore();
       }
 
       function build() {
         var mobile = w < 700;
-        // Drifting bones (rotate + float upward slowly).
-        var boneCount = mobile ? 7 : 14;
+        // Moon — fixed focal point upper-right, gives the scene an anchor.
+        moon = { x: w * 0.82, y: h * 0.2, r: mobile ? 46 : 74 };
+        // Far star / bokeh field (slow parallax).
+        stars = [];
+        var sc = mobile ? 46 : 90;
+        for (var i = 0; i < sc; i++) stars.push({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.7 + 0.3, tw: Math.random() * 6.28, sp: 0.6 + Math.random() * 1.4 });
+        // Mid soft clouds (very slow drift).
+        clouds = [];
+        var cc = mobile ? 3 : 5;
+        for (var c = 0; c < cc; c++) clouds.push({ x: Math.random() * w, y: h * (0.12 + Math.random() * 0.5), r: (mobile ? 120 : 200) + Math.random() * 160, sp: 0.06 + Math.random() * 0.08, a: 0.05 + Math.random() * 0.05 });
+        // Near bones — arc gracefully across on eased sine paths (parallax, foreground).
         bones = [];
-        for (var i = 0; i < boneCount; i++) {
-          bones.push({
-            x: Math.random() * w,
-            y: Math.random() * h,
-            L: (mobile ? 26 : 34) + Math.random() * (mobile ? 20 : 34),
-            rot: Math.random() * Math.PI,
-            vr: (Math.random() - 0.5) * 0.006,
-            vy: -(0.12 + Math.random() * 0.30),
-            vx: (Math.random() - 0.5) * 0.20,
-            a: 0.05 + Math.random() * 0.07,
-            cream: Math.random() < 0.5
-          });
-        }
-        // Paw stamps that fade in then out at random spots (like footprints appearing).
+        var bc = mobile ? 5 : 9;
+        for (var b = 0; b < bc; b++) bones.push(newBone(Math.random()));
+        // Paw prints appear/fade along a gentle trail.
         paws = [];
-        var pawCount = mobile ? 5 : 10;
-        for (var j = 0; j < pawCount; j++) {
-          paws.push(newPaw(Math.random() * 1));
-        }
-        // One playful bouncing ball arcing across the screen.
-        ball = { x: -60, y: h * 0.7, vx: 1.7 + Math.random() * 0.6, phase: Math.random() * Math.PI * 2, r: mobile ? 9 : 12 };
+        var pc = mobile ? 4 : 8;
+        for (var p = 0; p < pc; p++) paws.push(newPaw(Math.random() * 3));
+        // Warm ember fireflies (tiny glowing dots, gentle wander).
+        flies = [];
+        var fc = mobile ? 10 : 20;
+        for (var f = 0; f < fc; f++) flies.push({ x: Math.random() * w, y: Math.random() * h, ph: Math.random() * 6.28, sp: 0.3 + Math.random() * 0.5, r: Math.random() * 1.6 + 0.6, drift: Math.random() * 6.28 });
       }
 
-      function newPaw(startLife) {
+      function newBone(life) {
+        var mobile = w < 700;
         return {
-          x: Math.random() * w,
-          y: Math.random() * h,
-          S: 16 + Math.random() * 20,
-          rot: (Math.random() - 0.5) * 0.8,
-          life: startLife,               // 0..1 fade in, 1..2 hold, 2..3 fade out
-          sp: 0.004 + Math.random() * 0.005,
-          cream: Math.random() < 0.4
+          baseY: h * (0.15 + Math.random() * 0.7),
+          amp: 30 + Math.random() * 70,
+          L: (mobile ? 30 : 40) + Math.random() * (mobile ? 16 : 30),
+          scale: 0.6 + Math.random() * 0.7,
+          spin: (Math.random() - 0.5) * 0.5,
+          rot0: Math.random() * 6.28,
+          sp: 0.15 + Math.random() * 0.22,
+          life: life, phase: Math.random() * 6.28
         };
       }
+      function newPaw(life) {
+        return { x: Math.random() * w, y: Math.random() * h, S: 15 + Math.random() * 16, rot: (Math.random() - 0.5) * 0.9, life: life, sp: 0.004 + Math.random() * 0.004 };
+      }
 
-      function draw() {
+      function frame() {
         if (!running) return;
         t += 0.01;
         ctx.clearRect(0, 0, w, h);
 
-        // Soft warm glow blobs drifting (gives depth, like sunlight on fur).
-        var gx = w * (0.28 + 0.08 * Math.sin(t * 0.5));
-        var gy = h * (0.26 + 0.06 * Math.cos(t * 0.45));
-        var grd = ctx.createRadialGradient(gx, gy, 0, gx, gy, Math.max(w, h) * 0.5);
-        grd.addColorStop(0, 'rgba(' + HONEY + ',0.16)');
-        grd.addColorStop(1, 'rgba(' + HONEY + ',0)');
-        ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h);
+        // Vertical dusk wash for depth.
+        var sky = ctx.createLinearGradient(0, 0, 0, h);
+        sky.addColorStop(0, 'rgba(17,26,51,0.55)');
+        sky.addColorStop(0.6, 'rgba(10,15,30,0.2)');
+        sky.addColorStop(1, 'rgba(10,15,30,0.6)');
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
 
-        var gx2 = w * (0.76 - 0.08 * Math.cos(t * 0.4));
-        var gy2 = h * (0.78 - 0.05 * Math.sin(t * 0.5));
-        var grd2 = ctx.createRadialGradient(gx2, gy2, 0, gx2, gy2, Math.max(w, h) * 0.46);
-        grd2.addColorStop(0, 'rgba(' + CREAM + ',0.10)');
-        grd2.addColorStop(1, 'rgba(' + CREAM + ',0)');
-        ctx.fillStyle = grd2; ctx.fillRect(0, 0, w, h);
+        // Moon halo + moon.
+        var halo = ctx.createRadialGradient(moon.x, moon.y, 0, moon.x, moon.y, moon.r * 4.2);
+        halo.addColorStop(0, 'rgba(' + MOON + ',0.18)');
+        halo.addColorStop(1, 'rgba(' + MOON + ',0)');
+        ctx.fillStyle = halo; ctx.fillRect(0, 0, w, h);
+        var mg = ctx.createRadialGradient(moon.x - moon.r * 0.3, moon.y - moon.r * 0.3, moon.r * 0.2, moon.x, moon.y, moon.r);
+        mg.addColorStop(0, 'rgba(245,249,255,0.9)');
+        mg.addColorStop(1, 'rgba(' + MOON + ',0.35)');
+        ctx.fillStyle = mg;
+        ctx.beginPath(); ctx.arc(moon.x, moon.y, moon.r, 0, 7); ctx.fill();
 
-        // Paw stamps.
+        // Clouds (soft, slow).
+        for (var c = 0; c < clouds.length; c++) {
+          var cl = clouds[c]; cl.x += cl.sp;
+          if (cl.x - cl.r > w) cl.x = -cl.r;
+          var cg = ctx.createRadialGradient(cl.x, cl.y, 0, cl.x, cl.y, cl.r);
+          cg.addColorStop(0, 'rgba(' + DUSK + ',' + cl.a + ')');
+          cg.addColorStop(1, 'rgba(' + DUSK + ',0)');
+          ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(cl.x, cl.y, cl.r, 0, 7); ctx.fill();
+        }
+
+        // Stars twinkle (far parallax — drift very slightly with time).
+        for (var i = 0; i < stars.length; i++) {
+          var s = stars[i];
+          var tw = 0.4 + 0.6 * Math.abs(Math.sin(t * s.sp + s.tw));
+          ctx.globalAlpha = tw * 0.8;
+          ctx.fillStyle = 'rgba(' + MOON + ',1)';
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        // Paw trail (fade in/hold/out).
         for (var p = 0; p < paws.length; p++) {
-          var pw = paws[p];
-          pw.life += pw.sp;
+          var pw = paws[p]; pw.life += pw.sp;
           if (pw.life > 3) { paws[p] = newPaw(0); continue; }
-          var alpha;
-          if (pw.life < 1) alpha = pw.life;                 // fade in
-          else if (pw.life < 2) alpha = 1;                  // hold
-          else alpha = 3 - pw.life;                         // fade out
-          ctx.save();
-          ctx.translate(pw.x, pw.y);
-          ctx.rotate(pw.rot);
-          pawPath(pw.S);
-          ctx.fillStyle = 'rgba(' + (pw.cream ? CREAM : HONEY) + ',' + (alpha * 0.14) + ')';
-          ctx.fill();
+          var pa = pw.life < 1 ? pw.life : (pw.life < 2 ? 1 : 3 - pw.life);
+          drawPaw(pw.x, pw.y, pw.S, pw.rot, pa * 0.9);
+        }
+
+        // Bones arc across on eased sine paths (composed, parallax foreground).
+        for (var b = 0; b < bones.length; b++) {
+          var bo = bones[b]; bo.life += 0.0016 + bo.sp * 0.0016;
+          if (bo.life > 1) { bones[b] = newBone(0); continue; }
+          var x = -80 + bo.life * (w + 160);
+          var y = bo.baseY + Math.sin(bo.life * Math.PI * 2 + bo.phase) * bo.amp;
+          var rot = bo.rot0 + bo.life * 6.28 * bo.spin;
+          var edge = Math.min(1, Math.min(bo.life, 1 - bo.life) * 6); // fade at edges
+          drawBone(x, y, bo.L, rot, 0.85 * edge, bo.scale);
+        }
+
+        // Ember fireflies (warm, gentle wander + glow pulse).
+        for (var f = 0; f < flies.length; f++) {
+          var fl = flies[f];
+          fl.x += Math.cos(t * fl.sp + fl.drift) * 0.4;
+          fl.y += Math.sin(t * fl.sp * 0.8 + fl.ph) * 0.3;
+          var gl = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.6 + fl.ph));
+          ctx.save(); ctx.globalAlpha = gl * 0.8;
+          ctx.shadowColor = 'rgba(' + EMBER + ',0.9)'; ctx.shadowBlur = 10;
+          ctx.fillStyle = 'rgba(' + EMBERS + ',1)';
+          ctx.beginPath(); ctx.arc(fl.x, fl.y, fl.r, 0, 7); ctx.fill();
           ctx.restore();
         }
 
-        // Drifting bones.
-        for (var i = 0; i < bones.length; i++) {
-          var b = bones[i];
-          b.x += b.vx; b.y += b.vy; b.rot += b.vr;
-          if (b.y < -60) { b.y = h + 40; b.x = Math.random() * w; }
-          if (b.x < -60) b.x = w + 40; else if (b.x > w + 60) b.x = -40;
-          ctx.save();
-          ctx.translate(b.x, b.y);
-          ctx.rotate(b.rot);
-          bonePath(b.L);
-          ctx.fillStyle = 'rgba(' + (b.cream ? CREAM : HONEY) + ',' + b.a + ')';
-          ctx.fill();
-          ctx.restore();
-        }
-
-        // Bouncing ball (arcs across, bobs with a sine, resets off-screen).
-        ball.x += ball.vx;
-        if (ball.x > w + 60) { ball.x = -60; ball.y = h * (0.55 + Math.random() * 0.25); }
-        var bob = Math.abs(Math.sin(t * 2 + ball.phase)) * (h * 0.10);
-        var by = ball.y - bob;
-        var bg = ctx.createRadialGradient(ball.x - ball.r * 0.3, by - ball.r * 0.3, ball.r * 0.2, ball.x, by, ball.r);
-        bg.addColorStop(0, 'rgba(' + CREAM + ',0.55)');
-        bg.addColorStop(1, 'rgba(' + HONEY + ',0.15)');
-        ctx.beginPath();
-        ctx.arc(ball.x, by, ball.r, 0, Math.PI * 2);
-        ctx.fillStyle = bg;
-        ctx.fill();
-
-        raf = requestAnimationFrame(draw);
+        raf = requestAnimationFrame(frame);
       }
 
-      size(); build(); draw();
+      function start() { size(); build(); if (reduce) { drawStatic(); } else { frame(); } }
+      // Static, still-pretty fallback for reduced-motion users.
+      function drawStatic() {
+        t = 1; ctx.clearRect(0, 0, w, h);
+        var sky = ctx.createLinearGradient(0, 0, 0, h);
+        sky.addColorStop(0, 'rgba(17,26,51,0.55)'); sky.addColorStop(1, 'rgba(10,15,30,0.6)');
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+        var mg = ctx.createRadialGradient(moon.x, moon.y, moon.r * 0.2, moon.x, moon.y, moon.r);
+        mg.addColorStop(0, 'rgba(245,249,255,0.9)'); mg.addColorStop(1, 'rgba(' + MOON + ',0.35)');
+        ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(moon.x, moon.y, moon.r, 0, 7); ctx.fill();
+        for (var i = 0; i < stars.length; i++) { ctx.globalAlpha = 0.6; ctx.fillStyle = 'rgba(' + MOON + ',1)'; ctx.beginPath(); ctx.arc(stars[i].x, stars[i].y, stars[i].r, 0, 7); ctx.fill(); }
+        ctx.globalAlpha = 1;
+      }
+
+      start();
       var rt;
-      window.addEventListener('resize', function() {
-        clearTimeout(rt);
-        rt = setTimeout(function() { size(); build(); }, 200);
-      });
-      document.addEventListener('visibilitychange', function() {
+      window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { size(); build(); if (reduce) drawStatic(); }, 200); });
+      document.addEventListener('visibilitychange', function () {
         if (document.hidden) { running = false; if (raf) cancelAnimationFrame(raf); }
-        else if (!running) { running = true; draw(); }
+        else if (!running && !reduce) { running = true; frame(); }
       });
     })();
 
     // Body fade in
     document.body.style.opacity = '0';
 
-    // Intro overlay (morphs the avatar + name on load)
-    (function() {
+    // Intro overlay
+    (function () {
       var overlay = document.getElementById('intro-overlay');
       var card = document.getElementById('intro-card');
       var avatarWrap = document.getElementById('intro-avatar-wrap');
       var introName = document.getElementById('intro-name');
-
       var avatarImg = document.querySelector('.avatar-img');
       var avatarPlaceholder = document.querySelector('.avatar-placeholder');
       var tokenName = document.querySelector('.token-name');
-
       if (avatarImg) {
         var img = document.createElement('img');
         img.src = avatarImg.src;
-        img.style.cssText = 'width:220px;height:220px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,223,158,0.3);box-shadow:0 0 80px rgba(0,0,0,0.5);';
+        img.style.cssText = 'width:220px;height:220px;border-radius:50%;object-fit:cover;border:4px solid rgba(207,224,255,0.35);box-shadow:0 0 90px rgba(159,182,230,0.4);';
         avatarWrap.appendChild(img);
       } else if (avatarPlaceholder) {
         var ph = document.createElement('div');
         ph.textContent = avatarPlaceholder.textContent;
-        ph.style.cssText = 'width:220px;height:220px;border-radius:50%;background:rgba(255,223,158,0.1);border:4px solid rgba(255,223,158,0.3);display:flex;align-items:center;justify-content:center;font-size:80px;';
+        ph.style.cssText = 'width:220px;height:220px;border-radius:50%;background:rgba(159,182,230,0.12);border:4px solid rgba(207,224,255,0.35);display:flex;align-items:center;justify-content:center;font-size:80px;';
         avatarWrap.appendChild(ph);
       }
-
       if (tokenName) {
         introName.textContent = tokenName.textContent;
         var slugTag = document.querySelector('.slug-tag');
-        if (slugTag) {
-          introName.style.color = window.getComputedStyle(slugTag).color;
-        }
+        if (slugTag) introName.style.color = window.getComputedStyle(slugTag).color;
       }
-
-      setTimeout(function() { document.body.style.opacity = '1'; }, 50);
-      setTimeout(function() { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }, 150);
-      setTimeout(function() {
-        overlay.style.opacity = '0';
-        setTimeout(function() { overlay.style.display = 'none'; }, 1000);
-      }, 1800);
+      setTimeout(function () { document.body.style.opacity = '1'; }, 50);
+      setTimeout(function () { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }, 150);
+      setTimeout(function () { overlay.style.opacity = '0'; setTimeout(function () { overlay.style.display = 'none'; }, 1000); }, 1800);
     })();
 
-    // Scroll fade-in for cards
-    (function() {
-      var cards = document.querySelectorAll('.card, .tokenomics-block, .description-block, .contract-block, .buy-links, .header-row');
-      cards.forEach(function(el) {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(24px)';
-        el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-      });
-
-      var observer = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-          if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-            observer.unobserve(entry.target);
-          }
-        });
+    // Scroll fade-in
+    (function () {
+      var els = document.querySelectorAll('.card, .tokenomics-block, .description-block, .contract-block, .buy-links, .header-row');
+      els.forEach(function (el) { el.style.opacity = '0'; el.style.transform = 'translateY(24px)'; el.style.transition = 'opacity 0.5s ease, transform 0.5s ease'; });
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; obs.unobserve(e.target); } });
       }, { threshold: 0.1 });
-
-      setTimeout(function() {
-        cards.forEach(function(el) { observer.observe(el); });
-      }, 2000);
+      setTimeout(function () { els.forEach(function (el) { obs.observe(el); }); }, 2000);
     })();
 
-    // Countdown timers
-    document.querySelectorAll('.countdown-card').forEach(function(card) {
+    // Countdown
+    document.querySelectorAll('.countdown-card').forEach(function (card) {
       var target = parseInt(card.getAttribute('data-target'));
       if (!target) return;
-      function update() {
+      function upd() {
         var diff = target - Date.now();
-        if (diff <= 0) {
-          card.querySelector('.countdown-grid').innerHTML = '<div class="countdown-launched">Launched!</div>';
-          return;
-        }
-        var d = Math.floor(diff / 86400000);
-        var h = Math.floor((diff % 86400000) / 3600000);
-        var m = Math.floor((diff % 3600000) / 60000);
-        var s = Math.floor((diff % 60000) / 1000);
+        if (diff <= 0) { card.querySelector('.countdown-grid').innerHTML = '<div class="countdown-launched">Launched!</div>'; return; }
+        var d = Math.floor(diff / 86400000), hh = Math.floor((diff % 86400000) / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
         var dn = card.querySelector('.cd-days'); if (dn) dn.textContent = d;
-        var hn = card.querySelector('.cd-hours'); if (hn) hn.textContent = String(h).padStart(2,'0');
-        var mn = card.querySelector('.cd-mins'); if (mn) mn.textContent = String(m).padStart(2,'0');
-        var sn = card.querySelector('.cd-secs'); if (sn) sn.textContent = String(s).padStart(2,'0');
+        var hn = card.querySelector('.cd-hours'); if (hn) hn.textContent = String(hh).padStart(2, '0');
+        var mn = card.querySelector('.cd-mins'); if (mn) mn.textContent = String(m).padStart(2, '0');
+        var sn = card.querySelector('.cd-secs'); if (sn) sn.textContent = String(s).padStart(2, '0');
       }
-      update();
-      setInterval(update, 1000);
+      upd(); setInterval(upd, 1000);
     });
 
-    // Price ticker
-    document.querySelectorAll('.ticker-card').forEach(function(card) {
-      var ca = card.getAttribute('data-ca');
-      if (!ca) return;
-      var content = card.querySelector('.ticker-content');
-      if (!content) return;
+    // Ticker
+    document.querySelectorAll('.ticker-card').forEach(function (card) {
+      var ca = card.getAttribute('data-ca'); if (!ca) return;
+      var content = card.querySelector('.ticker-content'); if (!content) return;
       fetch('https://api.dexscreener.com/latest/dex/tokens/' + ca)
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
           var pairs = d && d.pairs && d.pairs.length > 0 ? d.pairs : null;
           if (!pairs) { content.innerHTML = '<div class="ticker-na">No price data found</div>'; return; }
           var p = pairs[0];
           var price = p.priceUsd ? '$' + parseFloat(p.priceUsd).toFixed(8) : 'N/A';
           var change = p.priceChange && p.priceChange.h24 !== undefined ? p.priceChange.h24 : null;
-          var changeHtml = change !== null ? '<span class="ticker-change ' + (change >= 0 ? 'positive' : 'negative') + '">' + (change >= 0 ? '+' : '') + parseFloat(change).toFixed(2) + '%</span>' : '';
+          var ch = change !== null ? '<span class="ticker-change ' + (change >= 0 ? 'positive' : 'negative') + '">' + (change >= 0 ? '+' : '') + parseFloat(change).toFixed(2) + '%</span>' : '';
           var mcap = p.marketCap ? '$' + Number(p.marketCap).toLocaleString() : 'N/A';
           var vol = p.volume && p.volume.h24 ? '$' + Number(p.volume.h24).toLocaleString() : 'N/A';
-          content.innerHTML = '<div class="ticker-price">' + price + ' ' + changeHtml + '</div><div class="ticker-stats"><span>MCap: ' + mcap + '</span><span>Vol 24h: ' + vol + '</span></div>';
+          content.innerHTML = '<div class="ticker-price">' + price + ' ' + ch + '</div><div class="ticker-stats"><span>MCap: ' + mcap + '</span><span>Vol 24h: ' + vol + '</span></div>';
         })
-        .catch(function() { content.innerHTML = '<div class="ticker-na">Price data unavailable</div>'; });
+        .catch(function () { content.innerHTML = '<div class="ticker-na">Price data unavailable</div>'; });
     });
   </script>
 </body>
