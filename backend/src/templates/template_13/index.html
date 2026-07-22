@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{TOKEN_NAME}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  {{OG_TAGS}}
+  {{CSS}}
+</head>
+<body style="opacity:0;transition:opacity 0.5s ease;">
+
+  <canvas id="bg-zoo" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
+
+  <div id="intro-overlay">
+    <div id="intro-card">
+      <div id="intro-avatar-wrap"></div>
+      <div id="intro-name"></div>
+    </div>
+  </div>
+
+  <div class="page-wrapper">
+    <div class="banner-container">
+      {{BANNER_BLOCK}}
+    </div>
+    <div class="content-container">
+      <div class="header-row">
+        <div class="avatar-container">
+          {{AVATAR_BLOCK}}
+        </div>
+        <div class="header-main">
+          <div class="name-area">
+            {{NAME_BLOCK}}
+            <div class="slug-tag">{{SLUG}}.shillit.fun</div>
+          </div>
+          <div class="header-socials">
+            {{SOCIAL_BLOCK}}
+          </div>
+        </div>
+      </div>
+      {{DESC_BLOCK}}
+      {{CONTRACT_BLOCK}}
+      {{BUY_BLOCK}}
+      <div class="cards-grid">
+        {{TOKENOMICS_BLOCK}}
+        {{TICKER_BLOCK}}
+        {{COUNTDOWN_BLOCK}}
+        {{ABOUT_BLOCK}}
+        {{ROADMAP_BLOCK}}
+      </div>
+      {{CHART_BLOCK}}
+    </div>
+    <div style="text-align:center;padding:24px 0 16px;font-size:11px;">
+      <a href="https://report.shillit.fun" target="_blank" rel="noreferrer" style="color:#4a6b60;text-decoration:none;">Report →</a>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // "ZOO" — A BRIGHT SAVANNA DAY, clean modern-illustration style.
+    //   Fresh blue sky with a soft sun halo and slow puffy clouds -> a clean
+    //   two-tone hot-air balloon drifting across -> layered rolling green
+    //   hills with flat-style trees and scattered daisies -> a few refined
+    //   butterflies -> and the hero moment: the animal parade — a marching
+    //   line of different footprints (paws, hooves, bird feet) popping one
+    //   by one over the hill crest, so every animal coin belongs here.
+    //   Bright, playful, professional. One setTransform only (dpr-safe).
+    // =========================================================================
+    (function () {
+      var canvas = document.getElementById('bg-zoo');
+      if (!canvas || !canvas.getContext) return;
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ctx = canvas.getContext('2d');
+      var w, h, dpr, t = 0, raf, running = true, mobile;
+      var clouds = [], trees = [], daisies = [], flies = [], balloon, parade, pops = [];
+
+      var SUN = '255,214,120';
+
+      function size() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        w = window.innerWidth; h = window.innerHeight;
+        mobile = w < 700;
+        canvas.width = w * dpr; canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      function hillY(H, x) {
+        return H.base + Math.sin((x / w) * H.freq * 6.283 + H.ph) * H.amp;
+      }
+      var H1, H2, H3;
+
+      function build() {
+        H1 = { base: h * 0.62, amp: h * 0.035, freq: 0.9, ph: 0.6, col: '#a9e493' };
+        H2 = { base: h * 0.72, amp: h * 0.045, freq: 0.7, ph: 2.8, col: '#7ed476' };
+        H3 = { base: h * 0.84, amp: h * 0.05, freq: 0.55, ph: 5.1, col: '#55bd5c' };
+        clouds = [];
+        var cc = mobile ? 3 : 5;
+        for (var c = 0; c < cc; c++) {
+          var s = 0.5 + Math.random() * 0.8;
+          clouds.push({ x: Math.random() * w, y: h * (0.06 + Math.random() * 0.22), s: s, sp: 0.08 + Math.random() * 0.1 });
+        }
+        trees = [];
+        var tc = mobile ? 4 : 7;
+        for (var i = 0; i < tc; i++) {
+          var tx = (i + 0.5) * (w / tc) + (Math.random() - 0.5) * w * 0.08;
+          trees.push({
+            x: tx, hill: Math.random() < 0.5 ? H1 : H2,
+            hgt: (mobile ? 26 : 40) + Math.random() * (mobile ? 18 : 28),
+            flat: Math.random() < 0.45, sway: Math.random() * 6.28,
+            tone: Math.random() < 0.5 ? '#3f9e55' : '#369055'
+          });
+        }
+        daisies = [];
+        var dc = mobile ? 12 : 26;
+        for (var d = 0; d < dc; d++) {
+          daisies.push({ x: Math.random() * w, hill: Math.random() < 0.5 ? H2 : H3, off: 8 + Math.random() * 46, pink: Math.random() < 0.3, ph: Math.random() * 6.28 });
+        }
+        flies = [];
+        var fc = mobile ? 3 : 5;
+        for (var f = 0; f < fc; f++) flies.push({
+          bx: Math.random() * w, by: h * (0.3 + Math.random() * 0.3),
+          a1: 30 + Math.random() * 50, a2: 18 + Math.random() * 26,
+          s1: 0.12 + Math.random() * 0.14, s2: 0.16 + Math.random() * 0.18,
+          p1: Math.random() * 6.28, p2: Math.random() * 6.28,
+          col: Math.random() < 0.5 ? '#ff8c69' : '#7fb8ff', flap: Math.random() * 6.28
+        });
+        balloon = { x: -80, y: h * 0.2, sp: 0.14, bob: Math.random() * 6.28 };
+        pops = [];
+        parade = { tt: -100 - Math.random() * 200, n: mobile ? 6 : 9, step: 30 };
+      }
+
+      function drawSky() {
+        var sky = ctx.createLinearGradient(0, 0, 0, h);
+        sky.addColorStop(0, '#6fc9f7');
+        sky.addColorStop(0.5, '#a8e0fb');
+        sky.addColorStop(0.75, '#e2f6ef');
+        sky.addColorStop(1, '#eafbe4');
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+      }
+
+      function drawSun() {
+        var sx = w * 0.82, sy = h * 0.14, r = mobile ? 34 : 52;
+        var breathe = 1 + 0.03 * Math.sin(t * 0.8);
+        var halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 4);
+        halo.addColorStop(0, 'rgba(' + SUN + ',0.5)');
+        halo.addColorStop(0.4, 'rgba(' + SUN + ',0.16)');
+        halo.addColorStop(1, 'rgba(' + SUN + ',0)');
+        ctx.fillStyle = halo;
+        ctx.beginPath(); ctx.arc(sx, sy, r * 4, 0, 7); ctx.fill();
+        var core = ctx.createRadialGradient(sx - r * 0.25, sy - r * 0.25, r * 0.2, sx, sy, r * breathe);
+        core.addColorStop(0, '#fff8e2');
+        core.addColorStop(1, '#ffd876');
+        ctx.fillStyle = core;
+        ctx.beginPath(); ctx.arc(sx, sy, r * breathe, 0, 7); ctx.fill();
+      }
+
+      function drawClouds() {
+        for (var i = 0; i < clouds.length; i++) {
+          var c = clouds[i];
+          c.x += c.sp;
+          var span = 120 * c.s;
+          if (c.x - span > w) c.x = -span;
+          ctx.fillStyle = 'rgba(255,255,255,0.92)';
+          ctx.beginPath();
+          ctx.arc(c.x, c.y, 26 * c.s, 0, 7);
+          ctx.arc(c.x + 30 * c.s, c.y - 14 * c.s, 32 * c.s, 0, 7);
+          ctx.arc(c.x + 64 * c.s, c.y - 4 * c.s, 26 * c.s, 0, 7);
+          ctx.arc(c.x + 88 * c.s, c.y + 6 * c.s, 18 * c.s, 0, 7);
+          ctx.arc(c.x + 40 * c.s, c.y + 10 * c.s, 28 * c.s, 0, 7);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(140,190,220,0.16)';
+          ctx.beginPath();
+          ctx.ellipse(c.x + 44 * c.s, c.y + 20 * c.s, 54 * c.s, 10 * c.s, 0, 0, 7);
+          ctx.fill();
+        }
+      }
+
+      function drawBalloon() {
+        balloon.x += balloon.sp;
+        if (balloon.x - 70 > w) { balloon.x = -90; balloon.y = h * (0.14 + Math.random() * 0.16); }
+        var bx = balloon.x, by = balloon.y + Math.sin(t * 0.6 + balloon.bob) * 6;
+        var R = mobile ? 26 : 38;
+        // envelope: clean two-tone vertical gores
+        ctx.fillStyle = '#ff7a59';
+        ctx.beginPath(); ctx.ellipse(bx, by, R, R * 1.1, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#fff4ea';
+        ctx.beginPath(); ctx.ellipse(bx, by, R * 0.62, R * 1.1, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = '#ff7a59';
+        ctx.beginPath(); ctx.ellipse(bx, by, R * 0.24, R * 1.1, 0, 0, 7); ctx.fill();
+        // soft shine
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.beginPath(); ctx.ellipse(bx - R * 0.4, by - R * 0.42, R * 0.28, R * 0.5, -0.5, 0, 7); ctx.fill();
+        // ropes + basket
+        ctx.strokeStyle = '#9a6a4a'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(bx - R * 0.5, by + R * 0.9); ctx.lineTo(bx - R * 0.22, by + R * 1.5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(bx + R * 0.5, by + R * 0.9); ctx.lineTo(bx + R * 0.22, by + R * 1.5); ctx.stroke();
+        ctx.fillStyle = '#b98358';
+        var bw = R * 0.48, bh2 = R * 0.34;
+        ctx.beginPath();
+        if (ctx.roundRect) { ctx.roundRect(bx - bw / 2, by + R * 1.45, bw, bh2, 4); } else { ctx.rect(bx - bw / 2, by + R * 1.45, bw, bh2); }
+        ctx.fill();
+      }
+
+      function drawHill(H, idx) {
+        ctx.fillStyle = H.col;
+        ctx.beginPath();
+        ctx.moveTo(0, hillY(H, 0));
+        for (var x = 0; x <= w; x += 16) ctx.lineTo(x, hillY(H, x));
+        ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,' + (0.5 - idx * 0.12) + ')';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, hillY(H, 0));
+        for (var x2 = 0; x2 <= w; x2 += 16) ctx.lineTo(x2, hillY(H, x2));
+        ctx.stroke();
+      }
+
+      function drawTrees() {
+        for (var i = 0; i < trees.length; i++) {
+          var tr = trees[i];
+          var gy = hillY(tr.hill, tr.x) + 4;
+          var sway = Math.sin(t * 0.4 + tr.sway) * 1.5;
+          ctx.strokeStyle = '#8a6242'; ctx.lineWidth = mobile ? 3 : 4; ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(tr.x, gy);
+          ctx.quadraticCurveTo(tr.x + sway * 0.5, gy - tr.hgt * 0.55, tr.x + sway, gy - tr.hgt);
+          ctx.stroke();
+          ctx.fillStyle = tr.tone;
+          if (tr.flat) {
+            ctx.beginPath();
+            ctx.ellipse(tr.x + sway, gy - tr.hgt, tr.hgt * 0.9, tr.hgt * 0.3, 0, 0, 7);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.18)';
+            ctx.beginPath();
+            ctx.ellipse(tr.x + sway - tr.hgt * 0.15, gy - tr.hgt - tr.hgt * 0.08, tr.hgt * 0.6, tr.hgt * 0.16, 0, 0, 7);
+            ctx.fill();
+          } else {
+            ctx.beginPath();
+            ctx.arc(tr.x + sway, gy - tr.hgt, tr.hgt * 0.52, 0, 7);
+            ctx.arc(tr.x + sway - tr.hgt * 0.32, gy - tr.hgt + tr.hgt * 0.14, tr.hgt * 0.36, 0, 7);
+            ctx.arc(tr.x + sway + tr.hgt * 0.32, gy - tr.hgt + tr.hgt * 0.14, tr.hgt * 0.36, 0, 7);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.16)';
+            ctx.beginPath();
+            ctx.arc(tr.x + sway - tr.hgt * 0.14, gy - tr.hgt - tr.hgt * 0.14, tr.hgt * 0.26, 0, 7);
+            ctx.fill();
+          }
+        }
+      }
+
+      function drawDaisies() {
+        for (var i = 0; i < daisies.length; i++) {
+          var d = daisies[i];
+          var gy = hillY(d.hill, d.x) + d.off;
+          if (gy > h - 4) continue;
+          var sway = Math.sin(t * 0.6 + d.ph) * 1;
+          ctx.strokeStyle = 'rgba(46,125,70,0.8)'; ctx.lineWidth = 1.2;
+          ctx.beginPath(); ctx.moveTo(d.x, gy); ctx.lineTo(d.x + sway, gy - 7); ctx.stroke();
+          ctx.fillStyle = d.pink ? '#ffc9d6' : '#ffffff';
+          for (var p = 0; p < 5; p++) {
+            var ang = (p / 5) * 6.283;
+            ctx.beginPath();
+            ctx.ellipse(d.x + sway + Math.cos(ang) * 2.6, gy - 7 + Math.sin(ang) * 2.6, 1.7, 1.1, ang, 0, 7);
+            ctx.fill();
+          }
+          ctx.fillStyle = '#ffd23f';
+          ctx.beginPath(); ctx.arc(d.x + sway, gy - 7, 1.5, 0, 7); ctx.fill();
+        }
+      }
+
+      function drawButterflies() {
+        for (var i = 0; i < flies.length; i++) {
+          var f = flies[i];
+          var fx = f.bx + Math.sin(t * f.s1 + f.p1) * f.a1;
+          var fy = f.by + Math.sin(t * f.s2 + f.p2) * f.a2;
+          var flap = Math.abs(Math.sin(t * 6 + f.flap));
+          ctx.save();
+          ctx.translate(fx, fy);
+          ctx.fillStyle = f.col;
+          ctx.save(); ctx.scale(0.4 + flap * 0.6, 1);
+          ctx.beginPath(); ctx.ellipse(-4, 0, 4.4, 3, -0.4, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(-3.4, 3.6, 3.2, 2.3, 0.4, 0, 7); ctx.fill();
+          ctx.restore();
+          ctx.save(); ctx.scale(-(0.4 + flap * 0.6), 1);
+          ctx.beginPath(); ctx.ellipse(-4, 0, 4.4, 3, -0.4, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(-3.4, 3.6, 3.2, 2.3, 0.4, 0, 7); ctx.fill();
+          ctx.restore();
+          ctx.fillStyle = '#4a3b32';
+          ctx.beginPath(); ctx.ellipse(0, 1.4, 1, 3.4, 0, 0, 7); ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // ---- the animal parade: different footprint shapes marching the crest ----
+      function printPos(i) {
+        var f = (i + 1) / (parade.n + 1);
+        var x = w * 0.06 + (w * 0.88) * f;
+        var y = hillY(H2, x) + 16;
+        return { x: x + (i % 2 ? 6 : -6), y: y };
+      }
+      function drawPaw(x, y, S, a) {
+        ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.shadowColor = 'rgba(58,166,106,0.5)'; ctx.shadowBlur = 6;
+        ctx.beginPath(); ctx.ellipse(x, y, S * 0.5, S * 0.4, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x - S * 0.42, y - S * 0.5, S * 0.18, S * 0.24, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x, y - S * 0.62, S * 0.18, S * 0.24, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x + S * 0.42, y - S * 0.5, S * 0.18, S * 0.24, 0, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      function drawHoof(x, y, S, a) {
+        ctx.save(); ctx.globalAlpha = a; ctx.fillStyle = 'rgba(255,255,255,0.95)';
+        ctx.shadowColor = 'rgba(58,166,106,0.5)'; ctx.shadowBlur = 6;
+        ctx.beginPath(); ctx.ellipse(x - S * 0.24, y, S * 0.22, S * 0.42, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x + S * 0.24, y, S * 0.22, S * 0.42, 0, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      function drawBird(x, y, S, a) {
+        ctx.save(); ctx.globalAlpha = a;
+        ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+        ctx.shadowColor = 'rgba(58,166,106,0.5)'; ctx.shadowBlur = 6;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - S * 0.4, y - S * 0.5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - S * 0.6); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + S * 0.4, y - S * 0.5); ctx.stroke();
+        ctx.restore();
+      }
+      function drawParade() {
+        parade.tt++;
+        var n = parade.n, STEP = parade.step;
+        var total = n * STEP + 160 + 60;
+        if (parade.tt > total) { parade.tt = -160 - Math.random() * 260; pops = []; return; }
+        if (parade.tt < 0) return;
+        var fadeAll = parade.tt > n * STEP + 160 ? 1 - (parade.tt - n * STEP - 160) / 60 : 1;
+        for (var i = 0; i < n; i++) {
+          var born = i * STEP;
+          if (parade.tt < born) break;
+          if (parade.tt === born) pops.push({ x: printPos(i).x, y: printPos(i).y, r: 2, a: 0.5 });
+          var age = parade.tt - born;
+          var a = Math.min(1, age / 12) * fadeAll * 0.9;
+          var pos = printPos(i);
+          var S = mobile ? 7 : 9;
+          var kind = i % 3;
+          if (kind === 0) drawPaw(pos.x, pos.y, S, a);
+          else if (kind === 1) drawHoof(pos.x, pos.y, S, a);
+          else drawBird(pos.x, pos.y, S, a);
+        }
+        for (var p = pops.length - 1; p >= 0; p--) {
+          var pp = pops[p];
+          pp.r += 0.8; pp.a *= 0.93;
+          if (pp.a < 0.02) { pops.splice(p, 1); continue; }
+          ctx.strokeStyle = 'rgba(255,255,255,' + pp.a + ')';
+          ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.arc(pp.x, pp.y, pp.r, 0, 7); ctx.stroke();
+        }
+      }
+
+      function frame() {
+        if (!running) return;
+        t += 0.016;
+        drawSky();
+        drawSun();
+        drawClouds();
+        drawBalloon();
+        drawHill(H1, 0);
+        drawTrees();
+        drawHill(H2, 1);
+        drawParade();
+        drawHill(H3, 2);
+        drawDaisies();
+        drawButterflies();
+        raf = requestAnimationFrame(frame);
+      }
+
+      function drawStatic() {
+        t = 1;
+        drawSky(); drawSun(); drawClouds(); drawBalloon();
+        drawHill(H1, 0); drawTrees(); drawHill(H2, 1); drawHill(H3, 2); drawDaisies();
+        drawButterflies();
+      }
+
+      function start() { size(); build(); if (reduce) { drawStatic(); } else { frame(); } }
+      start();
+      var rt;
+      window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { size(); build(); if (reduce) drawStatic(); }, 200); });
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) { running = false; if (raf) cancelAnimationFrame(raf); }
+        else if (!running && !reduce) { running = true; frame(); }
+      });
+    })();
+
+    // Body fade in
+    document.body.style.opacity = '0';
+
+    // Intro overlay
+    (function () {
+      var overlay = document.getElementById('intro-overlay');
+      var card = document.getElementById('intro-card');
+      var avatarWrap = document.getElementById('intro-avatar-wrap');
+      var introName = document.getElementById('intro-name');
+      var avatarImg = document.querySelector('.avatar-img');
+      var avatarPlaceholder = document.querySelector('.avatar-placeholder');
+      var tokenName = document.querySelector('.token-name');
+      if (avatarImg) {
+        var img = document.createElement('img');
+        img.src = avatarImg.src;
+        img.style.cssText = 'width:220px;height:220px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,255,255,0.9);box-shadow:0 0 70px rgba(58,166,106,0.35);';
+        avatarWrap.appendChild(img);
+      } else if (avatarPlaceholder) {
+        var ph = document.createElement('div');
+        ph.textContent = avatarPlaceholder.textContent;
+        ph.style.cssText = 'width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,0.6);border:4px solid rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;font-size:80px;';
+        avatarWrap.appendChild(ph);
+      }
+      if (tokenName) {
+        introName.textContent = tokenName.textContent;
+      }
+      setTimeout(function () { document.body.style.opacity = '1'; }, 50);
+      setTimeout(function () { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }, 150);
+      setTimeout(function () { overlay.style.opacity = '0'; setTimeout(function () { overlay.style.display = 'none'; }, 1000); }, 1800);
+    })();
+
+    // Scroll fade-in
+    (function () {
+      var els = document.querySelectorAll('.card, .tokenomics-block, .description-block, .contract-block, .buy-links, .header-row');
+      els.forEach(function (el) { el.style.opacity = '0'; el.style.transform = 'translateY(24px)'; el.style.transition = 'opacity 0.5s ease, transform 0.5s ease'; });
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; obs.unobserve(e.target); } });
+      }, { threshold: 0.1 });
+      setTimeout(function () { els.forEach(function (el) { obs.observe(el); }); }, 2000);
+    })();
+
+    // Countdown
+    document.querySelectorAll('.countdown-card').forEach(function (card) {
+      var target = parseInt(card.getAttribute('data-target'));
+      if (!target) return;
+      function upd() {
+        var diff = target - Date.now();
+        if (diff <= 0) { card.querySelector('.countdown-grid').innerHTML = '<div class="countdown-launched">Launched!</div>'; return; }
+        var d = Math.floor(diff / 86400000), hh = Math.floor((diff % 86400000) / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
+        var dn = card.querySelector('.cd-days'); if (dn) dn.textContent = d;
+        var hn = card.querySelector('.cd-hours'); if (hn) hn.textContent = String(hh).padStart(2, '0');
+        var mn = card.querySelector('.cd-mins'); if (mn) mn.textContent = String(m).padStart(2, '0');
+        var sn = card.querySelector('.cd-secs'); if (sn) sn.textContent = String(s).padStart(2, '0');
+      }
+      upd(); setInterval(upd, 1000);
+    });
+
+    // Ticker
+    document.querySelectorAll('.ticker-card').forEach(function (card) {
+      var ca = card.getAttribute('data-ca'); if (!ca) return;
+      var content = card.querySelector('.ticker-content'); if (!content) return;
+      fetch('https://api.dexscreener.com/latest/dex/tokens/' + ca)
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var pairs = d && d.pairs && d.pairs.length > 0 ? d.pairs : null;
+          if (!pairs) { content.innerHTML = '<div class="ticker-na">No price data found</div>'; return; }
+          var p = pairs[0];
+          var price = p.priceUsd ? '$' + parseFloat(p.priceUsd).toFixed(8) : 'N/A';
+          var change = p.priceChange && p.priceChange.h24 !== undefined ? p.priceChange.h24 : null;
+          var ch = change !== null ? '<span class="ticker-change ' + (change >= 0 ? 'positive' : 'negative') + '">' + (change >= 0 ? '+' : '') + parseFloat(change).toFixed(2) + '%</span>' : '';
+          var mcap = p.marketCap ? '$' + Number(p.marketCap).toLocaleString() : 'N/A';
+          var vol = p.volume && p.volume.h24 ? '$' + Number(p.volume.h24).toLocaleString() : 'N/A';
+          content.innerHTML = '<div class="ticker-price">' + price + ' ' + ch + '</div><div class="ticker-stats"><span>MCap: ' + mcap + '</span><span>Vol 24h: ' + vol + '</span></div>';
+        })
+        .catch(function () { content.innerHTML = '<div class="ticker-na">Price data unavailable</div>'; });
+    });
+  </script>
+</body>
+</html>
