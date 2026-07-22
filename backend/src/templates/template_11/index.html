@@ -186,9 +186,11 @@
       }
 
       // ---------- upper scene, painted at scale s onto the given context ----------
-      function drawUpper(c, s) {
+      // 'base' is the context's own pixel-density scale (dpr for the main
+      // canvas, 1 for the offscreen) so we never clobber it.
+      function drawUpper(c, s, base) {
         var W = w, H = wl;
-        c.setTransform(s, 0, 0, s, 0, 0);
+        c.setTransform(base * s, 0, 0, base * s, 0, 0);
         var sky = c.createLinearGradient(0, 0, 0, H);
         sky.addColorStop(0, '#02100c');
         sky.addColorStop(0.55, '#062820');
@@ -269,7 +271,7 @@
           c.beginPath(); c.arc(fx, fy, fl.r, 0, 7); c.fill();
           c.restore();
         }
-        c.setTransform(1, 0, 0, 1, 0, 0);
+        c.setTransform(base, 0, 0, base, 0, 0);
       }
 
       function drawWater() {
@@ -448,8 +450,8 @@
       function frame() {
         if (!running) return;
         t += 0.016;
-        drawUpper(octx, 0.5);
-        drawUpper(ctx, 1);
+        drawUpper(octx, 0.5, 1);
+        drawUpper(ctx, 1, dpr);
         drawWater();
         drawRipples();
         drawPads();
@@ -462,8 +464,8 @@
 
       function drawStatic() {
         t = 1;
-        drawUpper(octx, 0.5);
-        drawUpper(ctx, 1);
+        drawUpper(octx, 0.5, 1);
+        drawUpper(ctx, 1, dpr);
         drawWater();
         drawPads();
         drawMist();
