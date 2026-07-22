@@ -11,6 +11,7 @@ const TEMPLATES = [
   { id: "template_8", name: "Amber", description: "Dark warmth, glowing orange fire", color: "#ff8a3c" },
   { id: "template_9", name: "Woof", description: "For dog coins — a golden-hour park: blazing sun, rolling hills, swaying grass & a bouncing ball", color: "#ffc25e" },
   { id: "template_10", name: "Alpha", description: "For based dog coins — a midnight summit: moonlit peaks, rolling fog, drifting snow & a paw trail climbing to the top", color: "#9fc3e8" },
+  { id: "template_11", name: "Ribbit", description: "For frog coins — a glowing night swamp: real mirrored water, lily pads, fireflies & an invisible frog hopping across", color: "#4de08a" },
 ];
 
 export default function TemplateSelector({ value, onChange }) {
