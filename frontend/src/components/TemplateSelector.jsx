@@ -9,7 +9,7 @@ const TEMPLATES = [
   { id: "template_6", name: "Playground", description: "Playful pink, fun bubbly energy", color: "#ff5fa2" },
   { id: "template_7", name: "Moonshot", description: "Deep space starfield, to-the-moon vibe", color: "#7fb2ff" },
   { id: "template_8", name: "Amber", description: "Dark warmth, glowing orange fire", color: "#ff8a3c" },
-  { id: "template_9", name: "Woof", description: "For dog coins — a twilight scene with a glowing moon, drifting bones, paw trails & warm firefly glow", color: "#9fb6e6" },
+  { id: "template_9", name: "Woof", description: "For dog coins — a golden-hour park: blazing sun, rolling hills, swaying grass & a bouncing ball", color: "#ffc25e" },
 ];
 
 export default function TemplateSelector({ value, onChange }) {
