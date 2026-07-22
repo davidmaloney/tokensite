@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{TOKEN_NAME}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  {{OG_TAGS}}
+  {{CSS}}
+</head>
+<body style="opacity:0;transition:opacity 0.5s ease;">
+
+  <canvas id="bg-alpha" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
+
+  <div id="intro-overlay">
+    <div id="intro-card">
+      <div id="intro-avatar-wrap"></div>
+      <div id="intro-name"></div>
+    </div>
+  </div>
+
+  <div class="page-wrapper">
+    <div class="banner-container">
+      {{BANNER_BLOCK}}
+    </div>
+    <div class="content-container">
+      <div class="header-row">
+        <div class="avatar-container">
+          {{AVATAR_BLOCK}}
+        </div>
+        <div class="header-main">
+          <div class="name-area">
+            {{NAME_BLOCK}}
+            <div class="slug-tag">{{SLUG}}.shillit.fun</div>
+          </div>
+          <div class="header-socials">
+            {{SOCIAL_BLOCK}}
+          </div>
+        </div>
+      </div>
+      {{DESC_BLOCK}}
+      {{CONTRACT_BLOCK}}
+      {{BUY_BLOCK}}
+      <div class="cards-grid">
+        {{TOKENOMICS_BLOCK}}
+        {{TICKER_BLOCK}}
+        {{COUNTDOWN_BLOCK}}
+        {{ABOUT_BLOCK}}
+        {{ROADMAP_BLOCK}}
+      </div>
+      {{CHART_BLOCK}}
+    </div>
+    <div style="text-align:center;padding:24px 0 16px;font-size:11px;">
+      <a href="https://report.shillit.fun" target="_blank" rel="noreferrer" style="color:#cfe0f2;text-decoration:none;">Report →</a>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // "ALPHA" — MIDNIGHT SUMMIT. A cold, noble mountain night, in layers:
+    //   steel night sky -> sparse stars -> huge cratered moon with halo ->
+    //   storm clouds with moonlit silver edges -> three jagged snow-capped
+    //   ridges with moonlit rims -> rolling fog banks between them -> pine
+    //   silhouettes -> wind-gusted snow that streaks when a gust hits ->
+    //   and the hero: a glowing paw trail that climbs the mountainside,
+    //   print by print, reaches the peak, fades, and begins again.
+    // =========================================================================
+    (function () {
+      var canvas = document.getElementById('bg-alpha');
+      if (!canvas || !canvas.getContext) return;
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ctx = canvas.getContext('2d');
+      var w, h, dpr, t = 0, raf, running = true, mobile;
+      var stars = [], moon, clouds = [], ridges = [], pines = [], fogs = [], snow = [], trail;
+
+      var ICE = '207,232,255', STEEL = '159,195,232';
+
+      function size() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        w = window.innerWidth; h = window.innerHeight;
+        mobile = w < 700;
+        canvas.width = w * dpr; canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      // ---- jagged ridge: sharp random peaks, precomputed once ----
+      function makeJagged(baseY, amp, segs) {
+        var pts = [], up = Math.random() < 0.5;
+        for (var i = 0; i <= segs; i++) {
+          var x = (w * i) / segs;
+          var m = (up ? -1 : 1) * (0.35 + Math.random() * 0.65);
+          pts.push({ x: x, y: baseY + m * amp });
+          up = !up;
+        }
+        return pts;
+      }
+      function ridgeY(pts, x) {
+        if (x <= 0) return pts[0].y;
+        if (x >= w) return pts[pts.length - 1].y;
+        var f = (x / w) * (pts.length - 1), i = Math.floor(f), r = f - i;
+        return pts[i].y + (pts[i + 1].y - pts[i].y) * r;
+      }
+
+      function build() {
+        moon = { x: w * 0.74, y: h * 0.26, r: mobile ? 44 : 72 };
+        stars = [];
+        var sc = mobile ? 26 : 46;
+        for (var i = 0; i < sc; i++) stars.push({ x: Math.random() * w, y: Math.random() * h * 0.55, r: Math.random() * 1.3 + 0.3, tw: Math.random() * 6.28, sp: 0.5 + Math.random() * 1.2 });
+        // Storm cloud slabs — wide, flat, moonlit on top.
+        clouds = [];
+        var cc = mobile ? 3 : 4;
+        for (var c = 0; c < cc; c++) {
+          var puffs = [], n = 4 + Math.floor(Math.random() * 3);
+          var rx = (mobile ? 90 : 150) + Math.random() * 90;
+          for (var p = 0; p < n; p++) puffs.push({ dx: (p - n / 2) * rx * 1.2 + (Math.random() - 0.5) * 40, dy: (Math.random() - 0.5) * rx * 0.24, rx: rx * (0.7 + Math.random() * 0.5), ry: rx * (0.22 + Math.random() * 0.1) });
+          clouds.push({ x: Math.random() * w, y: h * (0.10 + Math.random() * 0.26), sp: 0.07 + Math.random() * 0.08, a: 0.5 + Math.random() * 0.25, puffs: puffs, span: rx * n * 1.3 });
+        }
+        // Three jagged ridges, far -> near.
+        ridges = [
+          { pts: makeJagged(h * 0.56, mobile ? 46 : 84, 9), col: '#1d2c45', snow: true },
+          { pts: makeJagged(h * 0.70, mobile ? 40 : 66, 11), col: '#131f33', snow: false },
+          { pts: makeJagged(h * 0.85, mobile ? 26 : 42, 13), col: '#070c16', snow: false }
+        ];
+        // Pines along the nearest ridge.
+        pines = [];
+        var pn = mobile ? 9 : 20;
+        for (var q = 0; q < pn; q++) {
+          var px = Math.random() * w;
+          pines.push({ x: px, hgt: (mobile ? 18 : 26) + Math.random() * (mobile ? 16 : 26), sway: Math.random() * 6.28 });
+        }
+        // Fog banks between ridges.
+        fogs = [];
+        var bands = [h * 0.60, h * 0.74];
+        for (var b = 0; b < bands.length; b++) {
+          var puffs2 = [], m = mobile ? 3 : 5;
+          for (var f = 0; f < m; f++) puffs2.push({ dx: (Math.random() - 0.5) * w, ry: 18 + Math.random() * 26, rx: (mobile ? 130 : 220) + Math.random() * 140 });
+          fogs.push({ y: bands[b], x: Math.random() * w, sp: (b === 0 ? 0.10 : 0.16) + Math.random() * 0.06, a: 0.05 + b * 0.03, puffs: puffs2 });
+        }
+        // Snow with depth.
+        snow = [];
+        var sn = mobile ? 34 : 80;
+        for (var s = 0; s < sn; s++) snow.push(newFlake(true));
+        // The paw trail: a climbing path up the MID ridge to its highest peak.
+        buildTrail();
+      }
+
+      function newFlake(anyY) {
+        var z = 0.25 + Math.random() * 0.75;
+        return { x: Math.random() * w, y: anyY ? Math.random() * h : -8, z: z, ph: Math.random() * 6.28 };
+      }
+
+      function buildTrail() {
+        var pts = ridges[1].pts;
+        // find highest mid-ridge peak in the middle band of the screen
+        var top = 0;
+        for (var i = 1; i < pts.length - 1; i++) {
+          if (pts[i].x > w * 0.25 && pts[i].x < w * 0.8 && pts[i].y < pts[top].y) top = i;
+        }
+        if (top === 0) top = Math.floor(pts.length / 2);
+        var peak = pts[top];
+        var startX = peak.x > w * 0.5 ? peak.x - w * 0.42 : peak.x + w * 0.42;
+        var n = mobile ? 8 : 12, prints = [];
+        for (var k = 0; k < n; k++) {
+          var f = k / (n - 1);
+          var x = startX + (peak.x - startX) * f;
+          // hug the ridge silhouette, easing upward toward the peak
+          var y = ridgeY(pts, x) + 14 - f * 6;
+          var side = (k % 2 === 0 ? -1 : 1);
+          prints.push({ x: x + side * 7, y: y, rot: Math.atan2(peak.y - y, peak.x - x) + 1.5708, S: (mobile ? 6 : 8) + f * 3 });
+        }
+        trail = { prints: prints, tt: 0, step: 34, hold: 130, fade: 70 };
+      }
+
+      function drawSky() {
+        var sky = ctx.createLinearGradient(0, 0, 0, h);
+        sky.addColorStop(0, '#070b16');
+        sky.addColorStop(0.5, '#0e1830');
+        sky.addColorStop(0.85, '#18263f');
+        sky.addColorStop(1, '#1e2c45');
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+      }
+
+      function drawStars() {
+        for (var i = 0; i < stars.length; i++) {
+          var s = stars[i];
+          var tw = 0.35 + 0.65 * Math.abs(Math.sin(t * s.sp + s.tw));
+          ctx.globalAlpha = tw * 0.7;
+          ctx.fillStyle = 'rgba(' + ICE + ',1)';
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function drawMoon() {
+        var breathe = 0.16 + 0.07 * Math.sin(t * 0.23);
+        var halo = ctx.createRadialGradient(moon.x, moon.y, 0, moon.x, moon.y, moon.r * 5);
+        halo.addColorStop(0, 'rgba(' + ICE + ',' + breathe + ')');
+        halo.addColorStop(0.5, 'rgba(' + STEEL + ',' + (breathe * 0.4) + ')');
+        halo.addColorStop(1, 'rgba(' + STEEL + ',0)');
+        ctx.fillStyle = halo; ctx.fillRect(0, 0, w, h);
+        var mg = ctx.createRadialGradient(moon.x - moon.r * 0.3, moon.y - moon.r * 0.3, moon.r * 0.15, moon.x, moon.y, moon.r);
+        mg.addColorStop(0, '#f4f9ff');
+        mg.addColorStop(0.7, '#dcebfb');
+        mg.addColorStop(1, '#a9c4e2');
+        ctx.fillStyle = mg;
+        ctx.beginPath(); ctx.arc(moon.x, moon.y, moon.r, 0, 7); ctx.fill();
+        // craters
+        ctx.fillStyle = 'rgba(150,175,205,0.35)';
+        ctx.beginPath(); ctx.arc(moon.x + moon.r * 0.32, moon.y - moon.r * 0.1, moon.r * 0.16, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(moon.x - moon.r * 0.15, moon.y + moon.r * 0.34, moon.r * 0.11, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(moon.x + moon.r * 0.05, moon.y + moon.r * 0.05, moon.r * 0.07, 0, 7); ctx.fill();
+      }
+
+      function drawClouds() {
+        for (var c = 0; c < clouds.length; c++) {
+          var cl = clouds[c]; cl.x += cl.sp;
+          if (cl.x - cl.span > w) cl.x = -cl.span;
+          for (var p = 0; p < cl.puffs.length; p++) {
+            var pf = cl.puffs[p], px = cl.x + pf.dx, py = cl.y + pf.dy;
+            // dark slab
+            var g = ctx.createRadialGradient(px, py, pf.ry * 0.2, px, py, pf.rx);
+            g.addColorStop(0, 'rgba(13,20,34,' + (cl.a * 0.9) + ')');
+            g.addColorStop(0.7, 'rgba(13,20,34,' + (cl.a * 0.5) + ')');
+            g.addColorStop(1, 'rgba(13,20,34,0)');
+            ctx.fillStyle = g;
+            ctx.save(); ctx.translate(px, py); ctx.scale(1, pf.ry / pf.rx);
+            ctx.beginPath(); ctx.arc(0, 0, pf.rx, 0, 7); ctx.fill();
+            ctx.restore();
+            // moonlit silver top edge, stronger near the moon
+            var d = Math.abs(px - moon.x) / w;
+            var edge = Math.max(0, 0.22 - d * 0.3);
+            if (edge > 0.02) {
+              ctx.save(); ctx.translate(px, py - pf.ry * 0.75); ctx.scale(1, (pf.ry * 0.35) / pf.rx);
+              var eg = ctx.createRadialGradient(0, 0, 0, 0, 0, pf.rx * 0.9);
+              eg.addColorStop(0, 'rgba(' + ICE + ',' + edge + ')');
+              eg.addColorStop(1, 'rgba(' + ICE + ',0)');
+              ctx.fillStyle = eg;
+              ctx.beginPath(); ctx.arc(0, 0, pf.rx * 0.9, 0, 7); ctx.fill();
+              ctx.restore();
+            }
+          }
+        }
+      }
+
+      function drawRidge(idx) {
+        var R = ridges[idx], pts = R.pts;
+        ctx.fillStyle = R.col;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+        ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
+        // moonlit rim on the moon-facing slopes
+        ctx.strokeStyle = 'rgba(' + STEEL + ',' + (idx === 0 ? 0.4 : 0.18) + ')';
+        ctx.lineWidth = idx === 0 ? 1.6 : 1;
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (var j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
+        ctx.stroke();
+        // snow caps on the far ridge peaks
+        if (R.snow) {
+          for (var k = 1; k < pts.length - 1; k++) {
+            if (pts[k].y < pts[k - 1].y && pts[k].y < pts[k + 1].y) {
+              var capW = (pts[k + 1].x - pts[k - 1].x) * 0.22;
+              var g = ctx.createLinearGradient(pts[k].x, pts[k].y, pts[k].x, pts[k].y + capW);
+              g.addColorStop(0, 'rgba(235,245,255,0.85)');
+              g.addColorStop(1, 'rgba(235,245,255,0)');
+              ctx.fillStyle = g;
+              ctx.beginPath();
+              ctx.moveTo(pts[k].x, pts[k].y);
+              ctx.lineTo(pts[k].x - capW * 0.8, pts[k].y + capW);
+              ctx.lineTo(pts[k].x + capW * 0.8, pts[k].y + capW);
+              ctx.closePath(); ctx.fill();
+            }
+          }
+        }
+      }
+
+      function drawFog(idx) {
+        var F = fogs[idx];
+        F.x += F.sp;
+        if (F.x > w * 1.5) F.x = -w * 0.5;
+        for (var p = 0; p < F.puffs.length; p++) {
+          var pf = F.puffs[p];
+          var px = ((F.x + pf.dx) % (w * 2) + w * 2) % (w * 2) - w * 0.5;
+          var py = F.y + Math.sin(t * 0.3 + p) * 4;
+          ctx.save(); ctx.translate(px, py); ctx.scale(1, pf.ry / pf.rx);
+          var g = ctx.createRadialGradient(0, 0, 0, 0, 0, pf.rx);
+          g.addColorStop(0, 'rgba(' + STEEL + ',' + F.a + ')');
+          g.addColorStop(1, 'rgba(' + STEEL + ',0)');
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(0, 0, pf.rx, 0, 7); ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      function drawPines() {
+        var pts = ridges[2].pts;
+        for (var i = 0; i < pines.length; i++) {
+          var p = pines[i];
+          var gy = ridgeY(pts, p.x) + 3;
+          var sway = Math.sin(t * 0.5 + p.sway) * 1.4;
+          var hgt = p.hgt, half = hgt * 0.34;
+          ctx.fillStyle = '#04070d';
+          for (var s = 0; s < 3; s++) {
+            var ty = gy - hgt * (0.45 + s * 0.28);
+            var tw2 = half * (1 - s * 0.26);
+            ctx.beginPath();
+            ctx.moveTo(p.x + sway * (s + 1) * 0.4, ty - hgt * 0.3);
+            ctx.lineTo(p.x - tw2, ty + hgt * 0.12);
+            ctx.lineTo(p.x + tw2, ty + hgt * 0.12);
+            ctx.closePath(); ctx.fill();
+          }
+          // icy moonlit edge
+          ctx.strokeStyle = 'rgba(' + ICE + ',0.12)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(p.x + sway * 1.2, gy - hgt * 1.05);
+          ctx.lineTo(p.x + half, gy);
+          ctx.stroke();
+        }
+      }
+
+      function drawPawPrint(x, y, S, rot, alpha) {
+        ctx.save();
+        ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = alpha;
+        ctx.shadowColor = 'rgba(' + ICE + ',0.9)'; ctx.shadowBlur = 12;
+        ctx.fillStyle = 'rgba(' + ICE + ',0.8)';
+        ctx.beginPath(); ctx.ellipse(0, S * 0.32, S * 0.5, S * 0.42, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(-S * 0.44, -S * 0.26, S * 0.2, S * 0.26, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(-S * 0.16, -S * 0.52, S * 0.19, S * 0.26, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(S * 0.16, -S * 0.52, S * 0.19, S * 0.26, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(S * 0.44, -S * 0.26, S * 0.2, S * 0.26, 0, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+
+      function drawTrail() {
+        trail.tt++;
+        var n = trail.prints.length;
+        var total = n * trail.step + trail.hold + trail.fade;
+        if (trail.tt > total) { trail.tt = -60 - Math.random() * 200; return; }
+        if (trail.tt < 0) return;
+        var fadeAll = trail.tt > n * trail.step + trail.hold
+          ? 1 - (trail.tt - n * trail.step - trail.hold) / trail.fade : 1;
+        for (var i = 0; i < n; i++) {
+          var born = i * trail.step;
+          if (trail.tt < born) break;
+          var a = Math.min(1, (trail.tt - born) / 16);
+          drawPawPrint(trail.prints[i].x, trail.prints[i].y, trail.prints[i].S, trail.prints[i].rot, a * fadeAll * 0.85);
+        }
+        // summit flare when the last print lands
+        var lastBorn = (n - 1) * trail.step;
+        if (trail.tt >= lastBorn && trail.tt < lastBorn + 60) {
+          var f = 1 - (trail.tt - lastBorn) / 60;
+          var pk = trail.prints[n - 1];
+          var g = ctx.createRadialGradient(pk.x, pk.y, 0, pk.x, pk.y, 60);
+          g.addColorStop(0, 'rgba(' + ICE + ',' + (0.35 * f) + ')');
+          g.addColorStop(1, 'rgba(' + ICE + ',0)');
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(pk.x, pk.y, 60, 0, 7); ctx.fill();
+        }
+      }
+
+      function drawSnow() {
+        var gust = Math.pow(Math.max(0, Math.sin(t * 0.15)), 3) * 2.6;
+        for (var i = 0; i < snow.length; i++) {
+          var f = snow[i];
+          var vx = (0.25 + gust) * f.z + Math.sin(t * 0.8 + f.ph) * 0.25;
+          var vy = (0.3 + f.z * 0.65) * (1 - gust * 0.12);
+          f.x += vx; f.y += vy;
+          if (f.y > h + 8 || f.x > w + 8) { snow[i] = newFlake(false); if (Math.random() < 0.4) { snow[i].x = -6; snow[i].y = Math.random() * h; } continue; }
+          ctx.globalAlpha = 0.25 + 0.55 * f.z;
+          ctx.fillStyle = 'rgba(' + ICE + ',1)';
+          if (gust > 1.4 && f.z > 0.6) {
+            // wind streak
+            ctx.lineWidth = f.z;
+            ctx.strokeStyle = 'rgba(' + ICE + ',0.5)';
+            ctx.beginPath(); ctx.moveTo(f.x, f.y); ctx.lineTo(f.x - vx * 6, f.y - vy * 2); ctx.stroke();
+          } else {
+            ctx.beginPath(); ctx.arc(f.x, f.y, 0.6 + f.z * 1.5, 0, 7); ctx.fill();
+          }
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function frame() {
+        if (!running) return;
+        t += 0.016;
+        drawSky();
+        drawStars();
+        drawMoon();
+        drawClouds();
+        drawRidge(0);
+        drawFog(0);
+        drawRidge(1);
+        drawTrail();
+        drawFog(1);
+        drawRidge(2);
+        drawPines();
+        drawSnow();
+        raf = requestAnimationFrame(frame);
+      }
+
+      function drawStatic() {
+        t = 1;
+        drawSky(); drawStars(); drawMoon(); drawClouds();
+        drawRidge(0); drawFog(0); drawRidge(1); drawFog(1); drawRidge(2); drawPines();
+        for (var i = 0; i < snow.length; i++) {
+          var f = snow[i];
+          ctx.globalAlpha = 0.25 + 0.5 * f.z;
+          ctx.fillStyle = 'rgba(' + ICE + ',1)';
+          ctx.beginPath(); ctx.arc(f.x, f.y, 0.6 + f.z * 1.5, 0, 7); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function start() { size(); build(); if (reduce) { drawStatic(); } else { frame(); } }
+      start();
+      var rt;
+      window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { size(); build(); if (reduce) drawStatic(); }, 200); });
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) { running = false; if (raf) cancelAnimationFrame(raf); }
+        else if (!running && !reduce) { running = true; frame(); }
+      });
+    })();
+
+    // Body fade in
+    document.body.style.opacity = '0';
+
+    // Intro overlay
+    (function () {
+      var overlay = document.getElementById('intro-overlay');
+      var card = document.getElementById('intro-card');
+      var avatarWrap = document.getElementById('intro-avatar-wrap');
+      var introName = document.getElementById('intro-name');
+      var avatarImg = document.querySelector('.avatar-img');
+      var avatarPlaceholder = document.querySelector('.avatar-placeholder');
+      var tokenName = document.querySelector('.token-name');
+      if (avatarImg) {
+        var img = document.createElement('img');
+        img.src = avatarImg.src;
+        img.style.cssText = 'width:220px;height:220px;border-radius:50%;object-fit:cover;border:4px solid rgba(159,195,232,0.45);box-shadow:0 0 90px rgba(159,195,232,0.4);';
+        avatarWrap.appendChild(img);
+      } else if (avatarPlaceholder) {
+        var ph = document.createElement('div');
+        ph.textContent = avatarPlaceholder.textContent;
+        ph.style.cssText = 'width:220px;height:220px;border-radius:50%;background:rgba(159,195,232,0.1);border:4px solid rgba(159,195,232,0.45);display:flex;align-items:center;justify-content:center;font-size:80px;';
+        avatarWrap.appendChild(ph);
+      }
+      if (tokenName) {
+        introName.textContent = tokenName.textContent;
+      }
+      setTimeout(function () { document.body.style.opacity = '1'; }, 50);
+      setTimeout(function () { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }, 150);
+      setTimeout(function () { overlay.style.opacity = '0'; setTimeout(function () { overlay.style.display = 'none'; }, 1000); }, 1800);
+    })();
+
+    // Scroll fade-in
+    (function () {
+      var els = document.querySelectorAll('.card, .tokenomics-block, .description-block, .contract-block, .buy-links, .header-row');
+      els.forEach(function (el) { el.style.opacity = '0'; el.style.transform = 'translateY(24px)'; el.style.transition = 'opacity 0.5s ease, transform 0.5s ease'; });
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; obs.unobserve(e.target); } });
+      }, { threshold: 0.1 });
+      setTimeout(function () { els.forEach(function (el) { obs.observe(el); }); }, 2000);
+    })();
+
+    // Countdown
+    document.querySelectorAll('.countdown-card').forEach(function (card) {
+      var target = parseInt(card.getAttribute('data-target'));
+      if (!target) return;
+      function upd() {
+        var diff = target - Date.now();
+        if (diff <= 0) { card.querySelector('.countdown-grid').innerHTML = '<div class="countdown-launched">Launched!</div>'; return; }
+        var d = Math.floor(diff / 86400000), hh = Math.floor((diff % 86400000) / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
+        var dn = card.querySelector('.cd-days'); if (dn) dn.textContent = d;
+        var hn = card.querySelector('.cd-hours'); if (hn) hn.textContent = String(hh).padStart(2, '0');
+        var mn = card.querySelector('.cd-mins'); if (mn) mn.textContent = String(m).padStart(2, '0');
+        var sn = card.querySelector('.cd-secs'); if (sn) sn.textContent = String(s).padStart(2, '0');
+      }
+      upd(); setInterval(upd, 1000);
+    });
+
+    // Ticker
+    document.querySelectorAll('.ticker-card').forEach(function (card) {
+      var ca = card.getAttribute('data-ca'); if (!ca) return;
+      var content = card.querySelector('.ticker-content'); if (!content) return;
+      fetch('https://api.dexscreener.com/latest/dex/tokens/' + ca)
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var pairs = d && d.pairs && d.pairs.length > 0 ? d.pairs : null;
+          if (!pairs) { content.innerHTML = '<div class="ticker-na">No price data found</div>'; return; }
+          var p = pairs[0];
+          var price = p.priceUsd ? '$' + parseFloat(p.priceUsd).toFixed(8) : 'N/A';
+          var change = p.priceChange && p.priceChange.h24 !== undefined ? p.priceChange.h24 : null;
+          var ch = change !== null ? '<span class="ticker-change ' + (change >= 0 ? 'positive' : 'negative') + '">' + (change >= 0 ? '+' : '') + parseFloat(change).toFixed(2) + '%</span>' : '';
+          var mcap = p.marketCap ? '$' + Number(p.marketCap).toLocaleString() : 'N/A';
+          var vol = p.volume && p.volume.h24 ? '$' + Number(p.volume.h24).toLocaleString() : 'N/A';
+          content.innerHTML = '<div class="ticker-price">' + price + ' ' + ch + '</div><div class="ticker-stats"><span>MCap: ' + mcap + '</span><span>Vol 24h: ' + vol + '</span></div>';
+        })
+        .catch(function () { content.innerHTML = '<div class="ticker-na">Price data unavailable</div>'; });
+    });
+  </script>
+</body>
+</html>
