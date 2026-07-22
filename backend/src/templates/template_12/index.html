@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{TOKEN_NAME}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  {{OG_TAGS}}
+  {{CSS}}
+</head>
+<body style="opacity:0;transition:opacity 0.5s ease;">
+
+  <canvas id="bg-meow" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none;display:block;"></canvas>
+
+  <div id="intro-overlay">
+    <div id="intro-card">
+      <div id="intro-avatar-wrap"></div>
+      <div id="intro-name"></div>
+    </div>
+  </div>
+
+  <div class="page-wrapper">
+    <div class="banner-container">
+      {{BANNER_BLOCK}}
+    </div>
+    <div class="content-container">
+      <div class="header-row">
+        <div class="avatar-container">
+          {{AVATAR_BLOCK}}
+        </div>
+        <div class="header-main">
+          <div class="name-area">
+            {{NAME_BLOCK}}
+            <div class="slug-tag">{{SLUG}}.shillit.fun</div>
+          </div>
+          <div class="header-socials">
+            {{SOCIAL_BLOCK}}
+          </div>
+        </div>
+      </div>
+      {{DESC_BLOCK}}
+      {{CONTRACT_BLOCK}}
+      {{BUY_BLOCK}}
+      <div class="cards-grid">
+        {{TOKENOMICS_BLOCK}}
+        {{TICKER_BLOCK}}
+        {{COUNTDOWN_BLOCK}}
+        {{ABOUT_BLOCK}}
+        {{ROADMAP_BLOCK}}
+      </div>
+      {{CHART_BLOCK}}
+    </div>
+    <div style="text-align:center;padding:24px 0 16px;font-size:11px;">
+      <a href="https://report.shillit.fun" target="_blank" rel="noreferrer" style="color:#ffe0cc;text-decoration:none;">Report →</a>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // "MEOW" — ROOFTOPS AT DUSK. The cat's kingdom at golden-blue hour:
+    //   indigo sky melting into warm rose city glow -> twinkling bokeh city
+    //   lights and a far skyline with flickering windows -> silhouetted
+    //   rooftop rows with chimneys (drifting smoke) and TV aerials -> a big
+    //   foreground roof with a swaying string of fairy lights -> and the
+    //   hero story: soft paw-steps pad along the roof ridge, pause... and
+    //   then the flower pot at the edge tips over and falls. Because cats.
+    //   Meanwhile two amber eyes occasionally blink from a dark attic window.
+    // =========================================================================
+    (function () {
+      var canvas = document.getElementById('bg-meow');
+      if (!canvas || !canvas.getContext) return;
+      var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var ctx = canvas.getContext('2d');
+      var w, h, dpr, t = 0, raf, running = true, mobile;
+      var stars = [], bokeh = [], skyline = [], roofs = [], smokes = [], lights, motes = [], eyes, cat, dust = [];
+
+      var AMBER = '255,184,92', ROSE = '255,158,122', CREAM = '255,236,214';
+
+      function size() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        w = window.innerWidth; h = window.innerHeight;
+        mobile = w < 700;
+        canvas.width = w * dpr; canvas.height = h * dpr;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+
+      // Foreground roof ridge: rises from the left edge to a peak, then a
+      // short drop to the roof's right edge (where the flower pot sits).
+      var ridge;
+      function ridgeAt(x) {
+        if (x <= ridge.x0) return ridge.y0;
+        if (x >= ridge.x2) return ridge.y2;
+        if (x <= ridge.x1) {
+          var f = (x - ridge.x0) / (ridge.x1 - ridge.x0);
+          return ridge.y0 + (ridge.y1 - ridge.y0) * f;
+        }
+        var g = (x - ridge.x1) / (ridge.x2 - ridge.x1);
+        return ridge.y1 + (ridge.y2 - ridge.y1) * g;
+      }
+
+      function build() {
+        stars = [];
+        var sc = mobile ? 20 : 38;
+        for (var i = 0; i < sc; i++) stars.push({ x: Math.random() * w, y: Math.random() * h * 0.4, r: Math.random() * 1.2 + 0.3, tw: Math.random() * 6.28, sp: 0.4 + Math.random() * 1 });
+        // City bokeh — big soft out-of-focus lights low on the horizon.
+        bokeh = [];
+        var bc = mobile ? 10 : 20;
+        for (var b = 0; b < bc; b++) bokeh.push({
+          x: Math.random() * w, y: h * (0.42 + Math.random() * 0.16),
+          r: 4 + Math.random() * (mobile ? 9 : 14),
+          hue: Math.random() < 0.6 ? AMBER : (Math.random() < 0.5 ? ROSE : '170,200,255'),
+          tw: Math.random() * 6.28, sp: 0.2 + Math.random() * 0.5, a: 0.05 + Math.random() * 0.09
+        });
+        // Far skyline with lit windows.
+        skyline = [];
+        var x = 0;
+        while (x < w) {
+          var bw = (mobile ? 34 : 52) + Math.random() * 60;
+          var bh = h * (0.06 + Math.random() * 0.13);
+          var wins = [];
+          var cols = Math.max(1, Math.floor(bw / 14)), rows = Math.max(1, Math.floor(bh / 16));
+          for (var cx2 = 0; cx2 < cols; cx2++) for (var ry = 0; ry < rows; ry++) {
+            if (Math.random() < 0.28) wins.push({ dx: 5 + cx2 * 14, dy: 8 + ry * 16, ph: Math.random() * 6.28, fl: Math.random() < 0.2 });
+          }
+          skyline.push({ x: x, w: bw, h: bh, wins: wins });
+          x += bw + 2 + Math.random() * 10;
+        }
+        // Mid rooftop row — angled roofs, chimneys, aerials.
+        roofs = [];
+        var rx = -30;
+        while (rx < w + 30) {
+          var rw = (mobile ? 90 : 150) + Math.random() * 120;
+          roofs.push({
+            x: rx, w: rw,
+            baseY: h * (0.66 + Math.random() * 0.05),
+            peak: h * (0.05 + Math.random() * 0.05),
+            chimney: Math.random() < 0.5, aerial: Math.random() < 0.45,
+            win: Math.random() < 0.4
+          });
+          rx += rw * (0.72 + Math.random() * 0.2);
+        }
+        // Foreground roof ridge geometry.
+        ridge = {
+          x0: -20, y0: h * 0.94,
+          x1: w * (mobile ? 0.56 : 0.5), y1: h * 0.70,
+          x2: w * (mobile ? 0.92 : 0.82), y2: h * 0.78
+        };
+        // Fairy-light string strung between two aerial poles on the big roof.
+        lights = {
+          ax: w * 0.16, ay: ridgeAt(w * 0.16) - (mobile ? 34 : 48),
+          bx: ridge.x1 + w * 0.08, by: ridgeAt(ridge.x1 + w * 0.08) - (mobile ? 44 : 62),
+          n: mobile ? 8 : 12, sag: mobile ? 26 : 38
+        };
+        smokes = []; dust = []; motes = [];
+        var mc = mobile ? 12 : 26;
+        for (var m = 0; m < mc; m++) motes.push({ x: Math.random() * w, y: Math.random() * h, z: 0.3 + Math.random() * 0.7, ph: Math.random() * 6.28 });
+        // Blinking attic eyes: pick a mid-roof with a window.
+        eyes = { tt: -200 - Math.random() * 400, roof: null };
+        for (var rr = 0; rr < roofs.length; rr++) { if (roofs[rr].win) { eyes.roof = roofs[rr]; break; } }
+        // The cat sequence: steps along the ridge toward the pot, then tips it.
+        cat = { tt: -240 - Math.random() * 300, steps: mobile ? 4 : 6, pot: newPot() };
+      }
+
+      function newPot() {
+        return { x: ridge.x2 - 14, y: ridgeAt(ridge.x2 - 14), rot: 0, vy: 0, vx: 0, state: 'idle', s: mobile ? 10 : 14 };
+      }
+
+      function drawSky() {
+        var sky = ctx.createLinearGradient(0, 0, 0, h);
+        sky.addColorStop(0, '#120e24');
+        sky.addColorStop(0.42, '#251739');
+        sky.addColorStop(0.62, '#4a2340');
+        sky.addColorStop(0.78, '#8a3b45');
+        sky.addColorStop(1, '#c96a4e');
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+        // warm city glow dome
+        var dome = ctx.createRadialGradient(w * 0.5, h * 0.62, 0, w * 0.5, h * 0.62, h * 0.6);
+        dome.addColorStop(0, 'rgba(' + ROSE + ',0.20)');
+        dome.addColorStop(1, 'rgba(' + ROSE + ',0)');
+        ctx.fillStyle = dome; ctx.fillRect(0, 0, w, h);
+      }
+
+      function drawStars() {
+        for (var i = 0; i < stars.length; i++) {
+          var s = stars[i];
+          ctx.globalAlpha = (0.3 + 0.6 * Math.abs(Math.sin(t * s.sp + s.tw))) * 0.6;
+          ctx.fillStyle = '#ffeeda';
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function drawBokeh() {
+        for (var i = 0; i < bokeh.length; i++) {
+          var b = bokeh[i];
+          var tw = 0.5 + 0.5 * Math.sin(t * b.sp + b.tw);
+          var g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+          g.addColorStop(0, 'rgba(' + b.hue + ',' + (b.a * (0.7 + 0.6 * tw)) + ')');
+          g.addColorStop(1, 'rgba(' + b.hue + ',0)');
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7); ctx.fill();
+        }
+      }
+
+      function drawSkyline() {
+        for (var i = 0; i < skyline.length; i++) {
+          var bld = skyline[i];
+          var top = h * 0.58 - bld.h;
+          ctx.fillStyle = '#1c1226';
+          ctx.fillRect(bld.x, top, bld.w, bld.h + 4);
+          for (var wn = 0; wn < bld.wins.length; wn++) {
+            var win = bld.wins[wn];
+            var a = win.fl ? (0.25 + 0.75 * Math.abs(Math.sin(t * 1.8 + win.ph))) : (0.55 + 0.25 * Math.sin(t * 0.4 + win.ph));
+            ctx.fillStyle = 'rgba(' + AMBER + ',' + (a * 0.8) + ')';
+            ctx.fillRect(bld.x + win.dx, top + win.dy, 4, 6);
+          }
+        }
+        // haze over the skyline base
+        var hz = ctx.createLinearGradient(0, h * 0.52, 0, h * 0.6);
+        hz.addColorStop(0, 'rgba(201,106,78,0)');
+        hz.addColorStop(1, 'rgba(201,106,78,0.35)');
+        ctx.fillStyle = hz; ctx.fillRect(0, h * 0.52, w, h * 0.08);
+      }
+
+      function spawnSmoke(x, y) {
+        smokes.push({ x: x, y: y, r: 3 + Math.random() * 3, a: 0.22, drift: (Math.random() - 0.5) * 0.3 });
+      }
+      function drawSmokes() {
+        for (var i = smokes.length - 1; i >= 0; i--) {
+          var s = smokes[i];
+          s.y -= 0.35; s.x += s.drift + Math.sin(t + s.y * 0.03) * 0.15;
+          s.r += 0.09; s.a *= 0.992;
+          if (s.a < 0.02) { smokes.splice(i, 1); continue; }
+          var g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r);
+          g.addColorStop(0, 'rgba(220,200,210,' + s.a + ')');
+          g.addColorStop(1, 'rgba(220,200,210,0)');
+          ctx.fillStyle = g;
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
+        }
+      }
+
+      function drawRoofs() {
+        for (var i = 0; i < roofs.length; i++) {
+          var r = roofs[i];
+          var peakY = r.baseY - r.peak - 10;
+          ctx.fillStyle = '#170e1e';
+          ctx.beginPath();
+          ctx.moveTo(r.x - 6, r.baseY);
+          ctx.lineTo(r.x + r.w * 0.5, peakY);
+          ctx.lineTo(r.x + r.w + 6, r.baseY);
+          ctx.lineTo(r.x + r.w + 6, h);
+          ctx.lineTo(r.x - 6, h);
+          ctx.closePath(); ctx.fill();
+          // warm rim on the sunset side
+          ctx.strokeStyle = 'rgba(' + ROSE + ',0.28)'; ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(r.x - 6, r.baseY);
+          ctx.lineTo(r.x + r.w * 0.5, peakY);
+          ctx.stroke();
+          if (r.chimney) {
+            var cx = r.x + r.w * 0.68, cw = mobile ? 8 : 12, cy = peakY + (r.baseY - peakY) * 0.3;
+            ctx.fillStyle = '#170e1e';
+            ctx.fillRect(cx, cy - 22, cw, 26);
+            ctx.fillRect(cx - 2, cy - 25, cw + 4, 4);
+            if (!reduce && Math.random() < 0.02) spawnSmoke(cx + cw / 2, cy - 26);
+          }
+          if (r.aerial) {
+            var ax = r.x + r.w * 0.3, ay = peakY + 4;
+            ctx.strokeStyle = '#170e1e'; ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax, ay - (mobile ? 22 : 32)); ctx.stroke();
+            ctx.lineWidth = 1.4;
+            ctx.beginPath(); ctx.moveTo(ax - 10, ay - (mobile ? 20 : 30)); ctx.lineTo(ax + 10, ay - (mobile ? 20 : 30)); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(ax - 7, ay - (mobile ? 15 : 23)); ctx.lineTo(ax + 7, ay - (mobile ? 15 : 23)); ctx.stroke();
+          }
+          if (r.win) {
+            // dark attic window (home of the eyes)
+            var wx = r.x + r.w * 0.42, wy = r.baseY - r.peak * 0.35 - 8;
+            r._winX = wx; r._winY = wy;
+            ctx.fillStyle = '#0a060e';
+            ctx.beginPath(); ctx.arc(wx, wy, mobile ? 7 : 10, 0, 7); ctx.fill();
+            ctx.strokeStyle = 'rgba(' + ROSE + ',0.2)'; ctx.lineWidth = 1.2;
+            ctx.beginPath(); ctx.arc(wx, wy, mobile ? 7 : 10, 0, 7); ctx.stroke();
+          }
+        }
+      }
+
+      function drawEyes() {
+        if (!eyes.roof || eyes.roof._winX === undefined) return;
+        eyes.tt++;
+        var FADE = 40, OPEN = 200;
+        var total = FADE + OPEN + FADE;
+        if (eyes.tt > total) { eyes.tt = -400 - Math.random() * 600; return; }
+        if (eyes.tt < 0) return;
+        var a = eyes.tt < FADE ? eyes.tt / FADE : (eyes.tt > FADE + OPEN ? (total - eyes.tt) / FADE : 1);
+        // blink twice while open
+        var blink = 1;
+        var bt = eyes.tt - FADE;
+        if (bt > 60 && bt < 68) blink = 0.1;
+        if (bt > 130 && bt < 138) blink = 0.1;
+        var ex = eyes.roof._winX, ey = eyes.roof._winY, es = mobile ? 2.2 : 3;
+        ctx.save();
+        ctx.globalAlpha = a * 0.95;
+        ctx.shadowColor = 'rgba(' + AMBER + ',0.9)'; ctx.shadowBlur = 8;
+        ctx.fillStyle = 'rgb(' + AMBER + ')';
+        ctx.beginPath(); ctx.ellipse(ex - es * 1.6, ey, es, es * 1.4 * blink, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(ex + es * 1.6, ey, es, es * 1.4 * blink, 0, 0, 7); ctx.fill();
+        if (blink > 0.5) {
+          ctx.fillStyle = '#1a0d05';
+          ctx.beginPath(); ctx.ellipse(ex - es * 1.6, ey, es * 0.28, es * 1.1, 0, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(ex + es * 1.6, ey, es * 0.28, es * 1.1, 0, 0, 7); ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      function drawForegroundRoof() {
+        // big roof plane
+        ctx.fillStyle = '#0e0813';
+        ctx.beginPath();
+        ctx.moveTo(ridge.x0, ridge.y0);
+        ctx.lineTo(ridge.x1, ridge.y1);
+        ctx.lineTo(ridge.x2, ridge.y2);
+        ctx.lineTo(ridge.x2, h + 10);
+        ctx.lineTo(ridge.x0, h + 10);
+        ctx.closePath(); ctx.fill();
+        // ridge rim light
+        ctx.strokeStyle = 'rgba(' + AMBER + ',0.4)'; ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(ridge.x0, ridge.y0);
+        ctx.lineTo(ridge.x1, ridge.y1);
+        ctx.lineTo(ridge.x2, ridge.y2);
+        ctx.stroke();
+        // shingle hints
+        ctx.strokeStyle = 'rgba(255,200,150,0.06)'; ctx.lineWidth = 1;
+        for (var i = 1; i <= 4; i++) {
+          ctx.beginPath();
+          ctx.moveTo(ridge.x0, ridge.y0 + i * 26);
+          ctx.lineTo(ridge.x1, ridge.y1 + i * 26);
+          ctx.lineTo(ridge.x2, ridge.y2 + i * 26);
+          ctx.stroke();
+        }
+        // aerial poles holding the fairy lights
+        ctx.strokeStyle = '#0e0813'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(lights.ax, ridgeAt(lights.ax)); ctx.lineTo(lights.ax, lights.ay); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(lights.bx, ridgeAt(lights.bx)); ctx.lineTo(lights.bx, lights.by); ctx.stroke();
+        ctx.lineWidth = 1.6;
+        ctx.beginPath(); ctx.moveTo(lights.ax - 8, lights.ay + 5); ctx.lineTo(lights.ax + 8, lights.ay + 5); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(lights.bx - 9, lights.by + 5); ctx.lineTo(lights.bx + 9, lights.by + 5); ctx.stroke();
+      }
+
+      function drawFairyLights() {
+        var sway = Math.sin(t * 0.7) * 4;
+        var mx = (lights.ax + lights.bx) / 2 + sway;
+        var my = Math.max(lights.ay, lights.by) + lights.sag;
+        // wire
+        ctx.strokeStyle = 'rgba(20,12,26,0.9)'; ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(lights.ax, lights.ay);
+        ctx.quadraticCurveTo(mx, my, lights.bx, lights.by);
+        ctx.stroke();
+        // bulbs along the curve
+        for (var i = 1; i < lights.n; i++) {
+          var f = i / lights.n;
+          var x = (1 - f) * (1 - f) * lights.ax + 2 * (1 - f) * f * mx + f * f * lights.bx;
+          var y = (1 - f) * (1 - f) * lights.ay + 2 * (1 - f) * f * my + f * f * lights.by;
+          var pulse = 0.55 + 0.45 * Math.sin(t * 1.3 + i * 1.7);
+          var hue = i % 3 === 0 ? ROSE : AMBER;
+          ctx.save();
+          ctx.globalAlpha = pulse;
+          ctx.shadowColor = 'rgba(' + hue + ',0.95)'; ctx.shadowBlur = 10;
+          ctx.fillStyle = 'rgb(' + CREAM + ')';
+          ctx.beginPath(); ctx.arc(x, y + 3, 2.2, 0, 7); ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      function drawPawStep(x, y, a) {
+        ctx.save();
+        ctx.globalAlpha = a;
+        ctx.shadowColor = 'rgba(' + AMBER + ',0.8)'; ctx.shadowBlur = 9;
+        ctx.fillStyle = 'rgba(' + CREAM + ',0.75)';
+        var S = mobile ? 5 : 7;
+        ctx.beginPath(); ctx.ellipse(x, y, S * 0.5, S * 0.4, -0.3, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x - S * 0.4, y - S * 0.5, S * 0.18, S * 0.24, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x, y - S * 0.62, S * 0.18, S * 0.24, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(x + S * 0.4, y - S * 0.5, S * 0.18, S * 0.24, 0, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+
+      function drawPot(p) {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        var s = p.s;
+        // pot body (trapezoid) + rim, silhouette with warm rim light
+        ctx.fillStyle = '#140a16';
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.6, 0);
+        ctx.lineTo(s * 0.6, 0);
+        ctx.lineTo(s * 0.42, -s);
+        ctx.lineTo(-s * 0.42, -s);
+        ctx.closePath(); ctx.fill();
+        ctx.fillRect(-s * 0.55, -s - s * 0.28, s * 1.1, s * 0.3);
+        // little plant sprigs
+        ctx.strokeStyle = '#140a16'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(0, -s - s * 0.28); ctx.quadraticCurveTo(-s * 0.3, -s * 1.8, -s * 0.5, -s * 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -s - s * 0.28); ctx.quadraticCurveTo(s * 0.2, -s * 1.9, s * 0.4, -s * 2.1); ctx.stroke();
+        // warm rim
+        ctx.strokeStyle = 'rgba(' + AMBER + ',0.5)'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(-s * 0.55, -s - s * 0.28); ctx.lineTo(s * 0.55, -s - s * 0.28); ctx.stroke();
+        ctx.restore();
+      }
+
+      function drawCat() {
+        cat.tt++;
+        var p = cat.pot;
+        var STEP = 30, steps = cat.steps;
+        var stepsEnd = steps * STEP;
+        var PAUSE = 50, TIP = 46;
+        // paw steps along the ridge toward the pot
+        if (cat.tt >= 0 && cat.tt < stepsEnd + 200) {
+          for (var i = 0; i < steps; i++) {
+            var born = i * STEP;
+            if (cat.tt < born) break;
+            var age = cat.tt - born;
+            var a = age < 12 ? age / 12 : Math.max(0, 1 - (age - 12) / 90);
+            if (a <= 0) continue;
+            var f = (i + 1) / (steps + 1);
+            var sx = ridge.x1 + (p.x - 26 - ridge.x1) * f + (i % 2 ? 5 : -5);
+            drawPawStep(sx, ridgeAt(sx) - 2, a * 0.9);
+          }
+        }
+        // pot behaviour
+        if (p.state === 'idle') {
+          if (cat.tt === stepsEnd + PAUSE) p.state = 'tip';
+        } else if (p.state === 'tip') {
+          p.rot += 0.028;
+          if (p.rot > 1.15) { p.state = 'fall'; p.vx = 0.8; p.vy = 0.4; }
+        } else if (p.state === 'fall') {
+          p.vy += 0.14; p.x += p.vx; p.y += p.vy; p.rot += 0.06;
+          if (p.y > h + 40) {
+            // dust puff at the bottom edge
+            for (var d = 0; d < 8; d++) dust.push({ x: p.x, y: h - 6, vx: (Math.random() - 0.5) * 1.6, vy: -Math.random() * 1.2, life: 1 });
+            p.state = 'gone';
+          }
+        } else if (p.state === 'gone') {
+          if (cat.tt > stepsEnd + PAUSE + TIP + 400) {
+            cat.tt = -400 - Math.random() * 500;
+            cat.pot = newPot();
+          }
+        }
+        if (p.state !== 'gone') drawPot(p);
+        // dust
+        for (var i2 = dust.length - 1; i2 >= 0; i2--) {
+          var du = dust[i2];
+          du.x += du.vx; du.y += du.vy; du.vy += 0.03; du.life -= 0.03;
+          if (du.life <= 0) { dust.splice(i2, 1); continue; }
+          ctx.globalAlpha = du.life * 0.5;
+          ctx.fillStyle = 'rgb(200,170,160)';
+          ctx.beginPath(); ctx.arc(du.x, du.y, 2, 0, 7); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function drawMotes() {
+        for (var i = 0; i < motes.length; i++) {
+          var m = motes[i];
+          m.y -= 0.06 + m.z * 0.1; m.x += Math.sin(t * 0.4 + m.ph) * 0.2;
+          if (m.y < -8) { m.y = h + 6; m.x = Math.random() * w; }
+          var tw = 0.4 + 0.6 * Math.sin(t * 1.1 + m.ph);
+          ctx.save();
+          ctx.globalAlpha = (0.1 + 0.35 * m.z) * tw;
+          ctx.shadowColor = 'rgba(' + AMBER + ',0.8)'; ctx.shadowBlur = 6 * m.z;
+          ctx.fillStyle = 'rgb(' + CREAM + ')';
+          ctx.beginPath(); ctx.arc(m.x, m.y, 0.6 + 1.3 * m.z, 0, 7); ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      function frame() {
+        if (!running) return;
+        t += 0.016;
+        drawSky();
+        drawStars();
+        drawBokeh();
+        drawSkyline();
+        drawSmokes();
+        drawRoofs();
+        drawEyes();
+        drawForegroundRoof();
+        drawFairyLights();
+        drawCat();
+        drawMotes();
+        raf = requestAnimationFrame(frame);
+      }
+
+      function drawStatic() {
+        t = 1;
+        drawSky(); drawStars(); drawBokeh(); drawSkyline(); drawRoofs();
+        drawForegroundRoof(); drawFairyLights();
+        drawPot(cat.pot);
+        for (var i = 0; i < motes.length; i++) {
+          var m = motes[i];
+          ctx.globalAlpha = 0.1 + 0.3 * m.z;
+          ctx.fillStyle = 'rgb(' + CREAM + ')';
+          ctx.beginPath(); ctx.arc(m.x, m.y, 0.6 + 1.3 * m.z, 0, 7); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function start() { size(); build(); if (reduce) { drawStatic(); } else { frame(); } }
+      start();
+      var rt;
+      window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { size(); build(); if (reduce) drawStatic(); }, 200); });
+      document.addEventListener('visibilitychange', function () {
+        if (document.hidden) { running = false; if (raf) cancelAnimationFrame(raf); }
+        else if (!running && !reduce) { running = true; frame(); }
+      });
+    })();
+
+    // Body fade in
+    document.body.style.opacity = '0';
+
+    // Intro overlay
+    (function () {
+      var overlay = document.getElementById('intro-overlay');
+      var card = document.getElementById('intro-card');
+      var avatarWrap = document.getElementById('intro-avatar-wrap');
+      var introName = document.getElementById('intro-name');
+      var avatarImg = document.querySelector('.avatar-img');
+      var avatarPlaceholder = document.querySelector('.avatar-placeholder');
+      var tokenName = document.querySelector('.token-name');
+      if (avatarImg) {
+        var img = document.createElement('img');
+        img.src = avatarImg.src;
+        img.style.cssText = 'width:220px;height:220px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,184,92,0.5);box-shadow:0 0 90px rgba(255,158,122,0.45);';
+        avatarWrap.appendChild(img);
+      } else if (avatarPlaceholder) {
+        var ph = document.createElement('div');
+        ph.textContent = avatarPlaceholder.textContent;
+        ph.style.cssText = 'width:220px;height:220px;border-radius:50%;background:rgba(255,184,92,0.12);border:4px solid rgba(255,184,92,0.5);display:flex;align-items:center;justify-content:center;font-size:80px;';
+        avatarWrap.appendChild(ph);
+      }
+      if (tokenName) {
+        introName.textContent = tokenName.textContent;
+      }
+      setTimeout(function () { document.body.style.opacity = '1'; }, 50);
+      setTimeout(function () { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }, 150);
+      setTimeout(function () { overlay.style.opacity = '0'; setTimeout(function () { overlay.style.display = 'none'; }, 1000); }, 1800);
+    })();
+
+    // Scroll fade-in
+    (function () {
+      var els = document.querySelectorAll('.card, .tokenomics-block, .description-block, .contract-block, .buy-links, .header-row');
+      els.forEach(function (el) { el.style.opacity = '0'; el.style.transform = 'translateY(24px)'; el.style.transition = 'opacity 0.5s ease, transform 0.5s ease'; });
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { e.target.style.opacity = '1'; e.target.style.transform = 'translateY(0)'; obs.unobserve(e.target); } });
+      }, { threshold: 0.1 });
+      setTimeout(function () { els.forEach(function (el) { obs.observe(el); }); }, 2000);
+    })();
+
+    // Countdown
+    document.querySelectorAll('.countdown-card').forEach(function (card) {
+      var target = parseInt(card.getAttribute('data-target'));
+      if (!target) return;
+      function upd() {
+        var diff = target - Date.now();
+        if (diff <= 0) { card.querySelector('.countdown-grid').innerHTML = '<div class="countdown-launched">Launched!</div>'; return; }
+        var d = Math.floor(diff / 86400000), hh = Math.floor((diff % 86400000) / 3600000), m = Math.floor((diff % 3600000) / 60000), s = Math.floor((diff % 60000) / 1000);
+        var dn = card.querySelector('.cd-days'); if (dn) dn.textContent = d;
+        var hn = card.querySelector('.cd-hours'); if (hn) hn.textContent = String(hh).padStart(2, '0');
+        var mn = card.querySelector('.cd-mins'); if (mn) mn.textContent = String(m).padStart(2, '0');
+        var sn = card.querySelector('.cd-secs'); if (sn) sn.textContent = String(s).padStart(2, '0');
+      }
+      upd(); setInterval(upd, 1000);
+    });
+
+    // Ticker
+    document.querySelectorAll('.ticker-card').forEach(function (card) {
+      var ca = card.getAttribute('data-ca'); if (!ca) return;
+      var content = card.querySelector('.ticker-content'); if (!content) return;
+      fetch('https://api.dexscreener.com/latest/dex/tokens/' + ca)
+        .then(function (r) { return r.json(); })
+        .then(function (d) {
+          var pairs = d && d.pairs && d.pairs.length > 0 ? d.pairs : null;
+          if (!pairs) { content.innerHTML = '<div class="ticker-na">No price data found</div>'; return; }
+          var p = pairs[0];
+          var price = p.priceUsd ? '$' + parseFloat(p.priceUsd).toFixed(8) : 'N/A';
+          var change = p.priceChange && p.priceChange.h24 !== undefined ? p.priceChange.h24 : null;
+          var ch = change !== null ? '<span class="ticker-change ' + (change >= 0 ? 'positive' : 'negative') + '">' + (change >= 0 ? '+' : '') + parseFloat(change).toFixed(2) + '%</span>' : '';
+          var mcap = p.marketCap ? '$' + Number(p.marketCap).toLocaleString() : 'N/A';
+          var vol = p.volume && p.volume.h24 ? '$' + Number(p.volume.h24).toLocaleString() : 'N/A';
+          content.innerHTML = '<div class="ticker-price">' + price + ' ' + ch + '</div><div class="ticker-stats"><span>MCap: ' + mcap + '</span><span>Vol 24h: ' + vol + '</span></div>';
+        })
+        .catch(function () { content.innerHTML = '<div class="ticker-na">Price data unavailable</div>'; });
+    });
+  </script>
+</body>
+</html>
