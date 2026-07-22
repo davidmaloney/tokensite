@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{TOKEN_NAME}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   {{OG_TAGS}}
   {{CSS}}
 </head>
@@ -50,70 +53,251 @@
       {{CHART_BLOCK}}
     </div>
     <div style="text-align:center;padding:24px 0 16px;font-size:11px;">
-      <a href="https://report.shillit.fun" target="_blank" rel="noreferrer" style="color:#ffffff;text-decoration:none;">Report →</a>
+      <a href="https://report.shillit.fun" target="_blank" rel="noreferrer" style="color:#ffe9c7;text-decoration:none;">Report →</a>
     </div>
   </div>
 
   <script>
     // =========================================================================
-    // "WOOF" — art-directed twilight scene. Composed, layered, parallax.
-    // Layers (far -> near): moon + halo, drifting soft clouds, star/bokeh field,
-    // gracefully arcing well-shaded BONES + PAW prints, warm ember fireflies.
-    // Designed motion (eased arcs, parallax depth, gentle bob) — not a random field.
+    // "WOOF" — GOLDEN HOUR. A cinematic sunset dog park, painted in layers:
+    //   sky wash -> blazing sun with slow god-rays -> under-lit clouds ->
+    //   bird flocks -> three parallax hill ridges -> swaying grass on the
+    //   nearest ridge -> glowing pollen -> paw prints along the ground ->
+    //   a hi-def tennis ball that arcs in with real gravity, squash-bounces
+    //   along the ridge and rolls out. Composed motion, warm light, depth.
     // =========================================================================
     (function () {
       var canvas = document.getElementById('bg-woof');
       if (!canvas || !canvas.getContext) return;
       var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       var ctx = canvas.getContext('2d');
-      var w, h, dpr, t = 0, raf, running = true;
-      var stars = [], clouds = [], bones = [], paws = [], flies = [], moon;
-
-      var MOON = '207,224,255', EMBER = '255,182,77', EMBERS = '255,213,145', DUSK = '27,42,77';
+      var w, h, dpr, t = 0, raf, running = true, mobile;
+      var sun, clouds = [], ridges = [], grass = [], pollen = [], paws = [], flock, ball;
 
       function size() {
         dpr = Math.min(window.devicePixelRatio || 1, 2);
         w = window.innerWidth; h = window.innerHeight;
+        mobile = w < 700;
         canvas.width = w * dpr; canvas.height = h * dpr;
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
 
-      // ---- rounded bone, properly shaded (gradient + soft rim) ----
-      function drawBone(x, y, L, rot, alpha, scale) {
-        var r = L * 0.19 * scale, hw = L * 0.5 * scale, bw = r * 1.35;
-        ctx.save();
-        ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = alpha;
-        var g = ctx.createLinearGradient(-hw, -r, hw, r);
-        g.addColorStop(0, 'rgba(' + MOON + ',0.95)');
-        g.addColorStop(0.5, 'rgba(235,242,255,0.75)');
-        g.addColorStop(1, 'rgba(159,182,230,0.6)');
-        ctx.fillStyle = g;
-        ctx.shadowColor = 'rgba(' + MOON + ',0.5)'; ctx.shadowBlur = 14 * scale;
-        // bar
-        ctx.beginPath();
-        ctx.moveTo(-hw, -bw * 0.5); ctx.lineTo(hw, -bw * 0.5);
-        ctx.lineTo(hw, bw * 0.5); ctx.lineTo(-hw, bw * 0.5); ctx.closePath(); ctx.fill();
-        // four knobs
-        ctx.beginPath(); ctx.arc(-hw, -r * 0.72, r, 0, 7); ctx.fill();
-        ctx.beginPath(); ctx.arc(-hw, r * 0.72, r, 0, 7); ctx.fill();
-        ctx.beginPath(); ctx.arc(hw, -r * 0.72, r, 0, 7); ctx.fill();
-        ctx.beginPath(); ctx.arc(hw, r * 0.72, r, 0, 7); ctx.fill();
-        // subtle top highlight
-        ctx.shadowBlur = 0; ctx.globalAlpha = alpha * 0.5;
-        ctx.fillStyle = 'rgba(255,255,255,0.6)';
-        ctx.beginPath(); ctx.ellipse(-hw * 0.1, -bw * 0.28, hw * 0.5, bw * 0.16, 0, 0, 7); ctx.fill();
-        ctx.restore();
+      // ---- ridge builder: layered sine curves, precomputed once ----
+      function makeRidge(baseY, a1, f1, a2, f2, ph) {
+        var pts = [], steps = 60;
+        for (var i = 0; i <= steps; i++) {
+          var x = (w * i) / steps;
+          pts.push({ x: x, y: baseY + Math.sin(x * f1 + ph) * a1 + Math.sin(x * f2 + ph * 2.7) * a2 });
+        }
+        return pts;
+      }
+      // interpolated ground height of the NEAREST ridge at x
+      function groundY(x) {
+        var pts = ridges[2].pts;
+        if (x <= 0) return pts[0].y;
+        if (x >= w) return pts[pts.length - 1].y;
+        var f = (x / w) * (pts.length - 1), i = Math.floor(f), r = f - i;
+        return pts[i].y + (pts[i + 1].y - pts[i].y) * r;
       }
 
-      // ---- paw print, soft-shaded ----
+      function build() {
+        sun = { x: w * 0.26, y: h * 0.34, r: mobile ? 40 : 66 };
+        // Clouds: puffy clusters lit from below by the sun.
+        clouds = [];
+        var cc = mobile ? 3 : 5;
+        for (var c = 0; c < cc; c++) {
+          var puffs = [], n = 3 + Math.floor(Math.random() * 3), base = (mobile ? 60 : 95) + Math.random() * 55;
+          for (var p = 0; p < n; p++) puffs.push({ dx: (p - n / 2) * base * 0.85 + (Math.random() - 0.5) * 30, dy: (Math.random() - 0.5) * base * 0.4, r: base * (0.6 + Math.random() * 0.5) });
+          clouds.push({ x: Math.random() * w, y: h * (0.08 + Math.random() * 0.3), sp: 0.05 + Math.random() * 0.07, a: 0.10 + Math.random() * 0.08, puffs: puffs, span: base * n });
+        }
+        // Three hill ridges, far -> near.
+        ridges = [
+          { pts: makeRidge(h * 0.62, mobile ? 16 : 26, 0.004, 8, 0.011, 1.3), col: '#43244f' },
+          { pts: makeRidge(h * 0.72, mobile ? 20 : 32, 0.0032, 10, 0.009, 4.1), col: '#301a3e' },
+          { pts: makeRidge(h * 0.83, mobile ? 24 : 38, 0.0026, 12, 0.008, 7.6), col: '#1c0f28' }
+        ];
+        // Grass blades along the nearest ridge.
+        grass = [];
+        var gc = mobile ? 30 : 70;
+        for (var g = 0; g < gc; g++) {
+          var gx = Math.random() * w;
+          grass.push({ x: gx, len: (mobile ? 14 : 20) + Math.random() * (mobile ? 14 : 24), ph: Math.random() * 6.28, sp: 0.5 + Math.random() * 0.7, lean: (Math.random() - 0.5) * 8, lw: 1.2 + Math.random() * 1.4 });
+        }
+        // Golden pollen with depth.
+        pollen = [];
+        var pc = mobile ? 18 : 40;
+        for (var i = 0; i < pc; i++) pollen.push(newPollen(true));
+        // Paw prints stepping along the ridge.
+        paws = [];
+        var pwc = mobile ? 4 : 7;
+        for (var q = 0; q < pwc; q++) paws.push(newPaw(Math.random() * 3));
+        // A small bird flock crossing the sky now and then.
+        flock = newFlock(true);
+        // The hero: a tennis ball with real physics.
+        ball = { phase: 'wait', timer: 120 + Math.random() * 240 };
+      }
+
+      function newPollen(anyY) {
+        var z = 0.3 + Math.random() * 0.7;
+        return { x: Math.random() * w, y: anyY ? Math.random() * h : h + 10, z: z, ph: Math.random() * 6.28, sp: 0.10 + z * 0.22 };
+      }
+      function newPaw(life) {
+        var x = Math.random() * w;
+        return { x: x, y: groundY(x) + 6 + Math.random() * (h - groundY(x) - 20), S: (mobile ? 9 : 12) + Math.random() * 8, rot: (Math.random() - 0.5) * 0.7, life: life, sp: 0.004 + Math.random() * 0.004 };
+      }
+      function newFlock(mid) {
+        var dir = Math.random() < 0.5 ? 1 : -1;
+        return { x: mid ? Math.random() * w : (dir > 0 ? -80 : w + 80), y: h * (0.10 + Math.random() * 0.18), dir: dir, sp: 0.5 + Math.random() * 0.35, n: 3 + Math.floor(Math.random() * 3), ph: Math.random() * 6.28, wait: 0 };
+      }
+      function launchBall() {
+        var fromLeft = Math.random() < 0.5;
+        var r = mobile ? 10 : 14;
+        ball = {
+          phase: 'fly', r: r, bounces: 0, squash: 0, rot: 0,
+          x: fromLeft ? -r * 2 : w + r * 2,
+          y: h * (0.30 + Math.random() * 0.15),
+          vx: (fromLeft ? 1 : -1) * (w / 900) * (2.4 + Math.random() * 1.2),
+          vy: -(1.5 + Math.random() * 1.5),
+          spin: (fromLeft ? 1 : -1) * (0.09 + Math.random() * 0.05)
+        };
+      }
+
+      function drawSky() {
+        var sky = ctx.createLinearGradient(0, 0, 0, h);
+        sky.addColorStop(0, '#1b1033');
+        sky.addColorStop(0.42, '#4a1e44');
+        sky.addColorStop(0.66, '#93374a');
+        sky.addColorStop(0.84, '#e2703a');
+        sky.addColorStop(1, '#ffb45e');
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+      }
+
+      function drawSun() {
+        // corona
+        var pulse = 0.22 + 0.06 * Math.sin(t * 0.9);
+        var cor = ctx.createRadialGradient(sun.x, sun.y, 0, sun.x, sun.y, sun.r * 6.5);
+        cor.addColorStop(0, 'rgba(255,214,140,' + pulse + ')');
+        cor.addColorStop(0.4, 'rgba(255,170,90,' + (pulse * 0.5) + ')');
+        cor.addColorStop(1, 'rgba(255,150,70,0)');
+        ctx.fillStyle = cor; ctx.fillRect(0, 0, w, h);
+        // slow god-rays
+        ctx.save();
+        ctx.translate(sun.x, sun.y); ctx.rotate(t * 0.02);
+        var rays = 10;
+        for (var i = 0; i < rays; i++) {
+          ctx.rotate((Math.PI * 2) / rays);
+          var rg = ctx.createLinearGradient(0, 0, sun.r * 7, 0);
+          rg.addColorStop(0, 'rgba(255,214,140,0.10)');
+          rg.addColorStop(1, 'rgba(255,214,140,0)');
+          ctx.fillStyle = rg;
+          ctx.beginPath();
+          ctx.moveTo(sun.r * 0.6, 0);
+          ctx.lineTo(sun.r * 7, -sun.r * 0.65);
+          ctx.lineTo(sun.r * 7, sun.r * 0.65);
+          ctx.closePath(); ctx.fill();
+        }
+        ctx.restore();
+        // disc
+        var sg = ctx.createRadialGradient(sun.x, sun.y - sun.r * 0.25, sun.r * 0.1, sun.x, sun.y, sun.r);
+        sg.addColorStop(0, '#fff7dd');
+        sg.addColorStop(0.55, '#ffd98a');
+        sg.addColorStop(1, '#ff9d4d');
+        ctx.fillStyle = sg;
+        ctx.beginPath(); ctx.arc(sun.x, sun.y, sun.r, 0, 7); ctx.fill();
+      }
+
+      function drawClouds() {
+        for (var c = 0; c < clouds.length; c++) {
+          var cl = clouds[c]; cl.x += cl.sp;
+          if (cl.x - cl.span > w) cl.x = -cl.span;
+          for (var p = 0; p < cl.puffs.length; p++) {
+            var pf = cl.puffs[p], px = cl.x + pf.dx, py = cl.y + pf.dy;
+            var g = ctx.createRadialGradient(px, py + pf.r * 0.35, pf.r * 0.1, px, py, pf.r);
+            g.addColorStop(0, 'rgba(255,182,120,' + (cl.a * 1.5) + ')');
+            g.addColorStop(0.55, 'rgba(150,70,110,' + cl.a + ')');
+            g.addColorStop(1, 'rgba(60,30,80,0)');
+            ctx.fillStyle = g;
+            ctx.beginPath(); ctx.arc(px, py, pf.r, 0, 7); ctx.fill();
+          }
+        }
+      }
+
+      function drawFlock() {
+        if (flock.wait > 0) { flock.wait--; if (flock.wait === 0) flock = newFlock(false); return; }
+        flock.x += flock.sp * flock.dir;
+        if ((flock.dir > 0 && flock.x > w + 100) || (flock.dir < 0 && flock.x < -100)) { flock.wait = 500 + Math.random() * 700; return; }
+        ctx.strokeStyle = 'rgba(30,14,40,0.75)';
+        ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+        for (var i = 0; i < flock.n; i++) {
+          var bx = flock.x - i * 26 * flock.dir + (i % 2) * 8;
+          var by = flock.y + (i % 2 === 0 ? 0 : 12) + Math.sin(t * 1.1 + i) * 3;
+          var flap = Math.sin(t * 7 + flock.ph + i) * 5;
+          ctx.beginPath();
+          ctx.moveTo(bx - 8, by - flap);
+          ctx.quadraticCurveTo(bx - 3, by + 2, bx, by);
+          ctx.quadraticCurveTo(bx + 3, by + 2, bx + 8, by - flap);
+          ctx.stroke();
+        }
+      }
+
+      function drawRidges() {
+        for (var r = 0; r < ridges.length; r++) {
+          var pts = ridges[r].pts;
+          ctx.fillStyle = ridges[r].col;
+          ctx.beginPath();
+          ctx.moveTo(pts[0].x, pts[0].y);
+          for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+          ctx.lineTo(w, h); ctx.lineTo(0, h); ctx.closePath(); ctx.fill();
+          if (r === 0) {
+            // warm rim light on the far ridge, facing the sun
+            ctx.strokeStyle = 'rgba(255,178,94,0.35)'; ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (var j = 1; j < pts.length; j++) ctx.lineTo(pts[j].x, pts[j].y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      function drawGrass() {
+        for (var g = 0; g < grass.length; g++) {
+          var b = grass[g];
+          var gy = groundY(b.x) + 2;
+          var sway = Math.sin(t * b.sp + b.ph) * b.len * 0.22 + b.lean;
+          ctx.strokeStyle = '#140a1e'; ctx.lineWidth = b.lw; ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(b.x, gy);
+          ctx.quadraticCurveTo(b.x + sway * 0.4, gy - b.len * 0.6, b.x + sway, gy - b.len);
+          ctx.stroke();
+          // sun-lit tip
+          ctx.strokeStyle = 'rgba(255,178,94,0.4)'; ctx.lineWidth = b.lw * 0.6;
+          ctx.beginPath();
+          ctx.moveTo(b.x + sway * 0.55, gy - b.len * 0.72);
+          ctx.quadraticCurveTo(b.x + sway * 0.8, gy - b.len * 0.88, b.x + sway, gy - b.len);
+          ctx.stroke();
+        }
+      }
+
+      function drawPollen() {
+        for (var i = 0; i < pollen.length; i++) {
+          var p = pollen[i];
+          p.y -= p.sp; p.x += Math.sin(t * 0.6 + p.ph) * 0.35;
+          if (p.y < -12) pollen[i] = newPollen(false);
+          var tw = 0.5 + 0.5 * Math.sin(t * 1.4 + p.ph);
+          ctx.save();
+          ctx.globalAlpha = (0.2 + 0.55 * p.z) * tw;
+          ctx.shadowColor = 'rgba(255,214,140,0.9)'; ctx.shadowBlur = 9 * p.z;
+          ctx.fillStyle = '#ffe9b8';
+          ctx.beginPath(); ctx.arc(p.x, p.y, 0.7 + 1.8 * p.z, 0, 7); ctx.fill();
+          ctx.restore();
+        }
+      }
+
       function drawPaw(x, y, S, rot, alpha) {
         ctx.save();
         ctx.translate(x, y); ctx.rotate(rot); ctx.globalAlpha = alpha;
-        var g = ctx.createRadialGradient(0, S * 0.1, S * 0.1, 0, S * 0.1, S);
-        g.addColorStop(0, 'rgba(' + EMBERS + ',0.5)');
-        g.addColorStop(1, 'rgba(' + EMBER + ',0.12)');
-        ctx.fillStyle = g;
-        ctx.shadowColor = 'rgba(' + EMBER + ',0.35)'; ctx.shadowBlur = 12;
+        ctx.shadowColor = 'rgba(255,178,94,0.5)'; ctx.shadowBlur = 10;
+        ctx.fillStyle = 'rgba(255,206,140,0.55)';
         ctx.beginPath(); ctx.ellipse(0, S * 0.32, S * 0.5, S * 0.42, 0, 0, 7); ctx.fill();
         ctx.beginPath(); ctx.ellipse(-S * 0.44, -S * 0.26, S * 0.2, S * 0.26, 0, 0, 7); ctx.fill();
         ctx.beginPath(); ctx.ellipse(-S * 0.16, -S * 0.52, S * 0.19, S * 0.26, 0, 0, 7); ctx.fill();
@@ -121,142 +305,103 @@
         ctx.beginPath(); ctx.ellipse(S * 0.44, -S * 0.26, S * 0.2, S * 0.26, 0, 0, 7); ctx.fill();
         ctx.restore();
       }
-
-      function build() {
-        var mobile = w < 700;
-        // Moon — fixed focal point upper-right, gives the scene an anchor.
-        moon = { x: w * 0.82, y: h * 0.2, r: mobile ? 46 : 74 };
-        // Far star / bokeh field (slow parallax).
-        stars = [];
-        var sc = mobile ? 46 : 90;
-        for (var i = 0; i < sc; i++) stars.push({ x: Math.random() * w, y: Math.random() * h, r: Math.random() * 1.7 + 0.3, tw: Math.random() * 6.28, sp: 0.6 + Math.random() * 1.4 });
-        // Mid soft clouds (very slow drift).
-        clouds = [];
-        var cc = mobile ? 3 : 5;
-        for (var c = 0; c < cc; c++) clouds.push({ x: Math.random() * w, y: h * (0.12 + Math.random() * 0.5), r: (mobile ? 120 : 200) + Math.random() * 160, sp: 0.06 + Math.random() * 0.08, a: 0.05 + Math.random() * 0.05 });
-        // Near bones — arc gracefully across on eased sine paths (parallax, foreground).
-        bones = [];
-        var bc = mobile ? 5 : 9;
-        for (var b = 0; b < bc; b++) bones.push(newBone(Math.random()));
-        // Paw prints appear/fade along a gentle trail.
-        paws = [];
-        var pc = mobile ? 4 : 8;
-        for (var p = 0; p < pc; p++) paws.push(newPaw(Math.random() * 3));
-        // Warm ember fireflies (tiny glowing dots, gentle wander).
-        flies = [];
-        var fc = mobile ? 10 : 20;
-        for (var f = 0; f < fc; f++) flies.push({ x: Math.random() * w, y: Math.random() * h, ph: Math.random() * 6.28, sp: 0.3 + Math.random() * 0.5, r: Math.random() * 1.6 + 0.6, drift: Math.random() * 6.28 });
+      function drawPaws() {
+        for (var p = 0; p < paws.length; p++) {
+          var pw = paws[p]; pw.life += pw.sp;
+          if (pw.life > 3) { paws[p] = newPaw(0); continue; }
+          var a = pw.life < 1 ? pw.life : (pw.life < 2 ? 1 : 3 - pw.life);
+          drawPaw(pw.x, pw.y, pw.S, pw.rot, a * 0.8);
+        }
       }
 
-      function newBone(life) {
-        var mobile = w < 700;
-        return {
-          baseY: h * (0.15 + Math.random() * 0.7),
-          amp: 30 + Math.random() * 70,
-          L: (mobile ? 30 : 40) + Math.random() * (mobile ? 16 : 30),
-          scale: 0.6 + Math.random() * 0.7,
-          spin: (Math.random() - 0.5) * 0.5,
-          rot0: Math.random() * 6.28,
-          sp: 0.15 + Math.random() * 0.22,
-          life: life, phase: Math.random() * 6.28
-        };
-      }
-      function newPaw(life) {
-        return { x: Math.random() * w, y: Math.random() * h, S: 15 + Math.random() * 16, rot: (Math.random() - 0.5) * 0.9, life: life, sp: 0.004 + Math.random() * 0.004 };
+      function drawBall() {
+        if (ball.phase === 'wait') {
+          ball.timer--;
+          if (ball.timer <= 0) launchBall();
+          return;
+        }
+        // physics
+        ball.vy += 0.085;
+        ball.x += ball.vx; ball.y += ball.vy;
+        ball.rot += ball.spin;
+        var gy = groundY(ball.x) - ball.r;
+        if (ball.y >= gy && ball.vy > 0) {
+          ball.y = gy;
+          ball.vy = -ball.vy * 0.58;
+          ball.vx *= 0.96;
+          ball.bounces++;
+          ball.squash = 1;
+        }
+        if (ball.squash > 0) ball.squash -= 0.12;
+        if (ball.x < -ball.r * 3 || ball.x > w + ball.r * 3 || ball.bounces > 5) {
+          ball = { phase: 'wait', timer: 500 + Math.random() * 500 };
+          return;
+        }
+        var r = ball.r;
+        var height = Math.max(0, gy + r - ball.y);
+        // soft contact shadow on the grass
+        var shA = Math.max(0, 0.35 - height / (h * 0.4));
+        if (shA > 0.02) {
+          ctx.save();
+          ctx.globalAlpha = shA;
+          ctx.fillStyle = '#0d0616';
+          ctx.beginPath();
+          ctx.ellipse(ball.x, groundY(ball.x) + 3, r * (1.2 + height / 180), r * 0.32, 0, 0, 7);
+          ctx.fill();
+          ctx.restore();
+        }
+        // the ball — sun-lit, seamed, squash-scaled
+        var sq = Math.max(0, ball.squash);
+        ctx.save();
+        ctx.translate(ball.x, ball.y);
+        ctx.scale(1 + sq * 0.22, 1 - sq * 0.28);
+        ctx.rotate(ball.rot);
+        var bg = ctx.createRadialGradient(-r * 0.38, -r * 0.38, r * 0.15, 0, 0, r * 1.15);
+        bg.addColorStop(0, '#f8ffb0');
+        bg.addColorStop(0.5, '#cfe23c');
+        bg.addColorStop(1, '#77861f');
+        ctx.fillStyle = bg;
+        ctx.shadowColor = 'rgba(255,214,140,0.45)'; ctx.shadowBlur = 16;
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill();
+        ctx.shadowBlur = 0;
+        // curved seams
+        ctx.strokeStyle = 'rgba(255,255,255,0.85)'; ctx.lineWidth = r * 0.14; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(-r * 0.75, 0, r * 0.82, -0.85, 0.85); ctx.stroke();
+        ctx.beginPath(); ctx.arc(r * 0.75, 0, r * 0.82, Math.PI - 0.85, Math.PI + 0.85); ctx.stroke();
+        // rim light
+        ctx.strokeStyle = 'rgba(255,247,221,0.7)'; ctx.lineWidth = r * 0.1;
+        ctx.beginPath(); ctx.arc(0, 0, r * 0.9, Math.PI * 1.05, Math.PI * 1.55); ctx.stroke();
+        ctx.restore();
       }
 
       function frame() {
         if (!running) return;
-        t += 0.01;
-        ctx.clearRect(0, 0, w, h);
-
-        // Vertical dusk wash for depth.
-        var sky = ctx.createLinearGradient(0, 0, 0, h);
-        sky.addColorStop(0, 'rgba(17,26,51,0.55)');
-        sky.addColorStop(0.6, 'rgba(10,15,30,0.2)');
-        sky.addColorStop(1, 'rgba(10,15,30,0.6)');
-        ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
-
-        // Moon halo + moon.
-        var halo = ctx.createRadialGradient(moon.x, moon.y, 0, moon.x, moon.y, moon.r * 4.2);
-        halo.addColorStop(0, 'rgba(' + MOON + ',0.18)');
-        halo.addColorStop(1, 'rgba(' + MOON + ',0)');
-        ctx.fillStyle = halo; ctx.fillRect(0, 0, w, h);
-        var mg = ctx.createRadialGradient(moon.x - moon.r * 0.3, moon.y - moon.r * 0.3, moon.r * 0.2, moon.x, moon.y, moon.r);
-        mg.addColorStop(0, 'rgba(245,249,255,0.9)');
-        mg.addColorStop(1, 'rgba(' + MOON + ',0.35)');
-        ctx.fillStyle = mg;
-        ctx.beginPath(); ctx.arc(moon.x, moon.y, moon.r, 0, 7); ctx.fill();
-
-        // Clouds (soft, slow).
-        for (var c = 0; c < clouds.length; c++) {
-          var cl = clouds[c]; cl.x += cl.sp;
-          if (cl.x - cl.r > w) cl.x = -cl.r;
-          var cg = ctx.createRadialGradient(cl.x, cl.y, 0, cl.x, cl.y, cl.r);
-          cg.addColorStop(0, 'rgba(' + DUSK + ',' + cl.a + ')');
-          cg.addColorStop(1, 'rgba(' + DUSK + ',0)');
-          ctx.fillStyle = cg; ctx.beginPath(); ctx.arc(cl.x, cl.y, cl.r, 0, 7); ctx.fill();
-        }
-
-        // Stars twinkle (far parallax — drift very slightly with time).
-        for (var i = 0; i < stars.length; i++) {
-          var s = stars[i];
-          var tw = 0.4 + 0.6 * Math.abs(Math.sin(t * s.sp + s.tw));
-          ctx.globalAlpha = tw * 0.8;
-          ctx.fillStyle = 'rgba(' + MOON + ',1)';
-          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-
-        // Paw trail (fade in/hold/out).
-        for (var p = 0; p < paws.length; p++) {
-          var pw = paws[p]; pw.life += pw.sp;
-          if (pw.life > 3) { paws[p] = newPaw(0); continue; }
-          var pa = pw.life < 1 ? pw.life : (pw.life < 2 ? 1 : 3 - pw.life);
-          drawPaw(pw.x, pw.y, pw.S, pw.rot, pa * 0.9);
-        }
-
-        // Bones arc across on eased sine paths (composed, parallax foreground).
-        for (var b = 0; b < bones.length; b++) {
-          var bo = bones[b]; bo.life += 0.0016 + bo.sp * 0.0016;
-          if (bo.life > 1) { bones[b] = newBone(0); continue; }
-          var x = -80 + bo.life * (w + 160);
-          var y = bo.baseY + Math.sin(bo.life * Math.PI * 2 + bo.phase) * bo.amp;
-          var rot = bo.rot0 + bo.life * 6.28 * bo.spin;
-          var edge = Math.min(1, Math.min(bo.life, 1 - bo.life) * 6); // fade at edges
-          drawBone(x, y, bo.L, rot, 0.85 * edge, bo.scale);
-        }
-
-        // Ember fireflies (warm, gentle wander + glow pulse).
-        for (var f = 0; f < flies.length; f++) {
-          var fl = flies[f];
-          fl.x += Math.cos(t * fl.sp + fl.drift) * 0.4;
-          fl.y += Math.sin(t * fl.sp * 0.8 + fl.ph) * 0.3;
-          var gl = 0.4 + 0.6 * Math.abs(Math.sin(t * 1.6 + fl.ph));
-          ctx.save(); ctx.globalAlpha = gl * 0.8;
-          ctx.shadowColor = 'rgba(' + EMBER + ',0.9)'; ctx.shadowBlur = 10;
-          ctx.fillStyle = 'rgba(' + EMBERS + ',1)';
-          ctx.beginPath(); ctx.arc(fl.x, fl.y, fl.r, 0, 7); ctx.fill();
-          ctx.restore();
-        }
-
+        t += 0.016;
+        drawSky();
+        drawSun();
+        drawClouds();
+        drawFlock();
+        drawRidges();
+        drawPaws();
+        drawGrass();
+        drawBall();
+        drawPollen();
         raf = requestAnimationFrame(frame);
       }
 
-      function start() { size(); build(); if (reduce) { drawStatic(); } else { frame(); } }
-      // Static, still-pretty fallback for reduced-motion users.
       function drawStatic() {
-        t = 1; ctx.clearRect(0, 0, w, h);
-        var sky = ctx.createLinearGradient(0, 0, 0, h);
-        sky.addColorStop(0, 'rgba(17,26,51,0.55)'); sky.addColorStop(1, 'rgba(10,15,30,0.6)');
-        ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
-        var mg = ctx.createRadialGradient(moon.x, moon.y, moon.r * 0.2, moon.x, moon.y, moon.r);
-        mg.addColorStop(0, 'rgba(245,249,255,0.9)'); mg.addColorStop(1, 'rgba(' + MOON + ',0.35)');
-        ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(moon.x, moon.y, moon.r, 0, 7); ctx.fill();
-        for (var i = 0; i < stars.length; i++) { ctx.globalAlpha = 0.6; ctx.fillStyle = 'rgba(' + MOON + ',1)'; ctx.beginPath(); ctx.arc(stars[i].x, stars[i].y, stars[i].r, 0, 7); ctx.fill(); }
+        t = 1;
+        drawSky(); drawSun(); drawClouds(); drawRidges(); drawGrass();
+        for (var i = 0; i < pollen.length; i++) {
+          var p = pollen[i];
+          ctx.globalAlpha = 0.2 + 0.5 * p.z;
+          ctx.fillStyle = '#ffe9b8';
+          ctx.beginPath(); ctx.arc(p.x, p.y, 0.7 + 1.8 * p.z, 0, 7); ctx.fill();
+        }
         ctx.globalAlpha = 1;
       }
 
+      function start() { size(); build(); if (reduce) { drawStatic(); } else { frame(); } }
       start();
       var rt;
       window.addEventListener('resize', function () { clearTimeout(rt); rt = setTimeout(function () { size(); build(); if (reduce) drawStatic(); }, 200); });
@@ -281,18 +426,16 @@
       if (avatarImg) {
         var img = document.createElement('img');
         img.src = avatarImg.src;
-        img.style.cssText = 'width:220px;height:220px;border-radius:50%;object-fit:cover;border:4px solid rgba(207,224,255,0.35);box-shadow:0 0 90px rgba(159,182,230,0.4);';
+        img.style.cssText = 'width:220px;height:220px;border-radius:50%;object-fit:cover;border:4px solid rgba(255,194,94,0.5);box-shadow:0 0 90px rgba(255,160,80,0.5);';
         avatarWrap.appendChild(img);
       } else if (avatarPlaceholder) {
         var ph = document.createElement('div');
         ph.textContent = avatarPlaceholder.textContent;
-        ph.style.cssText = 'width:220px;height:220px;border-radius:50%;background:rgba(159,182,230,0.12);border:4px solid rgba(207,224,255,0.35);display:flex;align-items:center;justify-content:center;font-size:80px;';
+        ph.style.cssText = 'width:220px;height:220px;border-radius:50%;background:rgba(255,178,94,0.14);border:4px solid rgba(255,194,94,0.5);display:flex;align-items:center;justify-content:center;font-size:80px;';
         avatarWrap.appendChild(ph);
       }
       if (tokenName) {
         introName.textContent = tokenName.textContent;
-        var slugTag = document.querySelector('.slug-tag');
-        if (slugTag) introName.style.color = window.getComputedStyle(slugTag).color;
       }
       setTimeout(function () { document.body.style.opacity = '1'; }, 50);
       setTimeout(function () { card.style.opacity = '1'; card.style.transform = 'scale(1)'; }, 150);
