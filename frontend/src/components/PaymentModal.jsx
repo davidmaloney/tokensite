@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const PLANS = [
@@ -12,6 +12,7 @@ const PAYMENTS_COMING_SOON = false;
 
 export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
   const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
   const [selectedPlan, setSelectedPlan] = useState(PLANS[0]);
   const [solPrice, setSolPrice] = useState(null);
   const [status, setStatus] = useState("idle");
@@ -70,9 +71,37 @@ export default function PaymentModal({ pageId, slug, onClose, onActivated }) {
       }
 
       const { amountSol, treasuryWallet, referenceId } = res.data;
-      const { data: { blockhash, lastValidBlockHeight } } = await axios.get("/api/payments/blockhash");
 
       const lamports = Math.round(parseFloat(amountSol) * LAMPORTS_PER_SOL);
+
+      // --- Pre-flight balance check ---------------------------------------
+      // Before the transaction is built and sent for signing, confirm the
+      // wallet actually holds enough SOL for the payment plus network fees.
+      // The buffer covers the transaction fee AND Solana's rent-exempt
+      // minimum (~0.0009 SOL) — a transfer that would leave a wallet with a
+      // tiny non-zero balance below that minimum fails on-chain anyway.
+      // Best-effort: if the balance lookup itself fails (RPC hiccup), we do
+      // NOT block the payment — this check is a courtesy, never a gate.
+      const FEE_BUFFER_LAMPORTS = 2000000; // ~0.002 SOL headroom
+      try {
+        const balanceLamports = await connection.getBalance(publicKey);
+        if (balanceLamports < lamports + FEE_BUFFER_LAMPORTS) {
+          const needed = ((lamports + FEE_BUFFER_LAMPORTS) / LAMPORTS_PER_SOL).toFixed(4);
+          const have = (balanceLamports / LAMPORTS_PER_SOL).toFixed(4);
+          setError(
+            "Not enough SOL in your wallet. This payment needs about " + needed +
+            " SOL including network fees, but your wallet has " + have +
+            " SOL. Please top up and try again."
+          );
+          setStatus("idle");
+          return;
+        }
+      } catch {
+        // Balance lookup failed — continue, never block payment on a courtesy check.
+      }
+      // ---------------------------------------------------------------------
+
+      const { data: { blockhash, lastValidBlockHeight } } = await axios.get("/api/payments/blockhash");
 
       const transaction = new Transaction().add(
         SystemProgram.transfer({
