@@ -53,20 +53,26 @@
       {{CHART_BLOCK}}
     </div>
     <div style="text-align:center;padding:24px 0 16px;font-size:11px;">
-      <a href="https://report.shillit.fun" target="_blank" rel="noreferrer" style="color:#ffe0cc;text-decoration:none;">Report →</a>
+      <a href="https://report.shillit.fun" target="_blank" rel="noreferrer" style="color:#8a6248;text-decoration:none;">Report →</a>
     </div>
   </div>
 
   <script>
     // =========================================================================
-    // "MEOW" — ROOFTOPS AT DUSK. The cat's kingdom at golden-blue hour:
-    //   indigo sky melting into warm rose city glow -> twinkling bokeh city
-    //   lights and a far skyline with flickering windows -> silhouetted
-    //   rooftop rows with chimneys (drifting smoke) and TV aerials -> a big
-    //   foreground roof with a swaying string of fairy lights -> and the
-    //   hero story: soft paw-steps pad along the roof ridge, pause... and
-    //   then the flower pot at the edge tips over and falls. Because cats.
-    //   Meanwhile two amber eyes occasionally blink from a dark attic window.
+    // "MEOW" v2 — SUNNY AFTERNOON, the cat's living room. Bright & mischievous.
+    //   Warm cream walls -> a big window with real sky, drifting clouds and a
+    //   sun glow outside -> a golden volumetric sunbeam slanting across a
+    //   plank wood floor, with dust motes floating inside it -> a shaded
+    //   coral armchair with a cushion -> teal rug, yarn balls -> a swaying
+    //   curtain and a picture frame that hangs slightly alive.
+    //   HERO STORY (the invisible cat): the cushion dents down under unseen
+    //   weight -> a hop puff -> dark paw prints pad one-by-one across the
+    //   sunlit floor -> a yarn ball gets batted and rolls away unravelling
+    //   string -> then the famous gag: the plant pot on the windowsill
+    //   wobbles, tips and falls with a dust puff and spilled soil. Separate
+    //   cycle: a tail peeks up from behind the armchair and sways, nudging
+    //   the picture frame crooked.
+    //   dpr-safe: ONE setTransform per canvas context (main + baked room).
     // =========================================================================
     (function () {
       var canvas = document.getElementById('bg-meow');
@@ -74,9 +80,10 @@
       var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       var ctx = canvas.getContext('2d');
       var w, h, dpr, t = 0, raf, running = true, mobile;
-      var stars = [], bokeh = [], skyline = [], roofs = [], smokes = [], lights, motes = [], eyes, cat, dust = [];
-
-      var AMBER = '255,184,92', ROSE = '255,158,122', CREAM = '255,236,214';
+      var roomLayer = null;
+      var motes = [], skyClouds = [];
+      var G; // geometry
+      var story, tail, yarn;
 
       function size() {
         dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -86,427 +93,690 @@
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
 
-      // Foreground roof ridge: rises from the left edge to a peak, then a
-      // short drop to the roof's right edge (where the flower pot sits).
-      var ridge;
-      function ridgeAt(x) {
-        if (x <= ridge.x0) return ridge.y0;
-        if (x >= ridge.x2) return ridge.y2;
-        if (x <= ridge.x1) {
-          var f = (x - ridge.x0) / (ridge.x1 - ridge.x0);
-          return ridge.y0 + (ridge.y1 - ridge.y0) * f;
-        }
-        var g = (x - ridge.x1) / (ridge.x2 - ridge.x1);
-        return ridge.y1 + (ridge.y2 - ridge.y1) * g;
+      function rr(c, x, y, ww, hh, r) {
+        if (c.roundRect) { c.beginPath(); c.roundRect(x, y, ww, hh, r); }
+        else { c.beginPath(); c.rect(x, y, ww, hh); }
       }
 
+      // ---- geometry shared by baked room + live actors ----
+      function layout() {
+        var floorY = h * 0.66;
+        var ww = mobile ? w * 0.44 : Math.min(w * 0.34, 430);
+        var wh = h * 0.36;
+        var wx = w - ww - w * (mobile ? 0.07 : 0.1);
+        var wy = h * 0.1;
+        G = {
+          floorY: floorY,
+          win: { x: wx, y: wy, w: ww, h: wh },
+          sillY: wy + wh + 8,
+          chair: { x: w * (mobile ? 0.17 : 0.15), base: floorY + h * 0.11, ht: h * 0.2, wd: mobile ? w * 0.3 : w * 0.17 },
+          rug: { x: w * 0.4, y: floorY + h * 0.16, rx: mobile ? w * 0.3 : w * 0.23, ry: h * 0.07 },
+          frame: { x: wx - w * (mobile ? 0.16 : 0.12), y: h * 0.17 }
+        };
+      }
+
+      // ================= BAKED ROOM (wall, floor, planks, rug) ===============
+      function bakeRoom() {
+        var off = document.createElement('canvas');
+        off.width = w * dpr; off.height = h * dpr;
+        var c = off.getContext('2d');
+        c.setTransform(dpr, 0, 0, dpr, 0, 0);
+        var fy = G.floorY;
+
+        // wall: warm cream, brighter toward the window side
+        var wallG = c.createLinearGradient(0, 0, w, 0);
+        wallG.addColorStop(0, '#f6e2c8');
+        wallG.addColorStop(0.55, '#fdeed8');
+        wallG.addColorStop(1, '#fff6e2');
+        c.fillStyle = wallG;
+        c.fillRect(0, 0, w, fy);
+        // soft top-of-wall shade
+        var topG = c.createLinearGradient(0, 0, 0, h * 0.16);
+        topG.addColorStop(0, 'rgba(150,100,60,0.12)');
+        topG.addColorStop(1, 'rgba(150,100,60,0)');
+        c.fillStyle = topG;
+        c.fillRect(0, 0, w, h * 0.16);
+
+        // baseboard
+        c.fillStyle = '#efd9bd';
+        c.fillRect(0, fy - 12, w, 12);
+        c.fillStyle = 'rgba(120,75,40,0.22)';
+        c.fillRect(0, fy - 2, w, 2);
+
+        // floor: warm wood, lit near the window (right)
+        var fg = c.createLinearGradient(0, fy, 0, h);
+        fg.addColorStop(0, '#e3b078');
+        fg.addColorStop(1, '#c08a52');
+        c.fillStyle = fg;
+        c.fillRect(0, fy, w, h - fy);
+        var fside = c.createLinearGradient(0, 0, w, 0);
+        fside.addColorStop(0, 'rgba(90,50,25,0.18)');
+        fside.addColorStop(0.6, 'rgba(90,50,25,0.02)');
+        fside.addColorStop(1, 'rgba(255,235,190,0.2)');
+        c.fillStyle = fside;
+        c.fillRect(0, fy, w, h - fy);
+
+        // planks: horizontal boards with staggered seams
+        c.strokeStyle = 'rgba(110,65,30,0.2)';
+        c.lineWidth = 1.2;
+        var rows = 6, rH = (h - fy) / rows;
+        for (var r = 1; r < rows; r++) {
+          var py = fy + r * rH;
+          c.beginPath(); c.moveTo(0, py); c.lineTo(w, py); c.stroke();
+        }
+        for (var r2 = 0; r2 < rows; r2++) {
+          var py2 = fy + r2 * rH, seams = 3;
+          for (var s = 0; s < seams; s++) {
+            var sx2 = ((s + (r2 % 2 ? 0.5 : 0)) / seams) * w + w * 0.08;
+            if (sx2 > w) continue;
+            c.beginPath(); c.moveTo(sx2, py2 + 1); c.lineTo(sx2, py2 + rH - 1); c.stroke();
+          }
+        }
+        // faint wood grain
+        c.strokeStyle = 'rgba(110,65,30,0.07)';
+        for (var gline = 0; gline < (mobile ? 14 : 26); gline++) {
+          var gy2 = fy + Math.random() * (h - fy);
+          var gx1 = Math.random() * w, glen = 30 + Math.random() * 90;
+          c.beginPath();
+          c.moveTo(gx1, gy2);
+          c.quadraticCurveTo(gx1 + glen * 0.5, gy2 + (Math.random() - 0.5) * 3, gx1 + glen, gy2);
+          c.stroke();
+        }
+
+        // teal rug with border + soft shadow
+        var R = G.rug;
+        c.fillStyle = 'rgba(90,50,25,0.16)';
+        c.beginPath(); c.ellipse(R.x, R.y + 6, R.rx * 1.02, R.ry * 1.02, 0, 0, 7); c.fill();
+        var rg = c.createRadialGradient(R.x + R.rx * 0.2, R.y - R.ry * 0.3, R.rx * 0.1, R.x, R.y, R.rx);
+        rg.addColorStop(0, '#79d6c5');
+        rg.addColorStop(0.7, '#54bcaa');
+        rg.addColorStop(1, '#3e9c8d');
+        c.fillStyle = rg;
+        c.beginPath(); c.ellipse(R.x, R.y, R.rx, R.ry, 0, 0, 7); c.fill();
+        c.strokeStyle = 'rgba(255,246,224,0.75)';
+        c.lineWidth = 2;
+        c.beginPath(); c.ellipse(R.x, R.y, R.rx * 0.86, R.ry * 0.86, 0, 0, 7); c.stroke();
+        c.strokeStyle = 'rgba(30,90,80,0.35)';
+        c.lineWidth = 1.2;
+        c.beginPath(); c.ellipse(R.x, R.y, R.rx * 0.78, R.ry * 0.78, 0, 0, 7); c.stroke();
+
+        // window: outer casing + sill (sky + dividers are drawn live)
+        var W = G.win;
+        c.fillStyle = 'rgba(120,75,40,0.16)';
+        rr(c, W.x - 10, W.y - 10, W.w + 20, W.h + 20, 14); c.fill();
+        c.fillStyle = '#fffaf0';
+        rr(c, W.x - 8, W.y - 8, W.w + 16, W.h + 16, 12); c.fill();
+        c.fillStyle = 'rgba(150,100,55,0.25)';
+        rr(c, W.x - 8, W.y + W.h + 2, W.w + 16, 6, 3); c.fill();
+        // sill board
+        c.fillStyle = '#fdf3e2';
+        rr(c, W.x - 16, W.y + W.h + 8, W.w + 32, 9, 4); c.fill();
+        c.fillStyle = 'rgba(120,75,40,0.28)';
+        rr(c, W.x - 16, W.y + W.h + 15, W.w + 32, 3, 2); c.fill();
+
+        // tall corner plant (right), painted into the room
+        var px = w * 0.93, pb = G.floorY + h * 0.07;
+        c.fillStyle = 'rgba(90,50,25,0.18)';
+        c.beginPath(); c.ellipse(px, pb + 4, 26, 7, 0, 0, 7); c.fill();
+        var potg = c.createLinearGradient(px - 20, 0, px + 20, 0);
+        potg.addColorStop(0, '#b2643c');
+        potg.addColorStop(0.6, '#d98352');
+        potg.addColorStop(1, '#e8975f');
+        c.fillStyle = potg;
+        c.beginPath();
+        c.moveTo(px - 20, pb - 30); c.lineTo(px + 20, pb - 30);
+        c.lineTo(px + 14, pb); c.lineTo(px - 14, pb); c.closePath(); c.fill();
+        c.fillStyle = '#e8975f';
+        rr(c, px - 22, pb - 36, 44, 9, 4); c.fill();
+        for (var lf = 0; lf < 5; lf++) {
+          var la = -1.9 + lf * 0.42 + (Math.random() - 0.5) * 0.1;
+          var ll = 55 + Math.random() * 40;
+          var lx = px + Math.cos(la) * ll, ly = pb - 36 + Math.sin(la) * ll;
+          var leafg = c.createLinearGradient(px, pb - 36, lx, ly);
+          leafg.addColorStop(0, '#3f9455');
+          leafg.addColorStop(1, '#7fce7d');
+          c.strokeStyle = leafg;
+          c.lineWidth = 7; c.lineCap = 'round';
+          c.beginPath();
+          c.moveTo(px, pb - 34);
+          c.quadraticCurveTo(px + Math.cos(la) * ll * 0.5, pb - 36 + Math.sin(la) * ll * 0.7, lx, ly);
+          c.stroke();
+        }
+        return off;
+      }
+
+      // ======================= BUILD DYNAMIC STATE ==========================
       function build() {
-        stars = [];
-        var sc = mobile ? 20 : 38;
-        for (var i = 0; i < sc; i++) stars.push({ x: Math.random() * w, y: Math.random() * h * 0.4, r: Math.random() * 1.2 + 0.3, tw: Math.random() * 6.28, sp: 0.4 + Math.random() * 1 });
-        // City bokeh — big soft out-of-focus lights low on the horizon.
-        bokeh = [];
-        var bc = mobile ? 10 : 20;
-        for (var b = 0; b < bc; b++) bokeh.push({
-          x: Math.random() * w, y: h * (0.42 + Math.random() * 0.16),
-          r: 4 + Math.random() * (mobile ? 9 : 14),
-          hue: Math.random() < 0.6 ? AMBER : (Math.random() < 0.5 ? ROSE : '170,200,255'),
-          tw: Math.random() * 6.28, sp: 0.2 + Math.random() * 0.5, a: 0.05 + Math.random() * 0.09
+        layout();
+        roomLayer = bakeRoom();
+        skyClouds = [
+          { u: 0.15, v: 0.3, s: 0.5, sp: 0.00035 },
+          { u: 0.6, v: 0.16, s: 0.72, sp: 0.00025 }
+        ];
+        motes = [];
+        var mc = mobile ? 10 : 18;
+        for (var m = 0; m < mc; m++) motes.push({
+          u: Math.random(), v: Math.random(),
+          dv: 0.0004 + Math.random() * 0.0009,
+          ph: Math.random() * 6.28, r: 0.7 + Math.random() * 1.2
         });
-        // Far skyline with lit windows.
-        skyline = [];
-        var x = 0;
-        while (x < w) {
-          var bw = (mobile ? 34 : 52) + Math.random() * 60;
-          var bh = h * (0.06 + Math.random() * 0.13);
-          var wins = [];
-          var cols = Math.max(1, Math.floor(bw / 14)), rows = Math.max(1, Math.floor(bh / 16));
-          for (var cx2 = 0; cx2 < cols; cx2++) for (var ry = 0; ry < rows; ry++) {
-            if (Math.random() < 0.28) wins.push({ dx: 5 + cx2 * 14, dy: 8 + ry * 16, ph: Math.random() * 6.28, fl: Math.random() < 0.2 });
-          }
-          skyline.push({ x: x, w: bw, h: bh, wins: wins });
-          x += bw + 2 + Math.random() * 10;
-        }
-        // Mid rooftop row — angled roofs, chimneys, aerials.
-        roofs = [];
-        var rx = -30;
-        while (rx < w + 30) {
-          var rw = (mobile ? 90 : 150) + Math.random() * 120;
-          roofs.push({
-            x: rx, w: rw,
-            baseY: h * (0.66 + Math.random() * 0.05),
-            peak: h * (0.05 + Math.random() * 0.05),
-            chimney: Math.random() < 0.5, aerial: Math.random() < 0.45,
-            win: Math.random() < 0.4
-          });
-          rx += rw * (0.72 + Math.random() * 0.2);
-        }
-        // Foreground roof ridge geometry.
-        ridge = {
-          x0: -20, y0: h * 0.94,
-          x1: w * (mobile ? 0.56 : 0.5), y1: h * 0.70,
-          x2: w * (mobile ? 0.92 : 0.82), y2: h * 0.78
-        };
-        // Fairy-light string strung between two aerial poles on the big roof.
-        lights = {
-          ax: w * 0.16, ay: ridgeAt(w * 0.16) - (mobile ? 34 : 48),
-          bx: ridge.x1 + w * 0.08, by: ridgeAt(ridge.x1 + w * 0.08) - (mobile ? 44 : 62),
-          n: mobile ? 8 : 12, sag: mobile ? 26 : 38
-        };
-        smokes = []; dust = []; motes = [];
-        var mc = mobile ? 12 : 26;
-        for (var m = 0; m < mc; m++) motes.push({ x: Math.random() * w, y: Math.random() * h, z: 0.3 + Math.random() * 0.7, ph: Math.random() * 6.28 });
-        // Blinking attic eyes: pick a mid-roof with a window.
-        eyes = { tt: -200 - Math.random() * 400, roof: null };
-        for (var rr = 0; rr < roofs.length; rr++) { if (roofs[rr].win) { eyes.roof = roofs[rr]; break; } }
-        // The cat sequence: steps along the ridge toward the pot, then tips it.
-        cat = { tt: -240 - Math.random() * 300, steps: mobile ? 4 : 6, pot: newPot() };
+        story = { tt: -80, dusts: [], landed: false };
+        tail = { tt: -400 - Math.random() * 300 };
+        yarn = resetYarn();
+      }
+      function resetYarn() {
+        var R = G.rug;
+        return { x0: R.x + R.rx * 0.55, y0: R.y - R.ry * 0.15, dx: 0, rot: 0 };
       }
 
-      function newPot() {
-        return { x: ridge.x2 - 14, y: ridgeAt(ridge.x2 - 14), rot: 0, vy: 0, vx: 0, state: 'idle', s: mobile ? 10 : 14 };
-      }
-
-      function drawSky() {
-        var sky = ctx.createLinearGradient(0, 0, 0, h);
-        sky.addColorStop(0, '#120e24');
-        sky.addColorStop(0.42, '#251739');
-        sky.addColorStop(0.62, '#4a2340');
-        sky.addColorStop(0.78, '#8a3b45');
-        sky.addColorStop(1, '#c96a4e');
-        ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
-        // warm city glow dome
-        var dome = ctx.createRadialGradient(w * 0.5, h * 0.62, 0, w * 0.5, h * 0.62, h * 0.6);
-        dome.addColorStop(0, 'rgba(' + ROSE + ',0.20)');
-        dome.addColorStop(1, 'rgba(' + ROSE + ',0)');
-        ctx.fillStyle = dome; ctx.fillRect(0, 0, w, h);
-      }
-
-      function drawStars() {
-        for (var i = 0; i < stars.length; i++) {
-          var s = stars[i];
-          ctx.globalAlpha = (0.3 + 0.6 * Math.abs(Math.sin(t * s.sp + s.tw))) * 0.6;
-          ctx.fillStyle = '#ffeeda';
-          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-      }
-
-      function drawBokeh() {
-        for (var i = 0; i < bokeh.length; i++) {
-          var b = bokeh[i];
-          var tw = 0.5 + 0.5 * Math.sin(t * b.sp + b.tw);
-          var g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
-          g.addColorStop(0, 'rgba(' + b.hue + ',' + (b.a * (0.7 + 0.6 * tw)) + ')');
-          g.addColorStop(1, 'rgba(' + b.hue + ',0)');
-          ctx.fillStyle = g;
-          ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, 7); ctx.fill();
-        }
-      }
-
-      function drawSkyline() {
-        for (var i = 0; i < skyline.length; i++) {
-          var bld = skyline[i];
-          var top = h * 0.58 - bld.h;
-          ctx.fillStyle = '#1c1226';
-          ctx.fillRect(bld.x, top, bld.w, bld.h + 4);
-          for (var wn = 0; wn < bld.wins.length; wn++) {
-            var win = bld.wins[wn];
-            var a = win.fl ? (0.25 + 0.75 * Math.abs(Math.sin(t * 1.8 + win.ph))) : (0.55 + 0.25 * Math.sin(t * 0.4 + win.ph));
-            ctx.fillStyle = 'rgba(' + AMBER + ',' + (a * 0.8) + ')';
-            ctx.fillRect(bld.x + win.dx, top + win.dy, 4, 6);
-          }
-        }
-        // haze over the skyline base
-        var hz = ctx.createLinearGradient(0, h * 0.52, 0, h * 0.6);
-        hz.addColorStop(0, 'rgba(201,106,78,0)');
-        hz.addColorStop(1, 'rgba(201,106,78,0.35)');
-        ctx.fillStyle = hz; ctx.fillRect(0, h * 0.52, w, h * 0.08);
-      }
-
-      function spawnSmoke(x, y) {
-        smokes.push({ x: x, y: y, r: 3 + Math.random() * 3, a: 0.22, drift: (Math.random() - 0.5) * 0.3 });
-      }
-      function drawSmokes() {
-        for (var i = smokes.length - 1; i >= 0; i--) {
-          var s = smokes[i];
-          s.y -= 0.35; s.x += s.drift + Math.sin(t + s.y * 0.03) * 0.15;
-          s.r += 0.09; s.a *= 0.992;
-          if (s.a < 0.02) { smokes.splice(i, 1); continue; }
-          var g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, s.r);
-          g.addColorStop(0, 'rgba(220,200,210,' + s.a + ')');
-          g.addColorStop(1, 'rgba(220,200,210,0)');
-          ctx.fillStyle = g;
-          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
-        }
-      }
-
-      function drawRoofs() {
-        for (var i = 0; i < roofs.length; i++) {
-          var r = roofs[i];
-          var peakY = r.baseY - r.peak - 10;
-          ctx.fillStyle = '#170e1e';
-          ctx.beginPath();
-          ctx.moveTo(r.x - 6, r.baseY);
-          ctx.lineTo(r.x + r.w * 0.5, peakY);
-          ctx.lineTo(r.x + r.w + 6, r.baseY);
-          ctx.lineTo(r.x + r.w + 6, h);
-          ctx.lineTo(r.x - 6, h);
-          ctx.closePath(); ctx.fill();
-          // warm rim on the sunset side
-          ctx.strokeStyle = 'rgba(' + ROSE + ',0.28)'; ctx.lineWidth = 1.4;
-          ctx.beginPath();
-          ctx.moveTo(r.x - 6, r.baseY);
-          ctx.lineTo(r.x + r.w * 0.5, peakY);
-          ctx.stroke();
-          if (r.chimney) {
-            var cx = r.x + r.w * 0.68, cw = mobile ? 8 : 12, cy = peakY + (r.baseY - peakY) * 0.3;
-            ctx.fillStyle = '#170e1e';
-            ctx.fillRect(cx, cy - 22, cw, 26);
-            ctx.fillRect(cx - 2, cy - 25, cw + 4, 4);
-            if (!reduce && Math.random() < 0.02) spawnSmoke(cx + cw / 2, cy - 26);
-          }
-          if (r.aerial) {
-            var ax = r.x + r.w * 0.3, ay = peakY + 4;
-            ctx.strokeStyle = '#170e1e'; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(ax, ay - (mobile ? 22 : 32)); ctx.stroke();
-            ctx.lineWidth = 1.4;
-            ctx.beginPath(); ctx.moveTo(ax - 10, ay - (mobile ? 20 : 30)); ctx.lineTo(ax + 10, ay - (mobile ? 20 : 30)); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(ax - 7, ay - (mobile ? 15 : 23)); ctx.lineTo(ax + 7, ay - (mobile ? 15 : 23)); ctx.stroke();
-          }
-          if (r.win) {
-            // dark attic window (home of the eyes)
-            var wx = r.x + r.w * 0.42, wy = r.baseY - r.peak * 0.35 - 8;
-            r._winX = wx; r._winY = wy;
-            ctx.fillStyle = '#0a060e';
-            ctx.beginPath(); ctx.arc(wx, wy, mobile ? 7 : 10, 0, 7); ctx.fill();
-            ctx.strokeStyle = 'rgba(' + ROSE + ',0.2)'; ctx.lineWidth = 1.2;
-            ctx.beginPath(); ctx.arc(wx, wy, mobile ? 7 : 10, 0, 7); ctx.stroke();
-          }
-        }
-      }
-
-      function drawEyes() {
-        if (!eyes.roof || eyes.roof._winX === undefined) return;
-        eyes.tt++;
-        var FADE = 40, OPEN = 200;
-        var total = FADE + OPEN + FADE;
-        if (eyes.tt > total) { eyes.tt = -400 - Math.random() * 600; return; }
-        if (eyes.tt < 0) return;
-        var a = eyes.tt < FADE ? eyes.tt / FADE : (eyes.tt > FADE + OPEN ? (total - eyes.tt) / FADE : 1);
-        // blink twice while open
-        var blink = 1;
-        var bt = eyes.tt - FADE;
-        if (bt > 60 && bt < 68) blink = 0.1;
-        if (bt > 130 && bt < 138) blink = 0.1;
-        var ex = eyes.roof._winX, ey = eyes.roof._winY, es = mobile ? 2.2 : 3;
+      // ======================= WINDOW SKY (live) ============================
+      function drawWindow() {
+        var W = G.win;
         ctx.save();
-        ctx.globalAlpha = a * 0.95;
-        ctx.shadowColor = 'rgba(' + AMBER + ',0.9)'; ctx.shadowBlur = 8;
-        ctx.fillStyle = 'rgb(' + AMBER + ')';
-        ctx.beginPath(); ctx.ellipse(ex - es * 1.6, ey, es, es * 1.4 * blink, 0, 0, 7); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(ex + es * 1.6, ey, es, es * 1.4 * blink, 0, 0, 7); ctx.fill();
-        if (blink > 0.5) {
-          ctx.fillStyle = '#1a0d05';
-          ctx.beginPath(); ctx.ellipse(ex - es * 1.6, ey, es * 0.28, es * 1.1, 0, 0, 7); ctx.fill();
-          ctx.beginPath(); ctx.ellipse(ex + es * 1.6, ey, es * 0.28, es * 1.1, 0, 0, 7); ctx.fill();
+        rr(ctx, W.x, W.y, W.w, W.h, 8);
+        ctx.clip();
+        var sg = ctx.createLinearGradient(0, W.y, 0, W.y + W.h);
+        sg.addColorStop(0, '#5fc2f5');
+        sg.addColorStop(0.7, '#a8e0fb');
+        sg.addColorStop(1, '#dff4ea');
+        ctx.fillStyle = sg;
+        ctx.fillRect(W.x, W.y, W.w, W.h);
+        // sun glow in the top-right of the window
+        var gl = ctx.createRadialGradient(W.x + W.w * 0.85, W.y + W.h * 0.16, 0, W.x + W.w * 0.85, W.y + W.h * 0.16, W.w * 0.7);
+        gl.addColorStop(0, 'rgba(255,240,190,0.9)');
+        gl.addColorStop(0.35, 'rgba(255,228,150,0.35)');
+        gl.addColorStop(1, 'rgba(255,228,150,0)');
+        ctx.fillStyle = gl;
+        ctx.fillRect(W.x, W.y, W.w, W.h);
+        // drifting clouds
+        for (var i = 0; i < skyClouds.length; i++) {
+          var cl = skyClouds[i];
+          cl.u += cl.sp;
+          if (cl.u > 1.25) cl.u = -0.25;
+          var cx = W.x + cl.u * W.w, cy = W.y + cl.v * W.h;
+          var cs = W.w * 0.09 * cl.s;
+          ctx.fillStyle = 'rgba(255,255,255,0.92)';
+          ctx.beginPath();
+          ctx.arc(cx, cy, cs, 0, 7);
+          ctx.arc(cx + cs * 1.1, cy - cs * 0.45, cs * 1.15, 0, 7);
+          ctx.arc(cx + cs * 2.3, cy, cs * 0.9, 0, 7);
+          ctx.fill();
+          ctx.fillStyle = 'rgba(150,185,215,0.25)';
+          ctx.beginPath();
+          ctx.ellipse(cx + cs * 1.15, cy + cs * 0.5, cs * 2, cs * 0.32, 0, 0, 7);
+          ctx.fill();
         }
+        // far rooftops silhouette at the bottom of the view (a wink to v1)
+        ctx.fillStyle = 'rgba(120,150,170,0.35)';
+        ctx.beginPath();
+        ctx.moveTo(W.x, W.y + W.h);
+        ctx.lineTo(W.x, W.y + W.h * 0.9);
+        ctx.lineTo(W.x + W.w * 0.18, W.y + W.h * 0.9);
+        ctx.lineTo(W.x + W.w * 0.24, W.y + W.h * 0.82);
+        ctx.lineTo(W.x + W.w * 0.38, W.y + W.h * 0.82);
+        ctx.lineTo(W.x + W.w * 0.44, W.y + W.h * 0.92);
+        ctx.lineTo(W.x + W.w * 0.66, W.y + W.h * 0.92);
+        ctx.lineTo(W.x + W.w * 0.72, W.y + W.h * 0.84);
+        ctx.lineTo(W.x + W.w, W.y + W.h * 0.84);
+        ctx.lineTo(W.x + W.w, W.y + W.h);
+        ctx.closePath();
+        ctx.fill();
         ctx.restore();
+        // dividers + inner frame on top of the sky
+        ctx.strokeStyle = '#fffaf0';
+        ctx.lineWidth = 6;
+        ctx.beginPath(); ctx.moveTo(W.x + W.w / 2, W.y); ctx.lineTo(W.x + W.w / 2, W.y + W.h); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(W.x, W.y + W.h * 0.48); ctx.lineTo(W.x + W.w, W.y + W.h * 0.48); ctx.stroke();
+        ctx.strokeStyle = 'rgba(150,100,55,0.3)';
+        ctx.lineWidth = 1.5;
+        rr(ctx, W.x, W.y, W.w, W.h, 8); ctx.stroke();
       }
 
-      function drawForegroundRoof() {
-        // big roof plane
-        ctx.fillStyle = '#0e0813';
+      // ======================= SUNBEAM + MOTES (live) =======================
+      function beamCorners() {
+        var W = G.win;
+        var p1 = { x: W.x + 4, y: W.y + 10 };
+        var p2 = { x: W.x + W.w - 4, y: W.y + 4 };
+        var p3 = { x: W.x + W.w - w * 0.16, y: G.floorY + h * 0.26 };
+        var p4 = { x: W.x - w * 0.3, y: G.floorY + h * 0.17 };
+        return [p1, p2, p3, p4];
+      }
+      function drawBeam() {
+        var b = beamCorners();
+        var breathe = 0.92 + 0.08 * Math.sin(t * 0.5);
+        var bg = ctx.createLinearGradient(b[1].x, b[1].y, b[3].x, b[3].y);
+        bg.addColorStop(0, 'rgba(255,232,160,' + 0.24 * breathe + ')');
+        bg.addColorStop(0.7, 'rgba(255,224,150,' + 0.12 * breathe + ')');
+        bg.addColorStop(1, 'rgba(255,224,150,0)');
+        ctx.fillStyle = bg;
         ctx.beginPath();
-        ctx.moveTo(ridge.x0, ridge.y0);
-        ctx.lineTo(ridge.x1, ridge.y1);
-        ctx.lineTo(ridge.x2, ridge.y2);
-        ctx.lineTo(ridge.x2, h + 10);
-        ctx.lineTo(ridge.x0, h + 10);
+        ctx.moveTo(b[0].x, b[0].y); ctx.lineTo(b[1].x, b[1].y);
+        ctx.lineTo(b[2].x, b[2].y); ctx.lineTo(b[3].x, b[3].y);
         ctx.closePath(); ctx.fill();
-        // ridge rim light
-        ctx.strokeStyle = 'rgba(' + AMBER + ',0.4)'; ctx.lineWidth = 2;
+        // brighter core stripe
+        ctx.fillStyle = 'rgba(255,244,200,' + 0.1 * breathe + ')';
         ctx.beginPath();
-        ctx.moveTo(ridge.x0, ridge.y0);
-        ctx.lineTo(ridge.x1, ridge.y1);
-        ctx.lineTo(ridge.x2, ridge.y2);
-        ctx.stroke();
-        // shingle hints
-        ctx.strokeStyle = 'rgba(255,200,150,0.06)'; ctx.lineWidth = 1;
-        for (var i = 1; i <= 4; i++) {
-          ctx.beginPath();
-          ctx.moveTo(ridge.x0, ridge.y0 + i * 26);
-          ctx.lineTo(ridge.x1, ridge.y1 + i * 26);
-          ctx.lineTo(ridge.x2, ridge.y2 + i * 26);
-          ctx.stroke();
-        }
-        // aerial poles holding the fairy lights
-        ctx.strokeStyle = '#0e0813'; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.moveTo(lights.ax, ridgeAt(lights.ax)); ctx.lineTo(lights.ax, lights.ay); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(lights.bx, ridgeAt(lights.bx)); ctx.lineTo(lights.bx, lights.by); ctx.stroke();
-        ctx.lineWidth = 1.6;
-        ctx.beginPath(); ctx.moveTo(lights.ax - 8, lights.ay + 5); ctx.lineTo(lights.ax + 8, lights.ay + 5); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(lights.bx - 9, lights.by + 5); ctx.lineTo(lights.bx + 9, lights.by + 5); ctx.stroke();
-      }
-
-      function drawFairyLights() {
-        var sway = Math.sin(t * 0.7) * 4;
-        var mx = (lights.ax + lights.bx) / 2 + sway;
-        var my = Math.max(lights.ay, lights.by) + lights.sag;
-        // wire
-        ctx.strokeStyle = 'rgba(20,12,26,0.9)'; ctx.lineWidth = 1.4;
-        ctx.beginPath();
-        ctx.moveTo(lights.ax, lights.ay);
-        ctx.quadraticCurveTo(mx, my, lights.bx, lights.by);
-        ctx.stroke();
-        // bulbs along the curve
-        for (var i = 1; i < lights.n; i++) {
-          var f = i / lights.n;
-          var x = (1 - f) * (1 - f) * lights.ax + 2 * (1 - f) * f * mx + f * f * lights.bx;
-          var y = (1 - f) * (1 - f) * lights.ay + 2 * (1 - f) * f * my + f * f * lights.by;
-          var pulse = 0.55 + 0.45 * Math.sin(t * 1.3 + i * 1.7);
-          var hue = i % 3 === 0 ? ROSE : AMBER;
-          ctx.save();
-          ctx.globalAlpha = pulse;
-          ctx.shadowColor = 'rgba(' + hue + ',0.95)'; ctx.shadowBlur = 10;
-          ctx.fillStyle = 'rgb(' + CREAM + ')';
-          ctx.beginPath(); ctx.arc(x, y + 3, 2.2, 0, 7); ctx.fill();
-          ctx.restore();
-        }
-      }
-
-      function drawPawStep(x, y, a) {
-        ctx.save();
-        ctx.globalAlpha = a;
-        ctx.shadowColor = 'rgba(' + AMBER + ',0.8)'; ctx.shadowBlur = 9;
-        ctx.fillStyle = 'rgba(' + CREAM + ',0.75)';
-        var S = mobile ? 5 : 7;
-        ctx.beginPath(); ctx.ellipse(x, y, S * 0.5, S * 0.4, -0.3, 0, 7); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(x - S * 0.4, y - S * 0.5, S * 0.18, S * 0.24, 0, 0, 7); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(x, y - S * 0.62, S * 0.18, S * 0.24, 0, 0, 7); ctx.fill();
-        ctx.beginPath(); ctx.ellipse(x + S * 0.4, y - S * 0.5, S * 0.18, S * 0.24, 0, 0, 7); ctx.fill();
-        ctx.restore();
-      }
-
-      function drawPot(p) {
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rot);
-        var s = p.s;
-        // pot body (trapezoid) + rim, silhouette with warm rim light
-        ctx.fillStyle = '#140a16';
-        ctx.beginPath();
-        ctx.moveTo(-s * 0.6, 0);
-        ctx.lineTo(s * 0.6, 0);
-        ctx.lineTo(s * 0.42, -s);
-        ctx.lineTo(-s * 0.42, -s);
+        ctx.moveTo(b[0].x + (b[1].x - b[0].x) * 0.3, b[0].y + (b[1].y - b[0].y) * 0.3);
+        ctx.lineTo(b[0].x + (b[1].x - b[0].x) * 0.7, b[0].y + (b[1].y - b[0].y) * 0.7);
+        ctx.lineTo(b[3].x + (b[2].x - b[3].x) * 0.7, b[3].y + (b[2].y - b[3].y) * 0.7);
+        ctx.lineTo(b[3].x + (b[2].x - b[3].x) * 0.3, b[3].y + (b[2].y - b[3].y) * 0.3);
         ctx.closePath(); ctx.fill();
-        ctx.fillRect(-s * 0.55, -s - s * 0.28, s * 1.1, s * 0.3);
-        // little plant sprigs
-        ctx.strokeStyle = '#140a16'; ctx.lineWidth = 2; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(0, -s - s * 0.28); ctx.quadraticCurveTo(-s * 0.3, -s * 1.8, -s * 0.5, -s * 2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, -s - s * 0.28); ctx.quadraticCurveTo(s * 0.2, -s * 1.9, s * 0.4, -s * 2.1); ctx.stroke();
-        // warm rim
-        ctx.strokeStyle = 'rgba(' + AMBER + ',0.5)'; ctx.lineWidth = 1.2;
-        ctx.beginPath(); ctx.moveTo(-s * 0.55, -s - s * 0.28); ctx.lineTo(s * 0.55, -s - s * 0.28); ctx.stroke();
-        ctx.restore();
+        // warm light pool where the beam meets the floor
+        var poolX = (b[2].x + b[3].x) / 2, poolY = (b[2].y + b[3].y) / 2 - h * 0.02;
+        var pg = ctx.createRadialGradient(poolX, poolY, 0, poolX, poolY, w * 0.2);
+        pg.addColorStop(0, 'rgba(255,238,180,' + 0.22 * breathe + ')');
+        pg.addColorStop(1, 'rgba(255,238,180,0)');
+        ctx.fillStyle = pg;
+        ctx.beginPath(); ctx.ellipse(poolX, poolY, w * 0.22, h * 0.06, -0.06, 0, 7); ctx.fill();
       }
-
-      function drawCat() {
-        cat.tt++;
-        var p = cat.pot;
-        var STEP = 30, steps = cat.steps;
-        var stepsEnd = steps * STEP;
-        var PAUSE = 50, TIP = 46;
-        // paw steps along the ridge toward the pot
-        if (cat.tt >= 0 && cat.tt < stepsEnd + 200) {
-          for (var i = 0; i < steps; i++) {
-            var born = i * STEP;
-            if (cat.tt < born) break;
-            var age = cat.tt - born;
-            var a = age < 12 ? age / 12 : Math.max(0, 1 - (age - 12) / 90);
-            if (a <= 0) continue;
-            var f = (i + 1) / (steps + 1);
-            var sx = ridge.x1 + (p.x - 26 - ridge.x1) * f + (i % 2 ? 5 : -5);
-            drawPawStep(sx, ridgeAt(sx) - 2, a * 0.9);
-          }
-        }
-        // pot behaviour
-        if (p.state === 'idle') {
-          if (cat.tt === stepsEnd + PAUSE) p.state = 'tip';
-        } else if (p.state === 'tip') {
-          p.rot += 0.028;
-          if (p.rot > 1.15) { p.state = 'fall'; p.vx = 0.8; p.vy = 0.4; }
-        } else if (p.state === 'fall') {
-          p.vy += 0.14; p.x += p.vx; p.y += p.vy; p.rot += 0.06;
-          if (p.y > h + 40) {
-            // dust puff at the bottom edge
-            for (var d = 0; d < 8; d++) dust.push({ x: p.x, y: h - 6, vx: (Math.random() - 0.5) * 1.6, vy: -Math.random() * 1.2, life: 1 });
-            p.state = 'gone';
-          }
-        } else if (p.state === 'gone') {
-          if (cat.tt > stepsEnd + PAUSE + TIP + 400) {
-            cat.tt = -400 - Math.random() * 500;
-            cat.pot = newPot();
-          }
-        }
-        if (p.state !== 'gone') drawPot(p);
-        // dust
-        for (var i2 = dust.length - 1; i2 >= 0; i2--) {
-          var du = dust[i2];
-          du.x += du.vx; du.y += du.vy; du.vy += 0.03; du.life -= 0.03;
-          if (du.life <= 0) { dust.splice(i2, 1); continue; }
-          ctx.globalAlpha = du.life * 0.5;
-          ctx.fillStyle = 'rgb(200,170,160)';
-          ctx.beginPath(); ctx.arc(du.x, du.y, 2, 0, 7); ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-      }
-
       function drawMotes() {
+        var b = beamCorners();
         for (var i = 0; i < motes.length; i++) {
           var m = motes[i];
-          m.y -= 0.06 + m.z * 0.1; m.x += Math.sin(t * 0.4 + m.ph) * 0.2;
-          if (m.y < -8) { m.y = h + 6; m.x = Math.random() * w; }
-          var tw = 0.4 + 0.6 * Math.sin(t * 1.1 + m.ph);
+          m.v += m.dv;
+          if (m.v > 1) { m.v = 0; m.u = Math.random(); }
+          var u = m.u + Math.sin(t * 0.7 + m.ph) * 0.02;
+          var topx = b[0].x + (b[1].x - b[0].x) * u, topy = b[0].y + (b[1].y - b[0].y) * u;
+          var botx = b[3].x + (b[2].x - b[3].x) * u, boty = b[3].y + (b[2].y - b[3].y) * u;
+          var mx = topx + (botx - topx) * m.v, my = topy + (boty - topy) * m.v;
+          var tw = 0.28 + 0.24 * Math.sin(t * 1.4 + m.ph * 2);
+          ctx.fillStyle = 'rgba(255,244,205,' + tw + ')';
+          ctx.beginPath(); ctx.arc(mx, my, m.r, 0, 7); ctx.fill();
+        }
+      }
+
+      // ======================= CURTAIN (live) ===============================
+      function drawCurtain() {
+        var W = G.win;
+        var cw = W.w * 0.2;
+        var sway = Math.sin(t * 0.7) * 4 + Math.sin(t * 1.7) * 2;
+        var cg = ctx.createLinearGradient(W.x - 14, 0, W.x - 14 + cw, 0);
+        cg.addColorStop(0, '#ffe8c8');
+        cg.addColorStop(0.5, '#ffd9ad');
+        cg.addColorStop(1, '#f2c491');
+        ctx.fillStyle = cg;
+        ctx.beginPath();
+        ctx.moveTo(W.x - 14, W.y - 14);
+        ctx.lineTo(W.x - 14 + cw, W.y - 14);
+        ctx.bezierCurveTo(
+          W.x - 14 + cw + sway * 0.4, W.y + W.h * 0.4,
+          W.x - 14 + cw + sway, W.y + W.h * 0.75,
+          W.x - 14 + cw * 0.7 + sway, W.y + W.h + 16
+        );
+        ctx.lineTo(W.x - 14, W.y + W.h + 16);
+        ctx.closePath(); ctx.fill();
+        // folds
+        ctx.strokeStyle = 'rgba(180,120,60,0.22)';
+        ctx.lineWidth = 1.4;
+        for (var f = 1; f < 3; f++) {
+          var u2 = f / 3;
+          var topx2 = W.x - 14 + cw * u2;
+          var botx2 = W.x - 14 + (cw * 0.7 + sway) * u2;
+          ctx.beginPath();
+          ctx.moveTo(topx2, W.y - 8);
+          ctx.quadraticCurveTo(topx2 + sway * 0.5 * u2, W.y + W.h * 0.6, botx2, W.y + W.h + 10);
+          ctx.stroke();
+        }
+        // rod
+        ctx.strokeStyle = '#b2794a';
+        ctx.lineWidth = 5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(W.x - 26, W.y - 16); ctx.lineTo(W.x + W.w + 26, W.y - 16); ctx.stroke();
+        ctx.fillStyle = '#b2794a';
+        ctx.beginPath(); ctx.arc(W.x - 28, W.y - 16, 5, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.arc(W.x + W.w + 28, W.y - 16, 5, 0, 7); ctx.fill();
+      }
+
+      // ======================= PICTURE FRAME (live) =========================
+      function drawFrame() {
+        var F = G.frame;
+        var extra = 0;
+        // gets nudged crooked while the tail is out
+        if (tail.tt > 0 && tail.tt < 140) {
+          var k = Math.min(1, tail.tt / 30);
+          extra = 0.06 * k * Math.sin(Math.min(3.1, (tail.tt / 140) * 3.1));
+        }
+        var ang = Math.sin(t * 0.5) * 0.012 + extra;
+        var fw = mobile ? 42 : 58, fh = mobile ? 52 : 72;
+        ctx.save();
+        ctx.translate(F.x, F.y);
+        ctx.rotate(ang);
+        ctx.fillStyle = 'rgba(120,75,40,0.16)';
+        rr(ctx, -fw / 2 + 3, -fh / 2 + 4, fw, fh, 5); ctx.fill();
+        var fg = ctx.createLinearGradient(-fw / 2, 0, fw / 2, 0);
+        fg.addColorStop(0, '#c98d54');
+        fg.addColorStop(1, '#e8b177');
+        ctx.fillStyle = fg;
+        rr(ctx, -fw / 2, -fh / 2, fw, fh, 5); ctx.fill();
+        ctx.fillStyle = '#fff7e8';
+        rr(ctx, -fw / 2 + 6, -fh / 2 + 6, fw - 12, fh - 12, 3); ctx.fill();
+        // tiny fish artwork (a cat's favourite painting)
+        ctx.strokeStyle = '#5ec8b8'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.ellipse(-2, 2, fw * 0.16, fh * 0.09, 0, 0, 7); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(fw * 0.14, 2); ctx.lineTo(fw * 0.24, -fh * 0.07);
+        ctx.moveTo(fw * 0.14, 2); ctx.lineTo(fw * 0.24, fh * 0.11);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // ======================= ARMCHAIR + CUSHION (live) ====================
+      function drawChair(dent) {
+        var C = G.chair;
+        var cx = C.x, base = C.base, ht = C.ht, wd = C.wd;
+        // shadow
+        ctx.fillStyle = 'rgba(90,50,25,0.2)';
+        ctx.beginPath(); ctx.ellipse(cx, base + 6, wd * 0.72, ht * 0.09, 0, 0, 7); ctx.fill();
+        var lit = ctx.createLinearGradient(cx - wd * 0.6, 0, cx + wd * 0.6, 0);
+        lit.addColorStop(0, '#e56d49');
+        lit.addColorStop(0.55, '#ff8f6b');
+        lit.addColorStop(1, '#ffb397');
+        // back
+        ctx.fillStyle = lit;
+        rr(ctx, cx - wd * 0.42, base - ht, wd * 0.84, ht * 0.72, 18); ctx.fill();
+        // arms
+        rr(ctx, cx - wd * 0.6, base - ht * 0.56, wd * 0.24, ht * 0.56, 12); ctx.fill();
+        rr(ctx, cx + wd * 0.36, base - ht * 0.56, wd * 0.24, ht * 0.56, 12); ctx.fill();
+        // seat
+        rr(ctx, cx - wd * 0.44, base - ht * 0.34, wd * 0.88, ht * 0.34, 12); ctx.fill();
+        // piping highlights
+        ctx.strokeStyle = 'rgba(255,240,225,0.55)';
+        ctx.lineWidth = 2;
+        rr(ctx, cx - wd * 0.6, base - ht * 0.56, wd * 0.24, ht * 0.56, 12); ctx.stroke();
+        rr(ctx, cx + wd * 0.36, base - ht * 0.56, wd * 0.24, ht * 0.56, 12); ctx.stroke();
+        // soft shade under the arms
+        ctx.fillStyle = 'rgba(140,45,20,0.18)';
+        rr(ctx, cx - wd * 0.42, base - ht * 0.36, wd * 0.84, ht * 0.06, 4); ctx.fill();
+        // cushion, squashing when the invisible cat lands on it
+        var sq = 1 - 0.2 * dent;
+        var cushW = wd * 0.56, cushH = ht * 0.2 * sq;
+        var cushY = base - ht * 0.34 - cushH;
+        var cg = ctx.createLinearGradient(0, cushY, 0, cushY + cushH);
+        cg.addColorStop(0, '#8adccb');
+        cg.addColorStop(1, '#54bcaa');
+        ctx.fillStyle = cg;
+        rr(ctx, cx - cushW / 2, cushY, cushW, cushH, 10); ctx.fill();
+        ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+        ctx.lineWidth = 1.4;
+        rr(ctx, cx - cushW / 2, cushY, cushW, cushH, 10); ctx.stroke();
+        // crease lines while dented
+        if (dent > 0.25) {
+          ctx.strokeStyle = 'rgba(30,90,80,' + 0.3 * dent + ')';
+          ctx.lineWidth = 1.4;
+          ctx.beginPath();
+          ctx.moveTo(cx - cushW * 0.22, cushY + cushH * 0.4);
+          ctx.quadraticCurveTo(cx, cushY + cushH * 0.75, cx + cushW * 0.22, cushY + cushH * 0.4);
+          ctx.stroke();
+        }
+      }
+
+      // ======================= TAIL PEEK (live) =============================
+      function drawTail() {
+        tail.tt++;
+        if (tail.tt > 140) { tail.tt = -500 - Math.random() * 400; return; }
+        if (tail.tt < 0) return;
+        var k = tail.tt < 20 ? tail.tt / 20 : (tail.tt > 115 ? (140 - tail.tt) / 25 : 1);
+        var C = G.chair;
+        var bx = C.x - C.wd * 0.34, by = C.base - C.ht + 4;
+        var rise = k * C.ht * 0.42;
+        var sway = Math.sin(tail.tt * 0.09) * C.wd * 0.14 * k;
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, k + 0.15);
+        ctx.strokeStyle = '#6b5344';
+        ctx.lineWidth = mobile ? 9 : 12;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(bx, by + 8);
+        ctx.quadraticCurveTo(bx - 6, by - rise * 0.55, bx + sway, by - rise);
+        ctx.stroke();
+        // lighter tip
+        ctx.strokeStyle = '#8a7060';
+        ctx.lineWidth = mobile ? 7 : 9;
+        ctx.beginPath();
+        ctx.moveTo(bx + sway * 0.7, by - rise * 0.8);
+        ctx.quadraticCurveTo(bx + sway, by - rise * 0.95, bx + sway + 3, by - rise - 4);
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // ======================= STORY: prints, yarn, pot =====================
+      function pawPath(f) {
+        var C = G.chair, W = G.win;
+        var x0 = C.x + C.wd * 0.55, y0 = G.floorY + h * 0.12;
+        var x1 = W.x + W.w * 0.3, y1 = G.floorY + h * 0.05;
+        var mx = (x0 + x1) / 2, my = Math.max(y0, y1) + h * 0.05;
+        var a = (1 - f) * (1 - f), b2 = 2 * (1 - f) * f, c2 = f * f;
+        return { x: a * x0 + b2 * mx + c2 * x1, y: a * y0 + b2 * my + c2 * y1 };
+      }
+      function drawPawPrint(x, y, S, a, ang) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(ang);
+        ctx.globalAlpha = a;
+        ctx.fillStyle = 'rgba(96,58,34,0.6)';
+        ctx.beginPath(); ctx.ellipse(0, 0, S * 0.46, S * 0.36, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(-S * 0.38, -S * 0.44, S * 0.16, S * 0.2, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(0, -S * 0.56, S * 0.16, S * 0.2, 0, 0, 7); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(S * 0.38, -S * 0.44, S * 0.16, S * 0.2, 0, 0, 7); ctx.fill();
+        ctx.restore();
+      }
+      function spawnDust(x, y, warm) {
+        for (var k = 0; k < 6; k++) {
+          story.dusts.push({
+            x: x + (Math.random() - 0.5) * 10, y: y + (Math.random() - 0.5) * 4,
+            vx: (Math.random() - 0.5) * 0.7, vy: -0.3 - Math.random() * 0.5,
+            r: 1.2 + Math.random() * 2, a: 0.5, warm: warm
+          });
+        }
+      }
+      function drawDusts() {
+        for (var p = story.dusts.length - 1; p >= 0; p--) {
+          var pp = story.dusts[p];
+          pp.x += pp.vx; pp.y += pp.vy; pp.vy += 0.01; pp.a *= 0.95;
+          if (pp.a < 0.02) { story.dusts.splice(p, 1); continue; }
+          ctx.fillStyle = (pp.warm ? 'rgba(214,160,110,' : 'rgba(250,238,214,') + pp.a + ')';
+          ctx.beginPath(); ctx.arc(pp.x, pp.y, pp.r, 0, 7); ctx.fill();
+        }
+      }
+      function drawYarn() {
+        var ry = mobile ? 9 : 12;
+        // the batted coral ball + unravelled string
+        var bx2 = yarn.x0 + yarn.dx, by2 = yarn.y0;
+        if (yarn.dx > 2) {
+          ctx.strokeStyle = 'rgba(242,106,72,0.85)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(yarn.x0 - ry * 0.4, yarn.y0 + ry * 0.5);
+          ctx.quadraticCurveTo(yarn.x0 + yarn.dx * 0.5, yarn.y0 + ry + 3 + Math.sin(yarn.dx * 0.2) * 2, bx2 - ry * 0.6, by2 + ry * 0.4);
+          ctx.stroke();
+        }
+        ctx.fillStyle = 'rgba(90,50,25,0.18)';
+        ctx.beginPath(); ctx.ellipse(bx2, by2 + ry * 0.85, ry * 1.05, ry * 0.34, 0, 0, 7); ctx.fill();
+        var yg = ctx.createRadialGradient(bx2 - ry * 0.3, by2 - ry * 0.35, ry * 0.15, bx2, by2, ry);
+        yg.addColorStop(0, '#ffb59a');
+        yg.addColorStop(0.6, '#ff8e66');
+        yg.addColorStop(1, '#d8532f');
+        ctx.fillStyle = yg;
+        ctx.beginPath(); ctx.arc(bx2, by2, ry, 0, 7); ctx.fill();
+        ctx.save();
+        ctx.translate(bx2, by2);
+        ctx.rotate(yarn.rot);
+        ctx.strokeStyle = 'rgba(140,45,20,0.4)';
+        ctx.lineWidth = 1.3;
+        ctx.beginPath(); ctx.arc(0, 0, ry * 0.7, 0.4, 2.6); ctx.stroke();
+        ctx.beginPath(); ctx.arc(0, 0, ry * 0.55, 3.5, 5.7); ctx.stroke();
+        ctx.restore();
+        // the calm teal ball that stays put
+        var tx = yarn.x0 - ry * 2.6, ty = yarn.y0 + ry * 0.7;
+        var ry2 = ry * 0.75;
+        ctx.fillStyle = 'rgba(90,50,25,0.16)';
+        ctx.beginPath(); ctx.ellipse(tx, ty + ry2 * 0.85, ry2, ry2 * 0.32, 0, 0, 7); ctx.fill();
+        var tg = ctx.createRadialGradient(tx - ry2 * 0.3, ty - ry2 * 0.35, ry2 * 0.15, tx, ty, ry2);
+        tg.addColorStop(0, '#a5e8da');
+        tg.addColorStop(0.6, '#54bcaa');
+        tg.addColorStop(1, '#357f72');
+        ctx.fillStyle = tg;
+        ctx.beginPath(); ctx.arc(tx, ty, ry2, 0, 7); ctx.fill();
+        ctx.strokeStyle = 'rgba(20,80,70,0.4)';
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.arc(tx, ty, ry2 * 0.65, 1, 3.4); ctx.stroke();
+      }
+      function drawPot(fadeAll) {
+        var W = G.win;
+        var px = W.x + W.w * 0.16;
+        var baseY = G.sillY + 1;
+        var potW = mobile ? 22 : 28, potH = mobile ? 20 : 25;
+        var tt = story.tt;
+        var wob = 0, dxp = 0, dyp = 0, rot = 0;
+        if (tt >= 380 && tt < 470) {
+          var k = (tt - 380) / 90;
+          wob = Math.sin(tt * 0.35) * 0.16 * k;
+        } else if (tt >= 470) {
+          var p = tt - 470;
+          dxp = p * 0.9;
+          dyp = 0.5 * 0.42 * p * p;
+          rot = Math.min(1.65, p * 0.09);
+          var landY = G.floorY + h * 0.055;
+          if (baseY + dyp >= landY) {
+            dyp = landY - baseY;
+            dxp = Math.min(dxp, 24);
+            rot = 1.65;
+            if (!story.landed) { story.landed = true; spawnDust(px + dxp, landY, true); }
+          }
+        }
+        ctx.save();
+        ctx.globalAlpha = fadeAll;
+        ctx.translate(px + dxp, baseY + dyp);
+        ctx.rotate(wob + rot);
+        // pot
+        var pg = ctx.createLinearGradient(-potW / 2, 0, potW / 2, 0);
+        pg.addColorStop(0, '#b2643c');
+        pg.addColorStop(0.6, '#d98352');
+        pg.addColorStop(1, '#e8975f');
+        ctx.fillStyle = pg;
+        ctx.beginPath();
+        ctx.moveTo(-potW / 2, -potH); ctx.lineTo(potW / 2, -potH);
+        ctx.lineTo(potW * 0.36, 0); ctx.lineTo(-potW * 0.36, 0);
+        ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#eda368';
+        rr(ctx, -potW / 2 - 2, -potH - 7, potW + 4, 8, 3); ctx.fill();
+        ctx.fillStyle = 'rgba(255,235,200,0.4)';
+        rr(ctx, -potW / 2 - 2, -potH - 7, (potW + 4) * 0.4, 8, 3); ctx.fill();
+        // little plant
+        ctx.strokeStyle = '#4aa65e'; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+        var lsway = Math.sin(t * 0.9) * 1.6;
+        ctx.beginPath(); ctx.moveTo(-4, -potH - 6); ctx.quadraticCurveTo(-8 + lsway * 0.4, -potH - 16, -10 + lsway, -potH - 24); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, -potH - 6); ctx.quadraticCurveTo(lsway * 0.5, -potH - 20, lsway, -potH - 30); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(4, -potH - 6); ctx.quadraticCurveTo(8 + lsway * 0.4, -potH - 15, 11 + lsway, -potH - 22); ctx.stroke();
+        ctx.restore();
+        // spilled soil once landed
+        if (story.landed && tt >= 470) {
           ctx.save();
-          ctx.globalAlpha = (0.1 + 0.35 * m.z) * tw;
-          ctx.shadowColor = 'rgba(' + AMBER + ',0.8)'; ctx.shadowBlur = 6 * m.z;
-          ctx.fillStyle = 'rgb(' + CREAM + ')';
-          ctx.beginPath(); ctx.arc(m.x, m.y, 0.6 + 1.3 * m.z, 0, 7); ctx.fill();
+          ctx.globalAlpha = fadeAll;
+          var sx3 = px + dxp, sy3 = G.floorY + h * 0.055;
+          ctx.fillStyle = 'rgba(92,58,34,0.8)';
+          ctx.beginPath(); ctx.ellipse(sx3 + 16, sy3 + 2, 12, 3.6, 0, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(sx3 + 30, sy3 + 4, 6, 2.4, 0, 0, 7); ctx.fill();
+          ctx.beginPath(); ctx.ellipse(sx3 + 38, sy3 + 3, 3, 1.6, 0, 0, 7); ctx.fill();
           ctx.restore();
         }
+      }
+
+      function drawStory() {
+        story.tt++;
+        var tt = story.tt;
+        var TOTAL = 700;
+        if (tt > TOTAL) {
+          story.tt = -(120 + Math.random() * 240);
+          story.dusts = [];
+          story.landed = false;
+          yarn = resetYarn();
+          drawChair(0); drawYarn(); drawPot(1);
+          return;
+        }
+        var fadeAll = tt > 620 ? Math.max(0, 1 - (tt - 620) / 70) : 1;
+
+        // cushion dent 0-70
+        var dent = 0;
+        if (tt >= 0 && tt < 70) {
+          if (tt < 40) dent = Math.min(1, tt / 14);
+          else dent = Math.max(0, 1 - (tt - 40) / 18);
+        }
+        drawChair(dent);
+        if (tt === 68) spawnDust(G.chair.x + G.chair.wd * 0.5, G.floorY + h * 0.12, false);
+
+        // paw prints 80..234
+        var n = 7, START = 80, STEP = 22;
+        for (var i = 0; i < n; i++) {
+          var born = START + i * STEP;
+          if (tt < born) break;
+          var age = tt - born;
+          var f = (i + 0.5) / n;
+          var pos = pawPath(f);
+          var side = (i % 2 ? 1 : -1);
+          var nx = pos.x + side * 7;
+          var a = Math.min(1, age / 10) * fadeAll * 0.9;
+          var k2 = Math.min(1, age / 12);
+          var S = (mobile ? 8 : 10) * (0.6 + 0.4 * k2 + 0.1 * Math.sin(k2 * 3.14159));
+          drawPawPrint(nx, pos.y, S, a, 0.5 - f * 0.6);
+        }
+
+        // yarn gets batted at 250, rolls & settles
+        if (tt >= 250 && tt < 340) {
+          var yk = (tt - 250) / 90;
+          var ease = 1 - (1 - yk) * (1 - yk);
+          yarn.dx = (mobile ? 40 : 64) * ease;
+          yarn.rot = yarn.dx * 0.09;
+          if (tt === 251) spawnDust(yarn.x0, yarn.y0 + 6, false);
+        }
+        drawYarn();
+
+        // the pot gag
+        drawPot(fadeAll);
+
+        drawDusts();
+      }
+
+      // ======================= VIGNETTE =====================================
+      function drawVignette() {
+        var v = ctx.createRadialGradient(w * 0.5, h * 0.45, Math.min(w, h) * 0.45, w * 0.5, h * 0.5, Math.max(w, h) * 0.85);
+        v.addColorStop(0, 'rgba(120,70,30,0)');
+        v.addColorStop(1, 'rgba(120,70,30,0.12)');
+        ctx.fillStyle = v;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // ======================= FRAME LOOP ===================================
+      function drawScene() {
+        ctx.drawImage(roomLayer, 0, 0, w, h);
+        drawWindow();
+        drawCurtain();
+        drawFrame();
+        drawBeam();
+        drawStory();
+        drawTail();
+        drawMotes();
+        drawVignette();
       }
 
       function frame() {
         if (!running) return;
         t += 0.016;
-        drawSky();
-        drawStars();
-        drawBokeh();
-        drawSkyline();
-        drawSmokes();
-        drawRoofs();
-        drawEyes();
-        drawForegroundRoof();
-        drawFairyLights();
-        drawCat();
-        drawMotes();
+        drawScene();
         raf = requestAnimationFrame(frame);
       }
 
       function drawStatic() {
         t = 1;
-        drawSky(); drawStars(); drawBokeh(); drawSkyline(); drawRoofs();
-        drawForegroundRoof(); drawFairyLights();
-        drawPot(cat.pot);
-        for (var i = 0; i < motes.length; i++) {
-          var m = motes[i];
-          ctx.globalAlpha = 0.1 + 0.3 * m.z;
-          ctx.fillStyle = 'rgb(' + CREAM + ')';
-          ctx.beginPath(); ctx.arc(m.x, m.y, 0.6 + 1.3 * m.z, 0, 7); ctx.fill();
-        }
-        ctx.globalAlpha = 1;
+        ctx.drawImage(roomLayer, 0, 0, w, h);
+        drawWindow();
+        drawCurtain();
+        drawFrame();
+        drawBeam();
+        drawChair(0);
+        drawYarn();
+        drawPot(1);
+        drawMotes();
+        drawVignette();
       }
 
       function start() { size(); build(); if (reduce) { drawStatic(); } else { frame(); } }
