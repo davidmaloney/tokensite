@@ -101,18 +101,41 @@ router.post("/initiate", async (req, res) => {
     return res.json({ activated: true });
   }
 
-  // Promo code — always 1 month free, regardless of selected plan
-  if (ownerCode && process.env.PROMO_CODE && ownerCode === process.env.PROMO_CODE) {
-    await activatePage(pageId, "1month");
-    const pool = getDb();
-    const now = Math.floor(Date.now() / 1000);
-    const promoId = uuidv4();
-    await pool.query(
-      "INSERT INTO transactions (id, wallet_address, page_id, reference_id, amount_sol, amount_usd, plan, confirmed, created_at, confirmed_at) VALUES ($1, $2, $3, $4, 0, 0, $5, 1, $6, $7)",
-      [promoId, page.wallet_address, pageId, "PROMO-" + uuidv4(), "1month", now, now]
-    );
-    logger.info("promo_code_activation", { pageId });
-    return res.json({ activated: true });
+  // Promo codes — space-separated list in PROMO_CODE env var.
+  // Each individual code grants 10 years free and can only be used ONCE.
+  // Example: PROMO_CODE="hands she1100 mydog"  -> three separate one-time codes.
+  if (ownerCode && process.env.PROMO_CODE) {
+    const validPromoCodes = process.env.PROMO_CODE
+      .split(/\s+/)
+      .map((c) => c.trim())
+      .filter(Boolean);
+
+    if (validPromoCodes.includes(ownerCode.trim())) {
+      const pool = getDb();
+      const usedKey = "promo_used:" + ownerCode.trim();
+
+      // Atomically claim the code. If it was already used, this insert does
+      // nothing (rowCount === 0) and we reject it as already redeemed.
+      const claim = await pool.query(
+        "INSERT INTO system_kv (key, value) VALUES ($1, $2) ON CONFLICT (key) DO NOTHING",
+        [usedKey, String(Math.floor(Date.now() / 1000))]
+      );
+
+      if (claim.rowCount === 0) {
+        logger.warn("promo_code_already_used", { pageId });
+        return res.status(400).json({ error: "This promo code has already been used." });
+      }
+
+      await activatePage(pageId, "10years");
+      const now = Math.floor(Date.now() / 1000);
+      const promoId = uuidv4();
+      await pool.query(
+        "INSERT INTO transactions (id, wallet_address, page_id, reference_id, amount_sol, amount_usd, plan, confirmed, created_at, confirmed_at) VALUES ($1, $2, $3, $4, 0, 0, $5, 1, $6, $7)",
+        [promoId, page.wallet_address, pageId, "PROMO-" + uuidv4(), "10years", now, now]
+      );
+      logger.info("promo_code_activation", { pageId });
+      return res.json({ activated: true });
+    }
   }
 
   try {
