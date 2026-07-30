@@ -1,6 +1,7 @@
 export const PLANS = {
   "1month": { usd: 4.99, days: 30 },
   "12months": { usd: 39, days: 365 },
+  "10years": { usd: 0, days: 3650 },
 };
 
 export const SOFT_DELETE_AFTER_EXPIRY_DAYS = 0;
