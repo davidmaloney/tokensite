@@ -20,7 +20,7 @@ import adminRouter from "./routes/admin.js";
 import previewRouter from "./routes/preview.js";
 import subdomainRouter from "./routes/subdomain.js";
 import { invalidatePageCache } from "./routes/subdomain.js";
-import { registerCacheInvalidator } from "./services/pageService.js";
+import ogCardRouter, { ogInject, OG_CARD_PATH } from "./routes/ogCard.js"; // [ADDED] social preview card
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const UPLOAD_DIR = process.env.UPLOAD_DIR || "/data/uploads";
@@ -59,6 +59,7 @@ app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(globalRateLimiter);
 app.use(subdomainResolver);
+app.use(ogInject); // [ADDED] repoints preview image tags to the card route; passes everything else through
 
 app.post("/api/media/upload", upload.single("image"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded." });
@@ -87,6 +88,16 @@ app.get("/media/:filename", (req, res) => {
   const filepath = path.join(UPLOAD_DIR, filename);
   if (!fs.existsSync(filepath)) return res.status(404).send("Not found");
   res.sendFile(filepath);
+});
+
+// [ADDED] Social-preview card image, served on page subdomains (e.g.
+// https://slug.DOMAIN/__og/card.jpg). Must sit BEFORE the subdomain catch-all
+// so this dedicated path is handled here and not treated as a page slug.
+app.use((req, res, next) => {
+  if (!req.isMainDomain && req.subdomain && req.path === OG_CARD_PATH) {
+    return ogCardRouter(req, res, next);
+  }
+  next();
 });
 
 app.use((req, res, next) => {
