@@ -105,23 +105,23 @@ export default function Dashboard() {
                 flex: 1, background: "rgba(255,255,255,0.06)", borderRadius: "6px",
                 padding: "4px 10px", fontSize: "11px", color: "#666", fontFamily: "monospace", textAlign: "center",
               }}>
-                fomoyodl.shillit.fun
+                shill.shillit.fun
               </div>
-              <a href="https://fomoyodl.shillit.fun" target="_blank" rel="noreferrer"
+              <a href="https://shill.shillit.fun" target="_blank" rel="noreferrer"
                 style={{ fontSize: "20px", fontWeight: 700, color: "#9945FF", textDecoration: "none", flexShrink: 0, lineHeight: 1, padding: "0 2px" }}>
                 ↗
               </a>
             </div>
             {!iframeError ? (
               <iframe
-                src="https://fomoyodl.shillit.fun"
+                src="https://shill.shillit.fun"
                 style={{ width: "100%", height: "320px", border: "none", display: "block", background: "#0d0d0d" }}
                 title="Live example"
                 onError={() => setIframeError(true)}
                 sandbox="allow-scripts allow-same-origin"
               />
             ) : (
-              <a href="https://fomoyodl.shillit.fun" target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
+              <a href="https://shill.shillit.fun" target="_blank" rel="noreferrer" style={{ textDecoration: "none" }}>
                 <div style={{
                   height: "320px", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: "12px",
@@ -129,7 +129,7 @@ export default function Dashboard() {
                 }}>
                   <div style={{ fontSize: "32px" }}>🚀</div>
                   <div style={{ fontSize: "14px", color: "#9945FF", fontWeight: 600 }}>View live example →</div>
-                  <div style={{ fontSize: "11px", color: "#555" }}>fomoyodl.shillit.fun</div>
+                  <div style={{ fontSize: "11px", color: "#555" }}>shill.shillit.fun</div>
                 </div>
               </a>
             )}
