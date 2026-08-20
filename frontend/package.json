@@ -8,6 +8,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@raydium-io/raydium-sdk-v2": "0.2.42-alpha",
+    "@solana/spl-token": "^0.4.6",
     "@solana/web3.js": "^1.91.1",
     "@solana/wallet-adapter-react": "^0.15.35",
     "@solana/wallet-adapter-react-ui": "^0.9.35",
@@ -16,6 +18,7 @@
     "@solana/wallet-adapter-backpack": "^0.1.13",
     "@solana/wallet-adapter-base": "^0.9.23",
     "axios": "^1.6.8",
+    "bn.js": "^5.2.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3"
@@ -23,6 +26,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.1",
     "vite": "^5.2.0",
+    "vite-plugin-node-polyfills": "^0.22.0",
     "autoprefixer": "^10.4.19",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.3"
