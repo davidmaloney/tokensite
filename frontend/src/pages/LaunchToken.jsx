@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import ImageUpload from "../components/ImageUpload";
 import { LAUNCH_CONFIG, LAUNCH_ENABLED, PLATFORM_ID } from "../config/launchConfig.js";
 import { launchToken, getSolPrice } from "../lib/raydiumLaunch.js";
 
@@ -11,7 +12,7 @@ export default function LaunchToken() {
   const { connected } = wallet;
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
-  const [uri, setUri] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
@@ -40,7 +41,7 @@ export default function LaunchToken() {
       if (!price) throw new Error("Couldn't fetch SOL price.");
       const res = await launchToken({
         wallet, name, symbol,
-        uri: uri || "https://arweave.net/placeholder",
+        uri: logoUrl || "https://arweave.net/placeholder",
         solPrice: price,
         onStatus: setStatus,
       });
@@ -53,62 +54,87 @@ export default function LaunchToken() {
 
   return (
     <div style={wrap}>
-      <div style={{ maxWidth: 560, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 32, fontWeight: 800, marginBottom: 6 }}>
-          Launch your <span style={{ background: `linear-gradient(135deg,${PURPLE},${GREEN})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>coin</span>
+      <div style={{ maxWidth: 640, margin: "0 auto", width: "100%" }}>
+        <h1 style={{ fontSize: "clamp(26px, 5vw, 34px)", fontWeight: 800, marginBottom: 6, lineHeight: 1.15 }}>
+          Launch your{" "}
+          <span style={{ background: `linear-gradient(135deg,${PURPLE},${GREEN})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            coin
+          </span>
         </h1>
-        <p style={{ color: "#888", marginBottom: 28 }}>
-          A fair launch on Raydium — deep liquidity, locked dev wallet, no hidden taxes.
+        <p style={{ color: "#888", marginBottom: 28, fontSize: "clamp(14px, 2.5vw, 16px)" }}>
+          A fair launch on Raydium — deep liquidity, transparent by design.
         </p>
 
-        {/* trust panel */}
-        <div style={panel}>
-          <Row label="Total supply" value={cfg.supplyWhole.toLocaleString()} />
-          <Row label="On bonding curve" value={`${cfg.sellPct}%`} />
-          <Row label="Dev locked" value={`${cfg.lockPct}% · ${cfg.cliffYears}yr cliff + ${cfg.unlockYears}yr unlock`} />
-          <Row label="To liquidity pool" value={`${cfg.poolPct}%`} />
-          <Row label="Graduation target" value={`$${cfg.targetUsd.toLocaleString()} (~${targetSol} SOL)`} />
-          <Row label="Platform fee" value={`${cfg.platformFeePct}%`} last />
-        </div>
+        {/* two-column on desktop, stacks on mobile */}
+        <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-start" }}>
+          {/* LEFT: trust panel */}
+          <div style={{ flex: "1 1 260px", minWidth: 260 }}>
+            <div className="glass" style={panel}>
+              <div style={{ fontSize: 13, color: GREEN, fontWeight: 700, marginBottom: 12, letterSpacing: 0.3 }}>
+                WHAT MAKES THIS FAIR
+              </div>
+              <Row label="Total supply" value={cfg.supplyWhole.toLocaleString()} />
+              <Row label="On bonding curve" value={`${cfg.sellPct}%`} />
+              <Row label="Deep liquidity pool" value={`${cfg.poolPct}%`} />
+              <Row
+                label="You're gifted"
+                value={`${cfg.lockPct}%`}
+                hint={`Locked ${cfg.cliffYears}yr, then released over ${cfg.unlockYears}yr — proves you won't dump. You can still buy more like anyone else.`}
+              />
+              <Row label="Graduation target" value={`$${cfg.targetUsd.toLocaleString()} · ~${targetSol} SOL`} />
+              <Row label="No hidden taxes" value="0%" />
+              <Row label="Platform fee" value={`${cfg.platformFeePct}%`} last />
+            </div>
+          </div>
 
-        {/* form */}
-        <div style={{ marginTop: 24 }}>
-          <Field label="Token name" value={name} onChange={setName} placeholder="e.g. My Coin" />
-          <Field label="Symbol" value={symbol} onChange={(v)=>setSymbol(v.toUpperCase())} placeholder="e.g. MYC" maxLength={10} />
-          <Field label="Image URL (metadata URI)" value={uri} onChange={setUri} placeholder="https://…  (optional for now)" />
-        </div>
+          {/* RIGHT: form */}
+          <div style={{ flex: "1 1 300px", minWidth: 280 }}>
+            <div className="glass" style={panel}>
+              <Field label="Token name" value={name} onChange={setName} placeholder="e.g. My Coin" />
+              <Field label="Symbol" value={symbol} onChange={(v) => setSymbol(v.toUpperCase())} placeholder="e.g. MYC" maxLength={10} />
 
-        {/* actions */}
-        <div style={{ marginTop: 24 }}>
-          {!connected ? (
-            <WalletMultiButton style={btn} />
-          ) : (
-            <button onClick={handleLaunch} disabled={busy} style={{ ...btn, opacity: busy ? 0.6 : 1, cursor: busy ? "wait" : "pointer" }}>
-              {busy ? "Launching…" : "Launch token"}
-            </button>
-          )}
-        </div>
+              <label style={lbl}>Coin logo</label>
+              <div style={{ marginBottom: 4 }}>
+                <ImageUpload onUploaded={setLogoUrl} currentUrl={logoUrl} />
+              </div>
+              <p style={{ color: "#666", fontSize: 12, marginTop: 6, marginBottom: 4 }}>
+                Shows in wallets, Raydium & DexScreener. Optional for now.
+              </p>
+            </div>
 
-        {!PLATFORM_ID && (
-          <p style={{ color: "#e0a800", fontSize: 13, marginTop: 14 }}>
-            ⚠ Platform ID not set yet — set VITE_LAUNCH_PLATFORM_ID after creating your platform.
-          </p>
-        )}
+            {/* actions */}
+            <div style={{ marginTop: 18 }}>
+              {!connected ? (
+                <WalletMultiButton style={btn} />
+              ) : (
+                <button onClick={handleLaunch} disabled={busy} style={{ ...btn, opacity: busy ? 0.6 : 1, cursor: busy ? "wait" : "pointer" }}>
+                  {busy ? "Launching…" : "Launch token"}
+                </button>
+              )}
+            </div>
+
+            {!PLATFORM_ID && (
+              <p style={{ color: "#e0a800", fontSize: 13, marginTop: 14 }}>
+                ⚠ Platform not set yet — add VITE_LAUNCH_PLATFORM_ID after creating your platform.
+              </p>
+            )}
+          </div>
+        </div>
 
         {status && (
-          <div style={{ marginTop: 18, padding: 14, borderRadius: 10, background: "#111", color: status.startsWith("Error") ? "#ff6b6b" : GREEN, fontSize: 14, wordBreak: "break-all" }}>
+          <div style={{ marginTop: 20, padding: 14, borderRadius: 10, background: "#111", color: status.startsWith("Error") ? "#ff6b6b" : GREEN, fontSize: 14, wordBreak: "break-all" }}>
             {status}
           </div>
         )}
 
         {result && (
-          <div style={{ marginTop: 14, padding: 16, borderRadius: 10, background: "#0d1f16", border: `1px solid ${GREEN}` }}>
+          <div className="glass" style={{ marginTop: 14, padding: 16, borderRadius: 12, border: `1px solid ${GREEN}` }}>
             <div style={{ color: GREEN, fontWeight: 700, marginBottom: 8 }}>✅ Token launched</div>
-            <div style={{ fontSize: 13, color: "#ccc", wordBreak: "break-all" }}>
+            <div style={{ fontSize: 13, color: "#ccc", wordBreak: "break-all", lineHeight: 1.6 }}>
               <b>Mint:</b> {result.mint}<br />
               <b>Tx:</b> {String(result.txId)}
             </div>
-            <a href={`https://solscan.io/token/${result.mint}`} target="_blank" rel="noreferrer" style={{ color: GREEN, fontSize: 13 }}>
+            <a href={`https://solscan.io/token/${result.mint}`} target="_blank" rel="noreferrer" style={{ color: GREEN, fontSize: 13, display: "inline-block", marginTop: 8 }}>
               View on Solscan →
             </a>
           </div>
@@ -118,24 +144,25 @@ export default function LaunchToken() {
   );
 }
 
-const wrap = { padding: "40px 20px", minHeight: "100vh", background: "#0a0a0a", color: "#fff" };
-const panel = { background: "#111", borderRadius: 12, padding: 18, border: "1px solid #222" };
+const wrap = { padding: "40px 20px", minHeight: "100vh", background: "#0d0d0d", color: "#f0f0f0" };
+const panel = { borderRadius: 14, padding: 20 };
 const btn = { width: "100%", background: `linear-gradient(135deg,${PURPLE},${GREEN})`, color: "#000", fontWeight: 800, fontSize: 15, borderRadius: 10, border: "none", height: 50, cursor: "pointer" };
+const lbl = { display: "block", color: "#aaa", fontSize: 13, marginBottom: 6, marginTop: 4 };
 
-function Row({ label, value, last }) {
+function Row({ label, value, hint, last }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: last ? "none" : "1px solid #1e1e1e" }}>
-      <span style={{ color: "#888", fontSize: 14 }}>{label}</span>
-      <span style={{ color: "#fff", fontSize: 14, fontWeight: 600, textAlign: "right" }}>{value}</span>
+    <div style={{ padding: "10px 0", borderBottom: last ? "none" : "1px solid rgba(255,255,255,0.06)" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+        <span style={{ color: "#999", fontSize: 14 }}>{label}</span>
+        <span style={{ color: "#fff", fontSize: 14, fontWeight: 600, textAlign: "right" }}>{value}</span>
+      </div>
+      {hint && <div style={{ color: "#6f6f6f", fontSize: 12, marginTop: 4, lineHeight: 1.5 }}>{hint}</div>}
     </div>
   );
 }
+
 function Field({ label, value, onChange, placeholder, maxLength }) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <label style={{ display: "block", color: "#aaa", fontSize: 13, marginBottom: 6 }}>{label}</label>
-      <input value={value} maxLength={maxLength} onChange={(e)=>onChange(e.target.value)} placeholder={placeholder}
-        style={{ width: "100%", height: 44, background: "#161616", border: "1px solid #2a2a2a", borderRadius: 8, color: "#fff", padding: "0 14px", fontSize: 14, boxSizing: "border-box" }} />
-    </div>
-  );
-}
+      <label style={lbl}>{label}</label>
+      
