@@ -4,6 +4,7 @@ import Navbar from "./components/Navbar";
 import Dashboard from "./pages/Dashboard";
 import CreatePage from "./pages/CreatePage";
 import ManagePage from "./pages/ManagePage";
+import LaunchToken from "./pages/LaunchToken";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/create" element={<CreatePage />} />
           <Route path="/manage/:pageId" element={<ManagePage />} />
+          <Route path="/launch" element={<LaunchToken />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
