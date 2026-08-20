@@ -12,7 +12,7 @@ export default function LaunchToken() {
   const { connected } = wallet;
   const [name, setName] = useState("");
   const [symbol, setSymbol] = useState("");
-  const [logoUrl, setLogoUrl] = useState("");
+  const [logoPreview, setLogoPreview] = useState("");
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
@@ -41,7 +41,7 @@ export default function LaunchToken() {
       if (!price) throw new Error("Couldn't fetch SOL price.");
       const res = await launchToken({
         wallet, name, symbol,
-        uri: logoUrl || "https://arweave.net/placeholder",
+        uri: "https://arweave.net/placeholder",
         solPrice: price,
         onStatus: setStatus,
       });
@@ -65,7 +65,6 @@ export default function LaunchToken() {
           A fair launch on Raydium — deep liquidity, transparent by design.
         </p>
 
-        {/* two-column on desktop, stacks on mobile */}
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap", alignItems: "flex-start" }}>
           {/* LEFT: trust panel */}
           <div style={{ flex: "1 1 260px", minWidth: 260 }}>
@@ -92,17 +91,14 @@ export default function LaunchToken() {
             <div className="glass" style={panel}>
               <Field label="Token name" value={name} onChange={setName} placeholder="e.g. My Coin" />
               <Field label="Symbol" value={symbol} onChange={(v) => setSymbol(v.toUpperCase())} placeholder="e.g. MYC" maxLength={10} />
-
-              <label style={lbl}>Coin logo</label>
-              <div style={{ marginBottom: 4 }}>
-                <ImageUpload onUploaded={setLogoUrl} currentUrl={logoUrl} />
-              </div>
-              <p style={{ color: "#666", fontSize: 12, marginTop: 6, marginBottom: 4 }}>
-                Shows in wallets, Raydium & DexScreener. Optional for now.
-              </p>
+              <ImageUpload
+                label="Coin logo"
+                hint="Shows in wallets, Raydium & DexScreener. Optional for now."
+                value={logoPreview}
+                onChange={(img) => setLogoPreview(img ? img.preview : "")}
+              />
             </div>
 
-            {/* actions */}
             <div style={{ marginTop: 18 }}>
               {!connected ? (
                 <WalletMultiButton style={btn} />
@@ -165,4 +161,12 @@ function Field({ label, value, onChange, placeholder, maxLength }) {
   return (
     <div style={{ marginBottom: 16 }}>
       <label style={lbl}>{label}</label>
-      
+      <input
+        value={value} maxLength={maxLength}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{ width: "100%", height: 44, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, color: "#fff", padding: "0 14px", fontSize: 14, boxSizing: "border-box" }}
+      />
+    </div>
+  );
+}
