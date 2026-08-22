@@ -164,37 +164,50 @@ export async function launchToken({ wallet, name, symbol, uri, solPrice, onStatu
   // Non-custodial: the beneficiary is always the wallet that just launched,
   // never our treasury. Only they can ever claim it, and only after the
   // cliff/unlock schedule set above.
+  //
+  // This is a SEPARATE transaction from the launch above, and its own
+  // try/catch on purpose: the coin has already been created successfully by
+  // this point, so a failure here (e.g. the wallet running low on SOL for
+  // this account's rent) must never look like the whole launch failed —
+  // that would hide a real, already-existing coin and risk someone
+  // re-launching (and re-paying rent for) a duplicate. Report the vesting
+  // failure separately so the caller can still show "your coin is live."
+  let vestingError = null;
   if (!totalLocked.isZero()) {
-    status("Locking dev vesting…");
-    const poolId = getPdaLaunchpadPoolId(programId, mintPair.publicKey, NATIVE_MINT).publicKey;
-    const vestingRecord = getPdaVestId(programId, poolId, wallet.publicKey).publicKey;
+    try {
+      status("Locking dev vesting…");
+      const poolId = getPdaLaunchpadPoolId(programId, mintPair.publicKey, NATIVE_MINT).publicKey;
+      const vestingRecord = getPdaVestId(programId, poolId, wallet.publicKey).publicKey;
 
-    const vestIx = new TransactionInstruction({
-      programId,
-      keys: [
-        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },  // creator
-        { pubkey: wallet.publicKey, isSigner: false, isWritable: true }, // beneficiary
-        { pubkey: poolId, isSigner: false, isWritable: true },
-        { pubkey: vestingRecord, isSigner: false, isWritable: true },
-        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
-      ],
-      data: Buffer.concat([CREATE_VESTING_ACCOUNT_DISCRIMINATOR, totalLocked.toArrayLike(Buffer, "le", 8)]),
-    });
+      const vestIx = new TransactionInstruction({
+        programId,
+        keys: [
+          { pubkey: wallet.publicKey, isSigner: true, isWritable: true },  // creator
+          { pubkey: wallet.publicKey, isSigner: false, isWritable: true }, // beneficiary
+          { pubkey: poolId, isSigner: false, isWritable: true },
+          { pubkey: vestingRecord, isSigner: false, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        data: Buffer.concat([CREATE_VESTING_ACCOUNT_DISCRIMINATOR, totalLocked.toArrayLike(Buffer, "le", 8)]),
+      });
 
-    const vestTx = new Transaction().add(vestIx);
-    vestTx.feePayer = wallet.publicKey;
-    const { blockhash: vestBlockhash } = await connection.getLatestBlockhash("confirmed");
-    vestTx.recentBlockhash = vestBlockhash;
+      const vestTx = new Transaction().add(vestIx);
+      vestTx.feePayer = wallet.publicKey;
+      const { blockhash: vestBlockhash } = await connection.getLatestBlockhash("confirmed");
+      vestTx.recentBlockhash = vestBlockhash;
 
-    status("Approve the vesting lock…");
-    const [signedVestTx] = await wallet.signAllTransactions([vestTx]);
-    const vestTxId = await connection.sendRawTransaction(signedVestTx.serialize(), { skipPreflight: true });
+      status("Approve the vesting lock…");
+      const [signedVestTx] = await wallet.signAllTransactions([vestTx]);
+      const vestTxId = await connection.sendRawTransaction(signedVestTx.serialize(), { skipPreflight: true });
 
-    status("Confirming vesting lock…");
-    await waitForConfirmation(connection, vestTxId, status);
+      status("Confirming vesting lock…");
+      await waitForConfirmation(connection, vestTxId, status);
+    } catch (e) {
+      vestingError = e.message || String(e);
+    }
   }
 
-  return { mint: mintPair.publicKey.toBase58(), txId, poolInfo: extInfo };
+  return { mint: mintPair.publicKey.toBase58(), txId, poolInfo: extInfo, vestingError };
 }
 
 // ---- claim vested dev tokens once the cliff/unlock schedule allows it ----

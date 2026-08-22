@@ -68,6 +68,10 @@ export default function LaunchToken() {
     <div style={s.wrap}>
       <div style={s.inner}>
 
+        <div style={s.testNotice}>
+          This page is still being tested. Please do not launch a coin or buy here yet.
+        </div>
+
         <h1 style={s.h1}>
           The launch built for <span style={s.accent}>holders</span>, not snipers.
         </h1>
@@ -183,6 +187,12 @@ export default function LaunchToken() {
             <div style={s.rr}><span style={s.rk}>Mint</span><span style={s.mono}>{result.mint}</span></div>
             {result.txId && <div style={s.rr}><span style={s.rk}>Transaction</span><span style={s.mono}>{result.txId}</span></div>}
             <a href={`https://solscan.io/token/${result.mint}`} target="_blank" rel="noreferrer" style={s.solscan}>View on Solscan →</a>
+            {result.vestingError && (
+              <div style={s.vestWarn}>
+                Your coin is live, but the vesting lock did not complete: {result.vestingError}
+                <br />Do not launch again — save this mint address and contact support to finish locking your 5%.
+              </div>
+            )}
           </div>
         )}
 
@@ -259,6 +269,8 @@ const s = {
   solscan:{color:GREEN,fontSize:13,display:"inline-block",marginTop:12,fontWeight:600},
   claimBox:{marginTop:18,paddingTop:18,borderTop:"1px solid rgba(255,255,255,0.08)"},
   claimTitle:{fontSize:12.5,color:"#8a8a8a",marginBottom:10,lineHeight:1.4},
+  vestWarn:{marginTop:14,padding:12,borderRadius:10,background:"rgba(224,168,0,0.08)",border:"1px solid #e0a800",color:"#e0a800",fontSize:12.5,lineHeight:1.6},
+  testNotice:{marginBottom:24,padding:14,borderRadius:11,background:"rgba(224,168,0,0.08)",border:"1px solid #e0a800",color:"#e0a800",fontSize:13,fontWeight:600,textAlign:"center"},
   legal:{marginTop:44,fontSize:11,color:"#555",lineHeight:1.6},
 };
 const st = {
