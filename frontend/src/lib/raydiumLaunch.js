@@ -124,12 +124,15 @@ export async function claimPlatformFees({ wallet, mint, onStatus }) {
   const poolId = getPdaLaunchpadPoolId(LAUNCHPAD_PROGRAM, new PublicKey(mint), NATIVE_MINT).publicKey;
 
   status("Building claim…");
+  // Don't pass mintB here: passing it makes the SDK skip its own step of
+  // looking up the pool's vault address on-chain, leaving vaultB blank and
+  // causing "cannot found mint info" even though the pool/vault exist.
+  // Leaving mintB out lets the SDK fetch both mintB and vaultB itself.
   const { execute } = await raydium.launchpad.claimPlatformFee({
     programId: LAUNCHPAD_PROGRAM,
     platformId,
     poolId,
     platformClaimFeeWallet: platform.platformClaimFeeWallet,
-    mintB: NATIVE_MINT,
     txVersion: TxVersion.V0,
   });
 
