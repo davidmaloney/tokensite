@@ -151,10 +151,17 @@ export default function LaunchToken() {
                 </div>
                 <div style={s.walletNote}>Your 5% locks to the wallet you launch with — you'll need this same wallet to claim it later, so don't lose access to it.</div>
 
-                <button onClick={handleLaunch} disabled={busy}
-                  style={{...s.btn, opacity:busy?0.6:1, cursor:busy?"wait":"pointer"}}>
-                  {busy ? "Launching…" : "Launch coin"}
-                </button>
+                {result ? (
+                  <button onClick={() => { setResult(null); setName(""); setTicker(""); setLogo(null); setStatus(""); }}
+                    style={{...s.btn, background:"transparent", border:"1px solid rgba(255,255,255,0.25)", color:"#fff"}}>
+                    Launch another coin
+                  </button>
+                ) : (
+                  <button onClick={handleLaunch} disabled={busy}
+                    style={{...s.btn, opacity:busy?0.6:1, cursor:busy?"wait":"pointer"}}>
+                    {busy ? "Launching…" : "Launch coin"}
+                  </button>
+                )}
 
                 <div style={s.buyNote}>You can buy your own coin at launch from this same wallet — no special access, just like any other buyer.</div>
                 {!PLATFORM_ID && <p style={s.warn}>Platform not configured.</p>}
