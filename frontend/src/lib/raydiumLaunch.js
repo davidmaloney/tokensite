@@ -3,10 +3,13 @@
 import {
   Raydium, TxVersion, LAUNCHPAD_PROGRAM,
   getPdaLaunchpadConfigId, LaunchpadConfig, PlatformConfig,
-  getPdaLaunchpadPoolId,
+  getPdaLaunchpadPoolId, getPdaPlatformVault, getPdaPlatformFeeVaultAuth,
 } from "@raydium-io/raydium-sdk-v2";
-import { NATIVE_MINT } from "@solana/spl-token";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import {
+  NATIVE_MINT, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction,
+} from "@solana/spl-token";
+import { Connection, Keypair, PublicKey, Transaction, TransactionInstruction, SystemProgram } from "@solana/web3.js";
 import BN from "bn.js";
 import { LAUNCH_CONFIG, PLATFORM_ID, RPC_URL } from "../config/launchConfig.js";
 
@@ -170,6 +173,61 @@ export async function claimPlatformFees({ wallet, mint, onStatus }) {
 
   status("Confirming on-chain…");
   await waitForConfirmation(raydium.connection, txId, status);
+
+  return { txId };
+}
+
+// ---- ADMIN: claim ALL accrued platform fees in one go, from the shared ----
+// platform-wide fee vault — instead of claiming coin by coin. Built by hand
+// (raw instruction) because the installed SDK version doesn't wrap this
+// instruction yet; account layout + discriminator taken directly from
+// Raydium's own published on-chain program IDL (raydium_launchpad.json).
+const CLAIM_PLATFORM_FEE_FROM_VAULT_DISCRIMINATOR = Buffer.from([117, 241, 198, 168, 248, 218, 80, 29]);
+
+export async function claimPlatformFeeFromVault({ wallet, onStatus }) {
+  const status = (m) => onStatus && onStatus(m);
+  if (!wallet?.publicKey) throw new Error("Connect the treasury wallet.");
+  if (!wallet.signAllTransactions) throw new Error("This wallet can't sign transactions.");
+  status("Loading…");
+  const raydium = await loadRaydium(wallet);
+  const connection = raydium.connection;
+
+  const platformId = new PublicKey(PLATFORM_ID);
+  const feeVaultAuthority = getPdaPlatformFeeVaultAuth(LAUNCHPAD_PROGRAM).publicKey;
+  const platformFeeVault = getPdaPlatformVault(LAUNCHPAD_PROGRAM, platformId, NATIVE_MINT).publicKey;
+  const recipientTokenAccount = getAssociatedTokenAddressSync(NATIVE_MINT, wallet.publicKey);
+
+  const claimIx = new TransactionInstruction({
+    programId: LAUNCHPAD_PROGRAM,
+    keys: [
+      { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+      { pubkey: feeVaultAuthority, isSigner: false, isWritable: false },
+      { pubkey: platformId, isSigner: false, isWritable: false },
+      { pubkey: platformFeeVault, isSigner: false, isWritable: true },
+      { pubkey: recipientTokenAccount, isSigner: false, isWritable: true },
+      { pubkey: NATIVE_MINT, isSigner: false, isWritable: false },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+    ],
+    data: CLAIM_PLATFORM_FEE_FROM_VAULT_DISCRIMINATOR,
+  });
+
+  status("Building transaction…");
+  const tx = new Transaction().add(
+    createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, recipientTokenAccount, wallet.publicKey, NATIVE_MINT),
+    claimIx
+  );
+  tx.feePayer = wallet.publicKey;
+  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  tx.recentBlockhash = blockhash;
+
+  status("Approve in your wallet…");
+  const [signedTx] = await wallet.signAllTransactions([tx]);
+  const txId = await connection.sendRawTransaction(signedTx.serialize(), { skipPreflight: true });
+
+  status("Confirming on-chain…");
+  await waitForConfirmation(connection, txId, status);
 
   return { txId };
 }

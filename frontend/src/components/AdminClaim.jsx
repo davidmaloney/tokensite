@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { claimPlatformFees } from "../lib/raydiumLaunch.js";
+import { claimPlatformFees, claimPlatformFeeFromVault } from "../lib/raydiumLaunch.js";
 
 // Raydium's claimPlatformFee instruction requires the platform's
 // platformClaimFeeWallet itself to sign the claim transaction — the admin
@@ -20,7 +20,9 @@ export default function AdminClaim() {
   const wallet = useWallet();
   const [mint, setMint] = useState(DEFAULT_MINT);
   const [busy, setBusy] = useState(false);
+  const [busyVault, setBusyVault] = useState(false);
   const [msg, setMsg] = useState("");
+  const [vaultMsg, setVaultMsg] = useState("");
 
   // Hard gate: only the admin wallet ever sees this.
   const isAdmin = wallet?.connected && wallet.publicKey?.toBase58() === ADMIN_WALLET;
@@ -37,6 +39,16 @@ export default function AdminClaim() {
     } finally { setBusy(false); }
   }
 
+  async function handleClaimVault() {
+    setBusyVault(true); setVaultMsg("");
+    try {
+      const { txId } = await claimPlatformFeeFromVault({ wallet, onStatus: setVaultMsg });
+      setVaultMsg(`Claimed to treasury.${txId ? " Tx: " + txId.slice(0, 12) + "…" : ""}`);
+    } catch (e) {
+      setVaultMsg("Error: " + (e.message || String(e)));
+    } finally { setBusyVault(false); }
+  }
+
   return (
     <div style={box}>
       <div style={title}>Admin · claim fees</div>
@@ -47,6 +59,13 @@ export default function AdminClaim() {
         {busy ? "Claiming…" : "Claim to treasury"}
       </button>
       {msg && <div style={{ ...note, color: msg.startsWith("Error") ? "#ff6b6b" : GREEN }}>{msg}</div>}
+
+      <div style={{ ...sub, marginTop: 16 }}>Sweeps ALL coins' accrued platform fees at once, from the shared platform vault.</div>
+      <button onClick={handleClaimVault} disabled={busyVault}
+        style={{ ...btn, opacity: busyVault ? 0.6 : 1, cursor: busyVault ? "wait" : "pointer" }}>
+        {busyVault ? "Claiming…" : "Claim all from platform vault"}
+      </button>
+      {vaultMsg && <div style={{ ...note, color: vaultMsg.startsWith("Error") ? "#ff6b6b" : GREEN }}>{vaultMsg}</div>}
     </div>
   );
 }
