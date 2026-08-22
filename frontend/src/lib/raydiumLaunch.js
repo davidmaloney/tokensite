@@ -4,6 +4,7 @@ import {
   Raydium, TxVersion, LAUNCHPAD_PROGRAM,
   getPdaLaunchpadConfigId, LaunchpadConfig,
   getPdaPlatformVault, getPdaPlatformFeeVaultAuth,
+  getPdaLaunchpadPoolId, getPdaVestId, getPdaLaunchpadAuth, getPdaLaunchpadVaultId,
 } from "@raydium-io/raydium-sdk-v2";
 import {
   NATIVE_MINT, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -76,6 +77,20 @@ export async function uploadLogo(file, name, symbol) {
   return j.uri;
 }
 
+// Locking dev tokens via `totalLockedAmount`/`cliffPeriod`/`unlockPeriod` on
+// createLaunchpad only reserves the share and sets the pool's overall vesting
+// schedule — it does NOT assign that share to anyone. A separate instruction
+// (create_vesting_account) is required to actually name a beneficiary who can
+// later claim it. Built by hand from Raydium's own IDL, same as the platform
+// fee vault claim.
+const CREATE_VESTING_ACCOUNT_DISCRIMINATOR = Buffer.from([129, 178, 2, 13, 217, 172, 230, 218]);
+
+// TEMPORARY TEST OVERRIDE — cliff/unlock forced to ~2 minutes total so the
+// real claim flow can be proven on mainnet without waiting 3 years. Revert
+// to LAUNCH_CONFIG.cliffYears/unlockYears (the real 3yr/3yr) once verified.
+const TEST_CLIFF_SECONDS = 120;
+const TEST_UNLOCK_SECONDS = 1;
+
 // ---- launch a coin ----
 export async function launchToken({ wallet, name, symbol, uri, solPrice, onStatus }) {
   const status = (m) => onStatus && onStatus(m);
@@ -100,8 +115,13 @@ export async function launchToken({ wallet, name, symbol, uri, solPrice, onStatu
   const totalLocked = supply.muln(lockPct).divn(100);
   const targetSol = targetUsd / solPrice;
   const totalFundRaisingB = new BN(Math.round(targetSol * 1e9));
-  const cliffPeriod = new BN(cliffYears * 365 * 24 * 60 * 60);
-  const unlockPeriod = new BN(unlockYears * 365 * 24 * 60 * 60);
+  // TEMPORARY: using the short test window instead of the real years while
+  // we prove the vesting lock + claim flow on mainnet. Swap back to the
+  // commented-out line once verified.
+  const cliffPeriod = new BN(TEST_CLIFF_SECONDS);
+  const unlockPeriod = new BN(TEST_UNLOCK_SECONDS);
+  // const cliffPeriod = new BN(cliffYears * 365 * 24 * 60 * 60);
+  // const unlockPeriod = new BN(unlockYears * 365 * 24 * 60 * 60);
   const devBuyLamports = new BN(Math.round((devBuySol || 0) * 1e9));
 
   const mintPair = Keypair.generate();
@@ -134,7 +154,98 @@ export async function launchToken({ wallet, name, symbol, uri, solPrice, onStatu
   status("Confirming on-chain…");
   await waitForConfirmation(connection, txId, status);
 
+  // ---- lock the dev's 5% to their own wallet, in the same launch flow ----
+  // Non-custodial: the beneficiary is always the wallet that just launched,
+  // never our treasury. Only they can ever claim it, and only after the
+  // cliff/unlock schedule set above.
+  if (!totalLocked.isZero()) {
+    status("Locking dev vesting…");
+    const poolId = getPdaLaunchpadPoolId(programId, mintPair.publicKey, NATIVE_MINT).publicKey;
+    const vestingRecord = getPdaVestId(programId, poolId, wallet.publicKey).publicKey;
+
+    const vestIx = new TransactionInstruction({
+      programId,
+      keys: [
+        { pubkey: wallet.publicKey, isSigner: true, isWritable: true },  // creator
+        { pubkey: wallet.publicKey, isSigner: false, isWritable: true }, // beneficiary
+        { pubkey: poolId, isSigner: false, isWritable: true },
+        { pubkey: vestingRecord, isSigner: false, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: Buffer.concat([CREATE_VESTING_ACCOUNT_DISCRIMINATOR, totalLocked.toArrayLike(Buffer, "le", 8)]),
+    });
+
+    const vestTx = new Transaction().add(vestIx);
+    vestTx.feePayer = wallet.publicKey;
+    const { blockhash: vestBlockhash } = await connection.getLatestBlockhash("confirmed");
+    vestTx.recentBlockhash = vestBlockhash;
+
+    status("Approve the vesting lock…");
+    const [signedVestTx] = await wallet.signAllTransactions([vestTx]);
+    const vestTxId = await connection.sendRawTransaction(signedVestTx.serialize(), { skipPreflight: true });
+
+    status("Confirming vesting lock…");
+    await waitForConfirmation(connection, vestTxId, status);
+  }
+
   return { mint: mintPair.publicKey.toBase58(), txId, poolInfo: extInfo };
+}
+
+// ---- claim vested dev tokens once the cliff/unlock schedule allows it ----
+// Anyone can call this for their own wallet + a coin mint; only the wallet
+// that originally launched (the vesting record's beneficiary) can actually
+// receive anything — enforced on-chain, not by our UI.
+const CLAIM_VESTED_TOKEN_DISCRIMINATOR = Buffer.from([49, 33, 104, 30, 189, 157, 79, 35]);
+
+export async function claimVestedTokens({ wallet, mint, onStatus }) {
+  const status = (m) => onStatus && onStatus(m);
+  if (!wallet?.publicKey) throw new Error("Connect your wallet.");
+  if (!wallet.signAllTransactions) throw new Error("This wallet can't sign transactions.");
+  status("Loading…");
+  const raydium = await loadRaydium(wallet);
+  const connection = raydium.connection;
+
+  const mintA = new PublicKey(mint);
+  const poolId = getPdaLaunchpadPoolId(LAUNCHPAD_PROGRAM, mintA, NATIVE_MINT).publicKey;
+  const vestingRecord = getPdaVestId(LAUNCHPAD_PROGRAM, poolId, wallet.publicKey).publicKey;
+  const authority = getPdaLaunchpadAuth(LAUNCHPAD_PROGRAM).publicKey;
+  const baseVault = getPdaLaunchpadVaultId(LAUNCHPAD_PROGRAM, poolId, mintA).publicKey;
+  const userBaseToken = getAssociatedTokenAddressSync(mintA, wallet.publicKey);
+
+  const claimIx = new TransactionInstruction({
+    programId: LAUNCHPAD_PROGRAM,
+    keys: [
+      { pubkey: wallet.publicKey, isSigner: true, isWritable: true },
+      { pubkey: authority, isSigner: false, isWritable: false },
+      { pubkey: poolId, isSigner: false, isWritable: true },
+      { pubkey: vestingRecord, isSigner: false, isWritable: true },
+      { pubkey: baseVault, isSigner: false, isWritable: true },
+      { pubkey: userBaseToken, isSigner: false, isWritable: true },
+      { pubkey: mintA, isSigner: false, isWritable: false },
+      { pubkey: TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      { pubkey: ASSOCIATED_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+    ],
+    data: CLAIM_VESTED_TOKEN_DISCRIMINATOR,
+  });
+
+  status("Building transaction…");
+  const tx = new Transaction().add(
+    createAssociatedTokenAccountIdempotentInstruction(wallet.publicKey, userBaseToken, wallet.publicKey, mintA),
+    claimIx
+  );
+  tx.feePayer = wallet.publicKey;
+  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  tx.recentBlockhash = blockhash;
+
+  status("Approve in your wallet…");
+  const [signedTx] = await wallet.signAllTransactions([tx]);
+  const txId = await connection.sendRawTransaction(signedTx.serialize(), { skipPreflight: true });
+
+  status("Confirming on-chain…");
+  await waitForConfirmation(connection, txId, status);
+
+  return { txId };
 }
 
 // ---- ADMIN: claim ALL accrued platform fees in one go, from the shared ----

@@ -3,7 +3,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import ImageUpload from "../components/ImageUpload";
 import { LAUNCH_CONFIG, LAUNCH_ENABLED, PLATFORM_ID } from "../config/launchConfig.js";
-import { launchToken, getSolPrice, uploadLogo } from "../lib/raydiumLaunch.js";
+import { launchToken, getSolPrice, uploadLogo, claimVestedTokens } from "../lib/raydiumLaunch.js";
 
 const GREEN = "#14F195";
 
@@ -17,6 +17,9 @@ export default function LaunchToken() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const [solPrice, setSolPrice] = useState(0);
+  const [claimMint, setClaimMint] = useState("");
+  const [claimStatus, setClaimStatus] = useState("");
+  const [claimBusy, setClaimBusy] = useState(false);
 
   useEffect(() => { getSolPrice().then(setSolPrice); }, []);
 
@@ -48,6 +51,17 @@ export default function LaunchToken() {
     } catch (e) {
       setStatus("Error: " + (e.message || String(e)));
     } finally { setBusy(false); }
+  }
+
+  async function handleClaimVesting() {
+    setClaimBusy(true); setClaimStatus("");
+    try {
+      if (!claimMint.trim()) throw new Error("Enter your coin's mint address.");
+      const { txId } = await claimVestedTokens({ wallet, mint: claimMint.trim(), onStatus: setClaimStatus });
+      setClaimStatus(`Claimed.${txId ? " Tx: " + txId.slice(0, 12) + "…" : ""}`);
+    } catch (e) {
+      setClaimStatus("Error: " + (e.message || String(e)));
+    } finally { setClaimBusy(false); }
   }
 
   return (
@@ -148,6 +162,24 @@ export default function LaunchToken() {
           </div>
         )}
 
+        {connected && (
+          <div style={s.claimBox}>
+            <div style={s.cardTitle}>Claim your vested tokens</div>
+            <p style={s.claimSub}>
+              Your locked 5% unlocks starting 3 years after launch, then bit by bit over the next
+              3. Paste your coin's mint address and claim whatever's unlocked so far, any time.
+            </p>
+            <Field label="Coin mint" value={claimMint} onChange={setClaimMint} placeholder="Your coin's mint address" />
+            <button onClick={handleClaimVesting} disabled={claimBusy}
+              style={{...s.btn, opacity:claimBusy?0.6:1, cursor:claimBusy?"wait":"pointer"}}>
+              {claimBusy ? "Claiming…" : "Claim vested tokens"}
+            </button>
+            {claimStatus && (
+              <div style={{...s.status, color: claimStatus.startsWith("Error") ? "#ff6b6b" : GREEN}}>{claimStatus}</div>
+            )}
+          </div>
+        )}
+
         <p style={s.legal}>Crypto is volatile and you can lose money. Launch responsibly.</p>
       </div>
     </div>
@@ -217,6 +249,8 @@ const s = {
   rk:{color:"#888",flex:"0 0 auto"},
   mono:{fontFamily:"ui-monospace,monospace",fontSize:11.5,wordBreak:"break-all",textAlign:"right"},
   solscan:{color:GREEN,fontSize:13,display:"inline-block",marginTop:12,fontWeight:600},
+  claimBox:{marginTop:40,padding:22,borderRadius:16,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)"},
+  claimSub:{fontSize:13,color:"#9a9a9a",lineHeight:1.6,margin:"0 0 16px"},
   legal:{marginTop:44,fontSize:11,color:"#555",lineHeight:1.6},
 };
 const st = {
