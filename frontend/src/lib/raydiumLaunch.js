@@ -2,8 +2,8 @@
 // We never take custody of coins or funds.
 import {
   Raydium, TxVersion, LAUNCHPAD_PROGRAM,
-  getPdaLaunchpadConfigId, LaunchpadConfig, PlatformConfig,
-  getPdaLaunchpadPoolId, getPdaPlatformVault, getPdaPlatformFeeVaultAuth,
+  getPdaLaunchpadConfigId, LaunchpadConfig,
+  getPdaPlatformVault, getPdaPlatformFeeVaultAuth,
 } from "@raydium-io/raydium-sdk-v2";
 import {
   NATIVE_MINT, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -135,46 +135,6 @@ export async function launchToken({ wallet, name, symbol, uri, solPrice, onStatu
   await waitForConfirmation(connection, txId, status);
 
   return { mint: mintPair.publicKey.toBase58(), txId, poolInfo: extInfo };
-}
-
-// ---- ADMIN: claim accrued platform fees for a given coin's pool ----
-// Only meaningful when the connected wallet is the platform admin. Sweeps that
-// pool's accrued 0.5% platform fee to the platform's claim-fee wallet (treasury).
-export async function claimPlatformFees({ wallet, mint, onStatus }) {
-  const status = (m) => onStatus && onStatus(m);
-  if (!wallet?.publicKey) throw new Error("Connect the admin wallet.");
-  status("Loading…");
-  const raydium = await loadRaydium(wallet);
-
-  const platformId = new PublicKey(PLATFORM_ID);
-  const pAcc = await raydium.connection.getAccountInfo(platformId);
-  if (!pAcc) throw new Error("Platform not found.");
-  const platform = PlatformConfig.decode(pAcc.data);
-
-  const poolId = getPdaLaunchpadPoolId(LAUNCHPAD_PROGRAM, new PublicKey(mint), NATIVE_MINT).publicKey;
-
-  status("Building claim…");
-  // Don't pass mintB here: passing it makes the SDK skip its own step of
-  // looking up the pool's vault address on-chain, leaving vaultB blank and
-  // causing "cannot found mint info" even though the pool/vault exist.
-  // Leaving mintB out lets the SDK fetch both mintB and vaultB itself.
-  const { execute } = await raydium.launchpad.claimPlatformFee({
-    programId: LAUNCHPAD_PROGRAM,
-    platformId,
-    poolId,
-    platformClaimFeeWallet: platform.platformClaimFeeWallet,
-    txVersion: TxVersion.V0,
-  });
-
-  status("Approve in your wallet…");
-  const result = await execute({ sequentially: true });
-  const txId = extractTxId(result);
-  if (!txId) throw new Error("Transaction was not sent.");
-
-  status("Confirming on-chain…");
-  await waitForConfirmation(raydium.connection, txId, status);
-
-  return { txId };
 }
 
 // ---- ADMIN: claim ALL accrued platform fees in one go, from the shared ----
