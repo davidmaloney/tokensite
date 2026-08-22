@@ -2,20 +2,13 @@
 // Hosts token logo images + a metadata JSON so launched coins have a real,
 // permanent `uri` that wallets and explorers can read to show the logo.
 // Files are tiny (a few KB each) and can be swept by your existing cleanup jobs.
-//
-// Wire up in server.js:
-//   const launchRoutes = require("./routes/launch");
-//   app.use("/api/launch", launchRoutes);
-// And serve the uploads dir statically (once):
-//   app.use("/uploads", express.static(process.env.UPLOAD_DIR || "/data/uploads"));
-//
-// Install the one dependency in backend:  npm install multer
+// ES module style to match the rest of the backend.
 
-const express = require("express");
-const multer = require("multer");
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
+import express from "express";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
 
 const router = express.Router();
 
@@ -61,4 +54,4 @@ router.post("/metadata", upload.single("image"), (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
