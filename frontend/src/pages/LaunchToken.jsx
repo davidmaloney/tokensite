@@ -134,6 +134,7 @@ export default function LaunchToken() {
                 <Row k="Into the burned pool" v="45%" />
                 <Row k="Yours, locked 3+3 years" v="5%" />
               </div>
+              <div style={s.walletNote}>Your 5% locks to the wallet you launch with — you'll need this same wallet to claim it later, so don't lose access to it.</div>
 
               {!connected
                 ? <div style={{marginTop:8}}><WalletMultiButton style={s.btn} /></div>
@@ -148,6 +149,7 @@ export default function LaunchToken() {
               {connected && (
                 <div style={s.claimBox}>
                   <div style={s.claimTitle}>Already launched a coin? Claim your vested tokens</div>
+                  <div style={s.claimTitle}>Must be the same wallet you launched with — the lock can't be claimed from any other wallet.</div>
                   <Field label="Coin mint" value={claimMint} onChange={setClaimMint} placeholder="Your coin's mint address" />
                   <button onClick={handleClaimVesting} disabled={claimBusy}
                     style={{...s.btn, opacity:claimBusy?0.6:1, cursor:claimBusy?"wait":"pointer"}}>
@@ -237,6 +239,7 @@ const s = {
   tk:{margin:"18px 0",padding:"14px 0",borderTop:"1px solid rgba(255,255,255,0.07)",borderBottom:"1px solid rgba(255,255,255,0.07)"},
   btn:{width:"100%",background:GREEN,color:"#08210f",fontWeight:800,fontSize:15,borderRadius:11,border:"none",height:50,cursor:"pointer",marginTop:4},
   buyNote:{marginTop:12,fontSize:12,color:"#777",lineHeight:1.5,textAlign:"center"},
+  walletNote:{marginTop:10,fontSize:12,color:"#e0a800",lineHeight:1.5},
   warn:{color:"#e0a800",fontSize:13,marginTop:10},
   status:{marginTop:24,padding:15,borderRadius:11,background:"rgba(255,255,255,0.04)",fontSize:14,wordBreak:"break-all"},
   result:{marginTop:24,padding:22,borderRadius:16,background:"rgba(20,241,149,0.05)",border:"1px solid #14F195"},
