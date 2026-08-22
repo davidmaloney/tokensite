@@ -1,25 +1,19 @@
-// Builds + sends a Raydium LaunchLab token launch using the connected browser
-// wallet (Phantom etc). Client-side: the user's wallet signs. No server custody.
+// Client-side Raydium LaunchLab. The user's own wallet signs every transaction.
+// We never take custody of coins or funds.
 import {
   Raydium, TxVersion, LAUNCHPAD_PROGRAM,
-  getPdaLaunchpadConfigId, LaunchpadConfig,
+  getPdaLaunchpadConfigId, LaunchpadConfig, PlatformConfig,
+  getPdaLaunchpadPoolId,
 } from "@raydium-io/raydium-sdk-v2";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { LAUNCH_CONFIG, PLATFORM_ID, RPC_URL } from "../config/launchConfig.js";
 
-// wallet = the object from useWallet() (has publicKey, signTransaction, signAllTransactions)
-export async function launchToken({ wallet, name, symbol, uri, solPrice, onStatus }) {
-  const status = (m) => onStatus && onStatus(m);
-  if (!wallet || !wallet.publicKey) throw new Error("Connect a wallet first.");
-  if (!PLATFORM_ID) throw new Error("Platform ID not set. Create your platform first.");
-  if (!wallet.signTransaction) throw new Error("This wallet can't sign transactions.");
-
+// ---- load an SDK instance bound to the connected browser wallet ----
+async function loadRaydium(wallet) {
   const connection = new Connection(RPC_URL, "confirmed");
-  status("Loading Raydium…");
-
-  const raydium = await Raydium.load({
+  return Raydium.load({
     owner: wallet.publicKey,
     connection,
     cluster: "mainnet",
@@ -28,11 +22,50 @@ export async function launchToken({ wallet, name, symbol, uri, solPrice, onStatu
     blockhashCommitment: "confirmed",
     signAllTransactions: wallet.signAllTransactions,
   });
+}
+
+// The SDK's execute() returns the tx id in different shapes by version.
+// Dig it out safely instead of String()-ing an object (the "[object Object]" bug).
+function extractTxId(result) {
+  if (!result) return "";
+  if (typeof result === "string") return result;
+  if (result.txId) return result.txId;
+  if (Array.isArray(result.txIds) && result.txIds.length) return result.txIds[0];
+  if (Array.isArray(result.signatures) && result.signatures.length) return result.signatures[0];
+  if (result.signature) return result.signature;
+  return "";
+}
+
+// ---- upload the logo to our backend, get back a permanent metadata URI ----
+// Backend stores the image + a metadata JSON and returns the JSON's URL, which
+// becomes the token's on-chain `uri` so wallets/explorers can render the logo.
+export async function uploadLogo(file, name, symbol) {
+  const fd = new FormData();
+  fd.append("image", file);
+  fd.append("name", name);
+  fd.append("symbol", symbol);
+  const r = await fetch("/api/launch/metadata", { method: "POST", body: fd });
+  if (!r.ok) throw new Error("Logo upload failed. Try again.");
+  const j = await r.json();
+  if (!j.uri) throw new Error("Logo upload returned no URI.");
+  return j.uri;
+}
+
+// ---- launch a coin ----
+export async function launchToken({ wallet, name, symbol, uri, solPrice, onStatus }) {
+  const status = (m) => onStatus && onStatus(m);
+  if (!wallet || !wallet.publicKey) throw new Error("Connect a wallet first.");
+  if (!PLATFORM_ID) throw new Error("Platform not configured.");
+  if (!wallet.signTransaction) throw new Error("This wallet can't sign transactions.");
+
+  status("Loading Raydium…");
+  const raydium = await loadRaydium(wallet);
+  const connection = raydium.connection;
 
   const programId = LAUNCHPAD_PROGRAM;
   const configId = getPdaLaunchpadConfigId(programId, NATIVE_MINT, 0, 0).publicKey;
   const configData = await connection.getAccountInfo(configId);
-  if (!configData) throw new Error("Launchpad config not found on-chain.");
+  if (!configData) throw new Error("Launchpad config not found.");
   const configInfo = LaunchpadConfig.decode(configData.data);
   const mintBInfo = await raydium.token.getTokenInfo(configInfo.mintB);
 
@@ -63,25 +96,49 @@ export async function launchToken({ wallet, name, symbol, uri, solPrice, onStatu
     buyAmount: devBuyLamports,
     createOnly: devBuyLamports.isZero(),
     extraSigners: [mintPair],
-    supply,
-    totalSellA,
-    totalFundRaisingB,
+    supply, totalSellA, totalFundRaisingB,
     totalLockedAmount: totalLocked,
-    cliffPeriod,
-    unlockPeriod,
+    cliffPeriod, unlockPeriod,
   });
 
   status("Approve in your wallet…");
   const result = await execute({ sequentially: true });
 
-  return {
-    mint: mintPair.publicKey.toBase58(),
-    txId: result?.txId || String(result),
-    poolInfo: extInfo,
-  };
+  return { mint: mintPair.publicKey.toBase58(), txId: extractTxId(result), poolInfo: extInfo };
 }
 
-// Live SOL price to convert the USD graduation target to SOL at launch time.
+// ---- ADMIN: claim accrued platform fees for a given coin's pool ----
+// Only meaningful when the connected wallet is the platform admin. Sweeps that
+// pool's accrued 0.5% platform fee to the platform's claim-fee wallet (treasury).
+export async function claimPlatformFees({ wallet, mint, onStatus }) {
+  const status = (m) => onStatus && onStatus(m);
+  if (!wallet?.publicKey) throw new Error("Connect the admin wallet.");
+  status("Loading…");
+  const raydium = await loadRaydium(wallet);
+
+  const platformId = new PublicKey(PLATFORM_ID);
+  const pAcc = await raydium.connection.getAccountInfo(platformId);
+  if (!pAcc) throw new Error("Platform not found.");
+  const platform = PlatformConfig.decode(pAcc.data);
+
+  const poolId = getPdaLaunchpadPoolId(LAUNCHPAD_PROGRAM, new PublicKey(mint), NATIVE_MINT).publicKey;
+
+  status("Building claim…");
+  const { execute } = await raydium.launchpad.claimPlatformFee({
+    programId: LAUNCHPAD_PROGRAM,
+    platformId,
+    poolId,
+    platformClaimFeeWallet: platform.platformClaimFeeWallet,
+    mintB: NATIVE_MINT,
+    txVersion: TxVersion.V0,
+  });
+
+  status("Approve in your wallet…");
+  const result = await execute({ sequentially: true });
+  return { txId: extractTxId(result) };
+}
+
+// ---- live SOL price to convert the USD graduation target to SOL at launch ----
 export async function getSolPrice() {
   try {
     const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd");
