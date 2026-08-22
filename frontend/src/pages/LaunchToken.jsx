@@ -141,7 +141,7 @@ export default function LaunchToken() {
                 <Field label="Ticker" value={ticker} onChange={(v)=>setTicker(v.toUpperCase())} placeholder="GDOG" maxLength={10} />
                 <label style={s.fieldLabel}>Logo</label>
                 <ImageUpload label="" hint="The face of your coin — shown in wallets and explorers."
-                  value={logo} onChange={setLogo} />
+                  value={logo} onChange={setLogo} required />
 
                 <div style={s.tk}>
                   <Row k="Total supply" v="1 billion coins" />

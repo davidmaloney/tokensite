@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 
-export default function ImageUpload({ label, value, onChange, hint }) {
+export default function ImageUpload({ label, value, onChange, hint, required = false }) {
   const inputRef = useRef();
 
   const handleFile = (e) => {
@@ -22,7 +22,7 @@ export default function ImageUpload({ label, value, onChange, hint }) {
   return (
     <div>
       <label>
-        {label} <span style={{ color: "#555" }}>(optional)</span>
+        {label} {!required && <span style={{ color: "#555" }}>(optional)</span>}
       </label>
       {hint && <div style={{ fontSize: "11px", color: "#555", marginBottom: "8px" }}>{hint}</div>}
       <div
