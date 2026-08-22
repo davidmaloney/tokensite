@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import CreatePage from "./pages/CreatePage";
 import ManagePage from "./pages/ManagePage";
 import LaunchToken from "./pages/LaunchToken";
+import AdminClaim from "./components/AdminClaim";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>
+      <AdminClaim />
     </BrowserRouter>
   );
 }
