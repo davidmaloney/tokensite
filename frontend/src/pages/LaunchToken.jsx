@@ -144,6 +144,20 @@ export default function LaunchToken() {
 
               {connected && <div style={s.buyNote}>You can buy your own coin at launch from this same wallet — no special access, just like any other buyer.</div>}
               {!PLATFORM_ID && <p style={s.warn}>Platform not configured.</p>}
+
+              {connected && (
+                <div style={s.claimBox}>
+                  <div style={s.claimTitle}>Already launched a coin? Claim your vested tokens</div>
+                  <Field label="Coin mint" value={claimMint} onChange={setClaimMint} placeholder="Your coin's mint address" />
+                  <button onClick={handleClaimVesting} disabled={claimBusy}
+                    style={{...s.btn, opacity:claimBusy?0.6:1, cursor:claimBusy?"wait":"pointer"}}>
+                    {claimBusy ? "Claiming…" : "Claim vested tokens"}
+                  </button>
+                  {claimStatus && (
+                    <div style={{...s.status, color: claimStatus.startsWith("Error") ? "#ff6b6b" : GREEN, marginTop:12}}>{claimStatus}</div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -159,24 +173,6 @@ export default function LaunchToken() {
             <div style={s.rr}><span style={s.rk}>Mint</span><span style={s.mono}>{result.mint}</span></div>
             {result.txId && <div style={s.rr}><span style={s.rk}>Transaction</span><span style={s.mono}>{result.txId}</span></div>}
             <a href={`https://solscan.io/token/${result.mint}`} target="_blank" rel="noreferrer" style={s.solscan}>View on Solscan →</a>
-          </div>
-        )}
-
-        {connected && (
-          <div style={s.claimBox}>
-            <div style={s.cardTitle}>Claim your vested tokens</div>
-            <p style={s.claimSub}>
-              Your locked 5% unlocks starting 3 years after launch, then bit by bit over the next
-              3. Paste your coin's mint address and claim whatever's unlocked so far, any time.
-            </p>
-            <Field label="Coin mint" value={claimMint} onChange={setClaimMint} placeholder="Your coin's mint address" />
-            <button onClick={handleClaimVesting} disabled={claimBusy}
-              style={{...s.btn, opacity:claimBusy?0.6:1, cursor:claimBusy?"wait":"pointer"}}>
-              {claimBusy ? "Claiming…" : "Claim vested tokens"}
-            </button>
-            {claimStatus && (
-              <div style={{...s.status, color: claimStatus.startsWith("Error") ? "#ff6b6b" : GREEN}}>{claimStatus}</div>
-            )}
           </div>
         )}
 
@@ -249,8 +245,8 @@ const s = {
   rk:{color:"#888",flex:"0 0 auto"},
   mono:{fontFamily:"ui-monospace,monospace",fontSize:11.5,wordBreak:"break-all",textAlign:"right"},
   solscan:{color:GREEN,fontSize:13,display:"inline-block",marginTop:12,fontWeight:600},
-  claimBox:{marginTop:40,padding:22,borderRadius:16,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)"},
-  claimSub:{fontSize:13,color:"#9a9a9a",lineHeight:1.6,margin:"0 0 16px"},
+  claimBox:{marginTop:18,paddingTop:18,borderTop:"1px solid rgba(255,255,255,0.08)"},
+  claimTitle:{fontSize:12.5,color:"#8a8a8a",marginBottom:10,lineHeight:1.4},
   legal:{marginTop:44,fontSize:11,color:"#555",lineHeight:1.6},
 };
 const st = {

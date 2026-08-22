@@ -146,8 +146,14 @@ export async function launchToken({ wallet, name, symbol, uri, solPrice, onStatu
     cliffPeriod, unlockPeriod,
   });
 
+  // NOT { sequentially: true } here: for a browser wallet (signAllTransactions,
+  // not a raw keypair), the SDK's sequential path fires transactions in the
+  // background without awaiting them and returns an empty txIds array
+  // immediately — there is never a real transaction id to read. Omitting it
+  // uses the SDK's other path, which awaits each send properly and returns
+  // real ids. Confirmed by reading the installed SDK's compiled execute().
   status("Approve in your wallet…");
-  const result = await execute({ sequentially: true });
+  const result = await execute({});
   const txId = extractTxId(result);
   if (!txId) throw new Error("Transaction was not sent.");
 
