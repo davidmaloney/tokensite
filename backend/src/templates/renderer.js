@@ -86,6 +86,9 @@ function buildChartBlock(contractAddress) {
   if (!contractAddress) return "";
   let chartUrl;
   const addr = contractAddress.trim();
+  // Tron: DexScreener's embed needs a pair/pool address and won't resolve a bare
+  // Tron token CA, so the iframe just loads blank. Rather than show a broken empty
+  // chart, show a short honest note instead.
   if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(addr)) {
     return "<div class=\"card chart-card\">" +
       "<div class=\"card-title\">Price Chart</div>" +
@@ -125,7 +128,7 @@ function buildCountdownBlock(countdown) {
 function buildAboutBlock(about) {
   if (!about) return "";
   var hasText = about.text && about.text.trim();
-  var hasTeam = Array.isArray(about.team) && about.team.length > 0;
+  var hasTeam = about.team && about.team.length > 0;
   if (!hasText && !hasTeam) return "";
   var html = "<div class=\"card about-card\"><div class=\"card-title\">About</div>";
   if (hasText) {
@@ -134,7 +137,7 @@ function buildAboutBlock(about) {
   if (hasTeam) {
     html += "<div class=\"team-grid\">";
     about.team.forEach(function(member) {
-      if (!member || !member.name) return;
+      if (!member.name) return;
       var avatarInner = member.photo
         ? "<img src=\"" + escapeHtml(member.photo) + "\" alt=\"" + escapeHtml(member.name) + "\" class=\"team-photo\" />"
         : escapeHtml(member.name.charAt(0).toUpperCase());
@@ -211,6 +214,8 @@ export function renderPage(page) {
 
   const buyLinks = content.buyLinks || {};
   let buyHtml = Object.entries(buyLinks)
+    // Skip any stored "sunswap" link â Tron gets the dedicated copy-and-open button
+    // below instead, so we never render a plain (empty) SunSwap buy button.
     .filter(([key, url]) => key !== "sunswap" && url && url.trim())
     .map(([key, url]) =>
       "<a href=\"" + escapeHtml(url) + "\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"buy-btn buy-" + key + "\">" +
@@ -218,6 +223,11 @@ export function renderPage(page) {
       "<span>" + (BUY_LABELS[key] || key) + "</span></a>"
     ).join("\n");
 
+  // Tron special-case: Tron DEXs don't support pre-filling the output token via URL,
+  // so instead of a normal buy button we render a button that copies the contract
+  // address to the buyer's clipboard AND opens SunSwap in a new tab. By the time they
+  // arrive on SunSwap, the CA is already copied and ready to paste. Driven purely off
+  // the contract address being a Tron address, so it works with no stored buy link.
   const caTrimmedForTron = (content.contractAddress || "").trim();
   if (/^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(caTrimmedForTron)) {
     const caJs = escapeHtml(caTrimmedForTron).replace(/'/g, "\\'");
@@ -285,6 +295,7 @@ export function renderPage(page) {
 
   html = html.replace(/\{\{DESC_BLOCK\}\}/g, descHtml);
   html = html.replace(/\{\{CONTRACT_BLOCK\}\}/g, contractHtml);
+  // Buy buttons show by default; the creator can switch them off (hideBuyButtons).
   const showBuy = !content.hideBuyButtons;
   html = html.replace(/\{\{BUY_BLOCK\}\}/g, (showBuy && buyHtml) ? "<div class=\"buy-links\">" + buyHtml + "</div>" : "");
   html = html.replace(/\{\{TOKENOMICS_BLOCK\}\}/g, tokenomicsHtml);
