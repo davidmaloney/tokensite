@@ -36,6 +36,28 @@ function extractTxId(result) {
   return "";
 }
 
+// execute() only submits the raw transaction and returns immediately — it
+// never checks whether the network actually confirmed it (no confirmation,
+// no websocket on our free RPC tier). Without this, the app can report
+// "success" on a transaction that silently gets dropped. Poll for a real
+// confirmed/finalized status (or an on-chain error) before trusting it.
+async function waitForConfirmation(connection, signature, onStatus, timeoutMs = 30000) {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const { value } = await connection.getSignatureStatuses([signature]);
+    const info = value && value[0];
+    if (info) {
+      if (info.err) throw new Error("Transaction failed on-chain: " + JSON.stringify(info.err));
+      if (info.confirmationStatus === "confirmed" || info.confirmationStatus === "finalized") return;
+    }
+    onStatus && onStatus(`Confirming… (${Math.round((Date.now() - start) / 1000)}s)`);
+    await new Promise((r) => setTimeout(r, 2000));
+  }
+  throw new Error(
+    `Not confirmed after ${Math.round(timeoutMs / 1000)}s — it may still land. Check manually: https://solscan.io/tx/${signature}`
+  );
+}
+
 // ---- upload the logo to our backend, get back a permanent metadata URI ----
 // Backend stores the image + a metadata JSON and returns the JSON's URL, which
 // becomes the token's on-chain `uri` so wallets/explorers can render the logo.
@@ -138,7 +160,13 @@ export async function claimPlatformFees({ wallet, mint, onStatus }) {
 
   status("Approve in your wallet…");
   const result = await execute({ sequentially: true });
-  return { txId: extractTxId(result) };
+  const txId = extractTxId(result);
+  if (!txId) throw new Error("Transaction was not sent.");
+
+  status("Confirming on-chain…");
+  await waitForConfirmation(raydium.connection, txId, status);
+
+  return { txId };
 }
 
 // ---- live SOL price to convert the USD graduation target to SOL at launch ----
