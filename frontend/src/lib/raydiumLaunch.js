@@ -125,8 +125,13 @@ export async function launchToken({ wallet, name, symbol, uri, solPrice, onStatu
 
   status("Approve in your wallet…");
   const result = await execute({ sequentially: true });
+  const txId = extractTxId(result);
+  if (!txId) throw new Error("Transaction was not sent.");
 
-  return { mint: mintPair.publicKey.toBase58(), txId: extractTxId(result), poolInfo: extInfo };
+  status("Confirming on-chain…");
+  await waitForConfirmation(connection, txId, status);
+
+  return { mint: mintPair.publicKey.toBase58(), txId, poolInfo: extInfo };
 }
 
 // ---- ADMIN: claim accrued platform fees for a given coin's pool ----
