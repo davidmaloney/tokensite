@@ -2,9 +2,13 @@ import React, { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { claimPlatformFees } from "../lib/raydiumLaunch.js";
 
-// The ONLY wallet allowed to see + use this button: your platform admin wallet.
-// Until this exact wallet is connected, the component renders nothing at all.
-const ADMIN_WALLET = "AdTfgvAQ1GqMMPMmJ8Jhm3YQBUcCpU1rkvqXqKDXyCXT";
+// Raydium's claimPlatformFee instruction requires the platform's
+// platformClaimFeeWallet itself to sign the claim transaction — the admin
+// wallet cannot sign for it. So the wallet allowed to see + use this button
+// must be the treasury wallet (the on-chain platformClaimFeeWallet), not the
+// admin/throwaway wallet. Until this exact wallet is connected, the
+// component renders nothing at all.
+const ADMIN_WALLET = "ApYPhmmxRpwnGzfeEaxSCFUhaqqgVz1vL9uBfK5cgD1T";
 
 // claimPlatformFee is per-coin (per pool), so you tell it which coin's fees to
 // sweep. Defaults to your first token; paste any mint to claim that coin's fees.
