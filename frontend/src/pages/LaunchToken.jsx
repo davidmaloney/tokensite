@@ -120,33 +120,41 @@ export default function LaunchToken() {
           </div>
 
           <div style={s.colRight}>
-            <div style={s.card}>
-              <div style={s.cardTitle}>Create your coin</div>
-              <Field label="Coin name" value={name} onChange={setName} placeholder="Good Dog" />
-              <Field label="Ticker" value={ticker} onChange={(v)=>setTicker(v.toUpperCase())} placeholder="GDOG" maxLength={10} />
-              <label style={s.fieldLabel}>Logo</label>
-              <ImageUpload label="" hint="The face of your coin — shown in wallets and explorers."
-                value={logo} onChange={setLogo} />
-
-              <div style={s.tk}>
-                <Row k="Total supply" v="1 billion coins" />
-                <Row k="Sold to buyers on the curve" v="50%" />
-                <Row k="Into the burned pool" v="45%" />
-                <Row k="Yours, locked 3+3 years" v="5%" />
+            {!connected ? (
+              <div style={s.card}>
+                <div style={s.cardTitle}>Connect your wallet to start</div>
+                <p style={s.connectHint}>
+                  Connect first, before filling in your coin's details — on Safari and other
+                  browsers, connecting can take you to your wallet app and back, which clears
+                  anything already typed.
+                </p>
+                <WalletMultiButton style={s.btn} />
               </div>
-              <div style={s.walletNote}>Your 5% locks to the wallet you launch with — you'll need this same wallet to claim it later, so don't lose access to it.</div>
+            ) : (
+              <div style={s.card}>
+                <div style={s.cardTitle}>Create your coin</div>
+                <Field label="Coin name" value={name} onChange={setName} placeholder="Good Dog" />
+                <Field label="Ticker" value={ticker} onChange={(v)=>setTicker(v.toUpperCase())} placeholder="GDOG" maxLength={10} />
+                <label style={s.fieldLabel}>Logo</label>
+                <ImageUpload label="" hint="The face of your coin — shown in wallets and explorers."
+                  value={logo} onChange={setLogo} />
 
-              {!connected
-                ? <div style={{marginTop:8}}><WalletMultiButton style={s.btn} /></div>
-                : <button onClick={handleLaunch} disabled={busy}
-                    style={{...s.btn, opacity:busy?0.6:1, cursor:busy?"wait":"pointer"}}>
-                    {busy ? "Launching…" : "Launch coin"}
-                  </button>}
+                <div style={s.tk}>
+                  <Row k="Total supply" v="1 billion coins" />
+                  <Row k="Sold to buyers on the curve" v="50%" />
+                  <Row k="Into the burned pool" v="45%" />
+                  <Row k="Yours, locked 3+3 years" v="5%" />
+                </div>
+                <div style={s.walletNote}>Your 5% locks to the wallet you launch with — you'll need this same wallet to claim it later, so don't lose access to it.</div>
 
-              {connected && <div style={s.buyNote}>You can buy your own coin at launch from this same wallet — no special access, just like any other buyer.</div>}
-              {!PLATFORM_ID && <p style={s.warn}>Platform not configured.</p>}
+                <button onClick={handleLaunch} disabled={busy}
+                  style={{...s.btn, opacity:busy?0.6:1, cursor:busy?"wait":"pointer"}}>
+                  {busy ? "Launching…" : "Launch coin"}
+                </button>
 
-              {connected && (
+                <div style={s.buyNote}>You can buy your own coin at launch from this same wallet — no special access, just like any other buyer.</div>
+                {!PLATFORM_ID && <p style={s.warn}>Platform not configured.</p>}
+
                 <div style={s.claimBox}>
                   <div style={s.claimTitle}>Already launched a coin? Claim your vested tokens</div>
                   <div style={s.claimTitle}>Must be the same wallet you launched with — the lock can't be claimed from any other wallet.</div>
@@ -159,8 +167,8 @@ export default function LaunchToken() {
                     <div style={{...s.status, color: claimStatus.startsWith("Error") ? "#ff6b6b" : GREEN, marginTop:12}}>{claimStatus}</div>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -240,6 +248,7 @@ const s = {
   btn:{width:"100%",background:GREEN,color:"#08210f",fontWeight:800,fontSize:15,borderRadius:11,border:"none",height:50,cursor:"pointer",marginTop:4},
   buyNote:{marginTop:12,fontSize:12,color:"#777",lineHeight:1.5,textAlign:"center"},
   walletNote:{marginTop:10,fontSize:12,color:"#e0a800",lineHeight:1.5},
+  connectHint:{fontSize:13,color:"#9a9a9a",lineHeight:1.6,margin:"0 0 18px"},
   warn:{color:"#e0a800",fontSize:13,marginTop:10},
   status:{marginTop:24,padding:15,borderRadius:11,background:"rgba(255,255,255,0.04)",fontSize:14,wordBreak:"break-all"},
   result:{marginTop:24,padding:22,borderRadius:16,background:"rgba(20,241,149,0.05)",border:"1px solid #14F195"},
