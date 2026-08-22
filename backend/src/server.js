@@ -20,6 +20,7 @@ import adminRouter from "./routes/admin.js";
 import previewRouter from "./routes/preview.js";
 import subdomainRouter from "./routes/subdomain.js";
 import { invalidatePageCache } from "./routes/subdomain.js";
+import launchRouter from "./routes/launch.js";
 import { registerCacheInvalidator } from "./services/pageService.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -77,6 +78,7 @@ app.use("/api/payments", paymentsRouter);
 app.use("/api/pricing", paymentsRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/preview", previewRouter);
+app.use("/api/launch", launchRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", domain: DOMAIN, mock: process.env.MOCK_MODE === "true" });
@@ -85,6 +87,16 @@ app.get("/api/health", (_req, res) => {
 app.get("/media/:filename", (req, res) => {
   const filename = path.basename(req.params.filename);
   const filepath = path.join(UPLOAD_DIR, filename);
+  if (!fs.existsSync(filepath)) return res.status(404).send("Not found");
+  res.sendFile(filepath);
+});
+
+// Serves the coin logo images + metadata JSON written by routes/launch.js
+// (UPLOAD_DIR/img and UPLOAD_DIR/meta) so a launched coin's on-chain uri
+// actually resolves to something real.
+app.get("/uploads/:type(img|meta)/:filename", (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const filepath = path.join(UPLOAD_DIR, req.params.type, filename);
   if (!fs.existsSync(filepath)) return res.status(404).send("Not found");
   res.sendFile(filepath);
 });
