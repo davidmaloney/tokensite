@@ -3,17 +3,16 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import ImageUpload from "../components/ImageUpload";
 import { LAUNCH_CONFIG, LAUNCH_ENABLED, PLATFORM_ID } from "../config/launchConfig.js";
-import { launchToken, getSolPrice } from "../lib/raydiumLaunch.js";
+import { launchToken, getSolPrice, uploadLogo } from "../lib/raydiumLaunch.js";
 
-const PURPLE = "#9945FF", GREEN = "#14F195";
-const grad = `linear-gradient(135deg, ${PURPLE}, ${GREEN})`;
+const GREEN = "#14F195";
 
 export default function LaunchToken() {
   const wallet = useWallet();
   const { connected } = wallet;
   const [name, setName] = useState("");
   const [ticker, setTicker] = useState("");
-  const [logoPreview, setLogoPreview] = useState("");
+  const [logo, setLogo] = useState(null);
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
@@ -22,11 +21,7 @@ export default function LaunchToken() {
   useEffect(() => { getSolPrice().then(setSolPrice); }, []);
 
   if (!LAUNCH_ENABLED) {
-    return (
-      <div style={s.wrap}>
-        <div style={s.notLive}>This feature isn't live yet.</div>
-      </div>
-    );
+    return <div style={s.wrap}><div style={s.notLive}>This feature isn't live yet.</div></div>;
   }
 
   const cfg = LAUNCH_CONFIG;
@@ -35,15 +30,18 @@ export default function LaunchToken() {
   async function handleLaunch() {
     setBusy(true); setResult(null); setStatus("");
     try {
-      if (!name.trim()) throw new Error("Add a token name to continue.");
+      if (!name.trim()) throw new Error("Add a coin name to continue.");
       if (!ticker.trim()) throw new Error("Add a ticker to continue.");
+      if (!logo?.file) throw new Error("Add a logo — it's the face of your coin.");
       const price = solPrice || (await getSolPrice());
       if (!price) throw new Error("Couldn't reach the SOL price feed. Try again in a moment.");
+
+      setStatus("Uploading logo…");
+      const uri = await uploadLogo(logo.file, name.trim(), ticker.trim());
+
       const res = await launchToken({
         wallet, name: name.trim(), symbol: ticker.trim(),
-        uri: "https://arweave.net/placeholder",
-        solPrice: price,
-        onStatus: setStatus,
+        uri, solPrice: price, onStatus: setStatus,
       });
       setResult(res);
       setStatus("");
@@ -56,208 +54,180 @@ export default function LaunchToken() {
     <div style={s.wrap}>
       <div style={s.inner}>
 
-        {/* HERO */}
-        <div style={s.eyebrow}>SHILLIT LAUNCH</div>
         <h1 style={s.h1}>
-          Launch a token<br/>
-          <span style={s.h1grad}>built to outlast the first minute.</span>
+          The launch built for <span style={s.accent}>holders</span>, not snipers.
         </h1>
         <p style={s.sub}>
-          Most launches are won by whoever's fastest in the opening seconds — and everyone
-          after is exit liquidity. This one is built the other way around: a calm start,
-          a deep pool, and the real move saved for the open market.
+          On most launchpads the first bots buy cheap, the price spikes, and everyone after
+          is exit liquidity. This flips it — a slow, even start where no one gets a head start,
+          and the real move saved for after graduation. You sign every step from your own
+          wallet; we never hold your coins.
         </p>
 
-        {/* THE DEV DEAL — lead with what they get */}
-        <div style={s.dealRow}>
-          <div style={s.dealBig}>
+        <div style={s.deal}>
+          <div style={s.dealLeft}>
             <div style={s.dealPct}>5%</div>
-            <div style={s.dealPctLabel}>of total supply, gifted to you</div>
+            <div style={s.dealPctSub}>of supply, free to you</div>
           </div>
-          <div style={s.dealText}>
-            <strong style={{color:"#fff"}}>Locked 3 years, then vested over 3 more.</strong>{" "}
-            It's yours — but time-locked, so the market can see from day one that you're
-            not here to dump. That lock is the most valuable thing you bring to your own launch.
+          <div style={s.dealRight}>
+            <div style={s.dealHead}>Your stake in your own project.</div>
+            <p style={s.dealBody}>
+              You keep 5% of the total supply — <strong style={{color:"#fff"}}>locked for 3 years,
+              then released bit by bit over the next 3</strong>. A real long-term stake, and because
+              it's time-locked on-chain, buyers can see from minute one you can't dump on them.
+            </p>
           </div>
         </div>
 
-        {/* TWO COLUMN: story + form */}
+        <div style={s.sectionLabel}>How your launch plays out</div>
         <div style={s.cols}>
-
-          {/* LEFT — how it works, as a real sequence */}
-          <div style={s.col}>
-            <Step n="01" title="Build your holders on a calm curve">
-              The price climbs only ~20% across the whole bonding phase. No first-minute
-              spike to chase, which gives your token time to gather real holders and attention
-              instead of snipers.
+          <div style={s.colLeft}>
+            <Step n="1" title="A slow, even climb — on purpose">
+              While your coin fills up, the price rises only about 20%. With no first-second spike
+              to grab, bots gain nothing by being fastest — so real people have time to find your
+              coin and buy in on the same footing. There's no transfer tax, so nothing is skimmed
+              from trades along the way.
             </Step>
-            <Step n="02" title={`Graduate at $${cfg.targetUsd.toLocaleString()}`}>
-              Once buys reach the target (~{targetSol} SOL), the bonding curve ends and your
-              token migrates to a normal AMM pool automatically.
+            <Step n="2" title={`It graduates at $${cfg.targetUsd.toLocaleString()} — always`}>
+              The target is a fixed dollar amount, converted to SOL the moment you launch
+              (about {targetSol} SOL right now). When SOL is worth more, fewer of your coins need
+              to sell to reach it — so your holders keep more of the supply.
             </Step>
-            <Step n="03" title="45% of supply seeds a deep pool">
-              Nearly half the supply plus every SOL raised is saved for that pool — real depth,
-              not spent inflating an early chart that fades.
+            <Step n="3" title="45% is saved to back real trading">
+              Nearly half of every coin — plus all the SOL raised — is poured into the market at
+              graduation, and that liquidity is 100% burned, so it can never be pulled back out.
+              A genuinely deep, locked pool instead of a thin chart that fades in minutes.
             </Step>
-            <Step n="04" title="The flat curve is gone" last>
-              After graduation the ~20% ceiling is lifted. On the open market, the same buying
-              can move the price far faster — you're early to the part that matters.
+            <Step n="4" title="Then the ceiling comes off" last>
+              At graduation the slow curve ends and your coin trades on the open market. Now the
+              same buying that barely moved it before can send it up fast — the part that matters,
+              with real depth underneath.
             </Step>
           </div>
 
-          {/* RIGHT — the form */}
-          <div style={s.col}>
+          <div style={s.colRight}>
             <div style={s.card}>
-              <div style={s.cardTitle}>Your token</div>
+              <div style={s.cardTitle}>Create your coin</div>
+              <Field label="Coin name" value={name} onChange={setName} placeholder="Good Dog" />
+              <Field label="Ticker" value={ticker} onChange={(v)=>setTicker(v.toUpperCase())} placeholder="GDOG" maxLength={10} />
+              <label style={s.fieldLabel}>Logo</label>
+              <ImageUpload label="" hint="The face of your coin — shown in wallets and explorers."
+                value={logo} onChange={setLogo} />
 
-              <Field label="Token name" value={name} onChange={setName} placeholder="e.g. Good Dog" />
-              <Field label="Ticker" value={ticker} onChange={(v)=>setTicker(v.toUpperCase())} placeholder="e.g. GDOG" maxLength={10} />
-
-              <label style={s.label}>Coin logo</label>
-              <ImageUpload
-                label=""
-                hint="This is the face of your coin — shown in wallets, on Raydium and DexScreener."
-                value={logoPreview}
-                onChange={(img)=>setLogoPreview(img ? img.preview : "")}
-              />
-
-              <div style={s.tokenomics}>
-                <span>1B supply</span><span style={s.dot}>·</span>
-                <span>50% curve</span><span style={s.dot}>·</span>
-                <span>45% pool</span><span style={s.dot}>·</span>
-                <span>5% you, locked</span>
+              <div style={s.tk}>
+                <Row k="Total supply" v="1 billion coins" />
+                <Row k="Sold to buyers on the curve" v="50%" />
+                <Row k="Into the burned pool" v="45%" />
+                <Row k="Yours, locked 3+3 years" v="5%" />
               </div>
 
-              {!connected ? (
-                <div style={{marginTop:18}}><WalletMultiButton style={s.btn} /></div>
-              ) : (
-                <button onClick={handleLaunch} disabled={busy}
-                  style={{...s.btn, marginTop:18, opacity:busy?0.65:1, cursor:busy?"wait":"pointer"}}>
-                  {busy ? "Launching…" : "Launch token"}
-                </button>
-              )}
+              {!connected
+                ? <div style={{marginTop:8}}><WalletMultiButton style={s.btn} /></div>
+                : <button onClick={handleLaunch} disabled={busy}
+                    style={{...s.btn, opacity:busy?0.6:1, cursor:busy?"wait":"pointer"}}>
+                    {busy ? "Launching…" : "Launch coin"}
+                  </button>}
 
-              {connected && (
-                <div style={s.buyNote}>
-                  You can buy your own token at launch, in the same wallet, exactly like any
-                  other buyer — no special access, no head start.
-                </div>
-              )}
-
-              {!PLATFORM_ID && (
-                <p style={s.warn}>Platform not configured yet.</p>
-              )}
+              {connected && <div style={s.buyNote}>You can buy your own coin at launch from this same wallet — no special access, just like any other buyer.</div>}
+              {!PLATFORM_ID && <p style={s.warn}>Platform not configured.</p>}
             </div>
           </div>
         </div>
 
-        {/* STATUS */}
         {status && (
-          <div style={{...s.status, color: status.startsWith("Error") ? "#ff6b6b" : GREEN}}>
-            {status.startsWith("Error") ? status : `${status}`}
-          </div>
+          <div style={{...s.status, color: status.startsWith("Error") ? "#ff6b6b" : GREEN}}>{status}</div>
         )}
 
-        {/* RESULT */}
         {result && (
           <div style={s.result}>
-            <div style={s.resultHead}>Your token is live.</div>
-            <div style={s.resultRow}><span style={s.resultKey}>Name</span><span>{name} ({ticker})</span></div>
-            <div style={s.resultRow}><span style={s.resultKey}>Mint</span><span style={s.mono}>{result.mint}</span></div>
-            {result.txId && <div style={s.resultRow}><span style={s.resultKey}>Transaction</span><span style={s.mono}>{result.txId}</span></div>}
-            <a href={`https://solscan.io/token/${result.mint}`} target="_blank" rel="noreferrer" style={s.solscan}>
-              View on Solscan →
-            </a>
+            <div style={s.resultHead}>Your coin is live.</div>
+            <div style={s.rr}><span style={s.rk}>Name</span><span>{name} ({ticker})</span></div>
+            <div style={s.rr}><span style={s.rk}>Mint</span><span style={s.mono}>{result.mint}</span></div>
+            {result.txId && <div style={s.rr}><span style={s.rk}>Transaction</span><span style={s.mono}>{result.txId}</span></div>}
+            <a href={`https://solscan.io/token/${result.mint}`} target="_blank" rel="noreferrer" style={s.solscan}>View on Solscan →</a>
           </div>
         )}
 
-        <p style={s.legal}>
-          A launch tool — not investment advice. Crypto is volatile and you can lose money.
-          Always do your own research.
-        </p>
+        <p style={s.legal}>Crypto is volatile and you can lose money. Launch responsibly.</p>
       </div>
     </div>
   );
 }
 
-/* ---------- little components ---------- */
 function Step({ n, title, children, last }) {
   return (
-    <div style={{...st.step, borderBottom: last ? "none" : "1px solid rgba(255,255,255,0.07)"}}>
-      <div style={st.stepN}>{n}</div>
-      <div>
-        <div style={st.stepTitle}>{title}</div>
-        <div style={st.stepBody}>{children}</div>
-      </div>
+    <div style={{...st.step, borderBottom: last ? "none" : "1px solid rgba(255,255,255,0.06)"}}>
+      <div style={st.n}>{n}</div>
+      <div><div style={st.title}>{title}</div><div style={st.body}>{children}</div></div>
     </div>
   );
 }
 function Field({ label, value, onChange, placeholder, maxLength }) {
   return (
-    <div style={{marginBottom:16}}>
-      <label style={st.fieldLabel}>{label}</label>
+    <div style={{marginBottom:14}}>
+      <label style={s.fieldLabel}>{label}</label>
       <input value={value} maxLength={maxLength} placeholder={placeholder}
         onChange={(e)=>onChange(e.target.value)} style={st.input}
         onFocus={(e)=>e.target.style.borderColor=GREEN}
-        onBlur={(e)=>e.target.style.borderColor="rgba(255,255,255,0.12)"} />
+        onBlur={(e)=>e.target.style.borderColor="rgba(255,255,255,0.1)"} />
+    </div>
+  );
+}
+function Row({ k, v }) {
+  return (
+    <div style={st.row}>
+      <span style={st.rowK}>{k}</span>
+      <span style={st.rowV}>{v}</span>
     </div>
   );
 }
 
-/* ---------- styles ---------- */
 const s = {
-  wrap: { minHeight:"100vh", background:"#0d0d0d", color:"#f0f0f0", padding:"48px 20px",
-    fontFamily:"Inter, system-ui, sans-serif" },
-  inner: { maxWidth:960, margin:"0 auto", width:"100%" },
-  notLive: { textAlign:"center", color:"#666", marginTop:100, fontSize:15 },
-  eyebrow: { fontSize:12, letterSpacing:3, color:GREEN, fontWeight:700, marginBottom:16 },
-  h1: { fontSize:"clamp(30px, 6vw, 52px)", fontWeight:800, lineHeight:1.08, margin:"0 0 20px",
-    letterSpacing:-1 },
-  h1grad: { background:grad, WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" },
-  sub: { fontSize:"clamp(15px, 2vw, 18px)", color:"#9a9a9a", lineHeight:1.6, maxWidth:620,
-    margin:"0 0 40px" },
-  dealRow: { display:"flex", gap:24, flexWrap:"wrap", alignItems:"center", padding:"28px",
-    borderRadius:18, background:"linear-gradient(135deg, rgba(153,69,255,0.12), rgba(20,241,149,0.08))",
-    border:"1px solid rgba(255,255,255,0.08)", marginBottom:48 },
-  dealBig: { flex:"0 0 auto" },
-  dealPct: { fontSize:64, fontWeight:800, lineHeight:1, background:grad,
-    WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" },
-  dealPctLabel: { fontSize:13, color:"#9a9a9a", marginTop:6, maxWidth:160 },
-  dealText: { flex:"1 1 320px", fontSize:15, color:"#b8b8b8", lineHeight:1.6 },
-  cols: { display:"flex", gap:32, flexWrap:"wrap", alignItems:"flex-start" },
-  col: { flex:"1 1 360px", minWidth:300 },
-  card: { background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.09)",
-    borderRadius:18, padding:24 },
-  cardTitle: { fontSize:13, letterSpacing:2, color:"#777", fontWeight:700, marginBottom:20,
-    textTransform:"uppercase" },
-  label: { display:"block", color:"#aaa", fontSize:13, marginBottom:8, marginTop:4 },
-  tokenomics: { display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", justifyContent:"center",
-    margin:"22px 0 4px", fontSize:13, color:"#8a8a8a" },
-  dot: { color:"#444" },
-  btn: { width:"100%", background:grad, color:"#000", fontWeight:800, fontSize:15,
-    borderRadius:12, border:"none", height:52, cursor:"pointer" },
-  buyNote: { marginTop:14, fontSize:12.5, color:"#777", lineHeight:1.5, textAlign:"center" },
-  warn: { color:"#e0a800", fontSize:13, marginTop:12 },
-  status: { marginTop:24, padding:16, borderRadius:12, background:"rgba(255,255,255,0.04)",
-    fontSize:14, wordBreak:"break-all" },
-  result: { marginTop:24, padding:24, borderRadius:18, background:"rgba(20,241,149,0.05)",
-    border:`1px solid ${GREEN}` },
-  resultHead: { color:GREEN, fontWeight:800, fontSize:18, marginBottom:16 },
-  resultRow: { display:"flex", justifyContent:"space-between", gap:16, padding:"8px 0",
-    borderBottom:"1px solid rgba(255,255,255,0.06)", fontSize:13.5 },
-  resultKey: { color:"#888", flex:"0 0 auto" },
-  mono: { fontFamily:"ui-monospace, monospace", fontSize:12, wordBreak:"break-all", textAlign:"right" },
-  solscan: { color:GREEN, fontSize:13.5, display:"inline-block", marginTop:14, fontWeight:600 },
-  legal: { marginTop:40, fontSize:12, color:"#5a5a5a", lineHeight:1.6, maxWidth:560 },
+  wrap:{minHeight:"100vh",background:"#0b0b0c",color:"#ededed",padding:"60px 20px",fontFamily:"Inter,system-ui,sans-serif"},
+  inner:{maxWidth:940,margin:"0 auto",width:"100%"},
+  notLive:{textAlign:"center",color:"#666",marginTop:100,fontSize:15},
+  h1:{fontSize:"clamp(29px,5vw,46px)",fontWeight:800,lineHeight:1.1,margin:"0 0 18px",letterSpacing:-1,color:"#fff"},
+  accent:{color:GREEN},
+  sub:{fontSize:"clamp(15px,1.8vw,17px)",color:"#9a9a9a",lineHeight:1.6,maxWidth:610,margin:"0 0 40px"},
+  deal:{display:"flex",gap:26,alignItems:"stretch",padding:"26px",borderRadius:16,
+    background:"rgba(255,255,255,0.025)",border:"1px solid rgba(255,255,255,0.08)",marginBottom:52,flexWrap:"wrap"},
+  dealLeft:{display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",
+    padding:"0 20px 0 6px",borderRight:"1px solid rgba(255,255,255,0.08)",flex:"0 0 auto",minWidth:120},
+  dealPct:{fontSize:56,fontWeight:800,lineHeight:1,color:GREEN},
+  dealPctSub:{fontSize:12.5,color:"#8a8a8a",marginTop:6,textAlign:"center"},
+  dealRight:{flex:"1 1 300px"},
+  dealHead:{fontSize:17,fontWeight:700,color:"#fff",marginBottom:8},
+  dealBody:{fontSize:14,color:"#aeaeae",lineHeight:1.6,margin:0},
+  sectionLabel:{fontSize:13,fontWeight:700,letterSpacing:1,color:"#777",textTransform:"uppercase",marginBottom:8},
+  cols:{display:"flex",gap:40,flexWrap:"wrap",alignItems:"flex-start"},
+  colLeft:{flex:"1 1 360px",minWidth:300},
+  colRight:{flex:"1 1 300px",minWidth:280},
+  card:{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:16,padding:22,
+    position:"sticky",top:24},
+  cardTitle:{fontSize:15,fontWeight:700,color:"#fff",marginBottom:18},
+  fieldLabel:{display:"block",color:"#9a9a9a",fontSize:13,marginBottom:7},
+  tk:{margin:"18px 0",padding:"14px 0",borderTop:"1px solid rgba(255,255,255,0.07)",borderBottom:"1px solid rgba(255,255,255,0.07)"},
+  btn:{width:"100%",background:GREEN,color:"#08210f",fontWeight:800,fontSize:15,borderRadius:11,border:"none",height:50,cursor:"pointer",marginTop:4},
+  buyNote:{marginTop:12,fontSize:12,color:"#777",lineHeight:1.5,textAlign:"center"},
+  warn:{color:"#e0a800",fontSize:13,marginTop:10},
+  status:{marginTop:24,padding:15,borderRadius:11,background:"rgba(255,255,255,0.04)",fontSize:14,wordBreak:"break-all"},
+  result:{marginTop:24,padding:22,borderRadius:16,background:"rgba(20,241,149,0.05)",border:"1px solid #14F195"},
+  resultHead:{color:GREEN,fontWeight:800,fontSize:17,marginBottom:14},
+  rr:{display:"flex",justifyContent:"space-between",gap:16,padding:"7px 0",borderBottom:"1px solid rgba(255,255,255,0.06)",fontSize:13},
+  rk:{color:"#888",flex:"0 0 auto"},
+  mono:{fontFamily:"ui-monospace,monospace",fontSize:11.5,wordBreak:"break-all",textAlign:"right"},
+  solscan:{color:GREEN,fontSize:13,display:"inline-block",marginTop:12,fontWeight:600},
+  legal:{marginTop:44,fontSize:11,color:"#555",lineHeight:1.6},
 };
 const st = {
-  step: { display:"flex", gap:18, padding:"20px 0", alignItems:"flex-start" },
-  stepN: { fontSize:13, fontWeight:800, color:GREEN, fontFamily:"ui-monospace, monospace",
-    flex:"0 0 auto", paddingTop:2, opacity:0.8 },
-  stepTitle: { fontSize:16, fontWeight:700, color:"#fff", marginBottom:6 },
-  stepBody: { fontSize:14, color:"#9a9a9a", lineHeight:1.6 },
-  fieldLabel: { display:"block", color:"#aaa", fontSize:13, marginBottom:8 },
-  input: { width:"100%", height:46, background:"rgba(255,255,255,0.04)",
-    border:"1px solid rgba(255,255,255,0.12)", borderRadius:10, color:"#fff",
-    padding:"0 14px", fontSize:15, boxSizing:"border-box", outline:"none", transition:"border-color .15s" },
+  step:{display:"flex",gap:16,padding:"18px 0",alignItems:"flex-start"},
+  n:{fontSize:14,fontWeight:800,color:"#08210f",background:GREEN,borderRadius:8,width:26,height:26,
+    display:"flex",alignItems:"center",justifyContent:"center",flex:"0 0 auto"},
+  title:{fontSize:16,fontWeight:700,color:"#fff",marginBottom:6},
+  body:{fontSize:14,color:"#9a9a9a",lineHeight:1.6},
+  input:{width:"100%",height:44,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",
+    borderRadius:10,color:"#fff",padding:"0 13px",fontSize:15,boxSizing:"border-box",outline:"none",transition:"border-color .15s"},
+  row:{display:"flex",justifyContent:"space-between",padding:"6px 0",fontSize:13},
+  rowK:{color:"#8a8a8a"},
+  rowV:{color:"#e0e0e0",fontWeight:600},
 };
